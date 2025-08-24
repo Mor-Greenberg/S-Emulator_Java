@@ -19,7 +19,6 @@ public class programDisplayImpl implements programDisplay {
 
     }
 
-    @Override
     public void printProgram()
     {
         System.out.println(program.getName());
@@ -62,6 +61,4 @@ public class programDisplayImpl implements programDisplay {
        }
 
     }
-
-
 }

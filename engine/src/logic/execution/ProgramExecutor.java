@@ -6,4 +6,5 @@ import java.util.Map;
 
 public interface ProgramExecutor {
     long run(Long... input);
+    Map<Variable, Long> getVariableState();
 }

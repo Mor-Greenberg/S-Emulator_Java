@@ -12,6 +12,7 @@ public interface SProgram {
     List<SInstruction> getInstructions();
     List<Variable> getVars();
     List<Label> getLabels();
+    int getNextIndexByLabel(Label nextLabel);
 
         boolean validate();
     int calculateMaxDegree();

@@ -29,6 +29,7 @@ public class DecreaseInstruction extends AbstractInstruction {
     public InstructionType getType(){
         return type;
     }
+
     @Override
     public String commandDisplay(){
         Variable variable = getVariable();

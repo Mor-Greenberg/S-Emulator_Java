@@ -2,6 +2,7 @@ package logic.program;
 
 import logic.Variable.Variable;
 import logic.instruction.SInstruction;
+import logic.label.FixedLabel;
 import logic.label.Label;
 
 import java.util.ArrayList;
@@ -60,5 +61,20 @@ public class SProgramImpl implements SProgram {
     public List<Label> getLabels(){
         return labels;
     }
+
+    @Override
+    public int getNextIndexByLabel(Label nextLabel) {
+        List<SInstruction> instructions = getInstructions();
+        for (int i = 0; i < instructions.size(); i++) {
+            if (nextLabel.equals(instructions.get(i).getLabel())) {
+                return i;
+            }
+        }
+        throw new IllegalArgumentException("Label not found: " + nextLabel);
+
+    }
+
+
+
 
 }

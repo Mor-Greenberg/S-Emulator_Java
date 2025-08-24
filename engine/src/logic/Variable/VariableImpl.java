@@ -18,4 +18,8 @@ public class VariableImpl implements Variable {
     public String getRepresentation() {
         return type.getVariableRepresentation(number);
     }
+    @Override
+    public String toString(){
+        return type.getVariableRepresentation(number);
+    }
 }

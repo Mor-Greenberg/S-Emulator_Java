@@ -11,28 +11,40 @@ import java.util.Map;
 public class ProgramExecutorImpl implements ProgramExecutor {
     private final SProgram program;
 
-    public ProgramExecutorImpl(SProgram program) {
+    private Map<Variable, Long> variableState;
+    public ProgramExecutorImpl(SProgram program, Map<Variable, Long> variableState) {
         this.program = program;
+        this.variableState = variableState;
     }
 
     @Override
     public long run(Long... input) {
+        int pc=0;
 
-        ExecutionContext context = null; // create the context with inputs.
+        ExecutionContext context = new ExecutionContextImpl();// create the context with inputs.
+//        List<Variable> inputVars = program.getInputVariables(); // אם קיים
+//        for (int i = 0; i < input.length; i++) {
+//            context.updateVariable(inputVars.get(i), input[i]);
+//        }
 
-        SInstruction currentInstruction = program.getInstructions().get(0);
         Label nextLabel;
         do {
+            SInstruction currentInstruction=program.getInstructions().get(pc);
             nextLabel = currentInstruction.execute(context);
 
             if (nextLabel == FixedLabel.EMPTY) {
-                // set currentInstruction to the next instruction in line
+                pc++;
             } else if (nextLabel != FixedLabel.EXIT) {
-                // need to find the instruction at 'nextLabel' and set current instruction to it
+                pc = program.getNextIndexByLabel(nextLabel); // נדרש מימוש
             }
         } while (nextLabel != FixedLabel.EXIT);
 
         return context.getVariableValue(Variable.RESULT);
+    }
+
+    @Override
+    public Map<Variable, Long> getVariableState(){
+        return variableState;
     }
 
 

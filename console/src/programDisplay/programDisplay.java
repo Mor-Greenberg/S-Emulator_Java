@@ -7,5 +7,4 @@ import logic.program.SProgram;
 import java.util.List;
 
 public interface programDisplay {
-    void printProgram();
 }
