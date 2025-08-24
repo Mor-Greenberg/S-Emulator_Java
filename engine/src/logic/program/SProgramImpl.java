@@ -1,4 +1,64 @@
 package logic.program;
 
-public class SProgramImpl {
+import logic.Variable.Variable;
+import logic.instruction.SInstruction;
+import logic.label.Label;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class SProgramImpl implements SProgram {
+    private final String name;
+    private final List<SInstruction> instructions;
+    private final List<Variable> variables;
+    private final List<Label> labels;
+
+    public SProgramImpl(String name, List<Variable> variables, List<Label> labels) {
+        this.name = name;
+        this.variables = variables;
+        this.labels = labels;
+        instructions = new ArrayList<>();
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public void addInstruction(SInstruction instruction) {
+        instructions.add(instruction);
+    }
+
+    @Override
+    public List<SInstruction> getInstructions() {
+        return instructions;
+    }
+
+    @Override
+    public boolean validate() {
+        return false;
+    }
+
+    @Override
+    public int calculateMaxDegree() {
+        // traverse all commands and find maximum degree
+        return 0;
+    }
+
+    @Override
+    public int calculateCycles() {
+        // traverse all commands and calculate cycles
+        return 0;
+    }
+    @Override
+    public List<Variable> getVars(){
+        return variables;
+
+    }
+    @Override
+    public List<Label> getLabels(){
+        return labels;
+    }
+
 }
