@@ -4,7 +4,7 @@ import logic.Variable.Variable;
 import logic.label.FixedLabel;
 import logic.label.Label;
 
-public abstract class AbstractInstruction implements SInstruction {
+public abstract class AbstractInstruction implements Instruction {
     private final InstructionData instructionData;
     private final Label label;
     private final Variable variable;

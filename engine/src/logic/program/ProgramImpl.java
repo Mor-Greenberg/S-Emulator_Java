@@ -1,20 +1,19 @@
 package logic.program;
 
 import logic.Variable.Variable;
-import logic.instruction.SInstruction;
-import logic.label.FixedLabel;
+import logic.instruction.Instruction;
 import logic.label.Label;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class SProgramImpl implements SProgram {
+public class ProgramImpl implements Program {
     private final String name;
-    private final List<SInstruction> instructions;
+    private final List<Instruction> instructions;
     private final List<Variable> variables;
     private final List<Label> labels;
 
-    public SProgramImpl(String name, List<Variable> variables, List<Label> labels) {
+    public ProgramImpl(String name, List<Variable> variables, List<Label> labels) {
         this.name = name;
         this.variables = variables;
         this.labels = labels;
@@ -27,12 +26,12 @@ public class SProgramImpl implements SProgram {
     }
 
     @Override
-    public void addInstruction(SInstruction instruction) {
+    public void addInstruction(Instruction instruction) {
         instructions.add(instruction);
     }
 
     @Override
-    public List<SInstruction> getInstructions() {
+    public List<Instruction> getInstructions() {
         return instructions;
     }
 
@@ -64,7 +63,7 @@ public class SProgramImpl implements SProgram {
 
     @Override
     public int getNextIndexByLabel(Label nextLabel) {
-        List<SInstruction> instructions = getInstructions();
+        List<Instruction> instructions = getInstructions();
         for (int i = 0; i < instructions.size(); i++) {
             if (nextLabel.equals(instructions.get(i).getLabel())) {
                 return i;

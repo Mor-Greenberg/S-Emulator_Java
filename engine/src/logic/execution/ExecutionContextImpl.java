@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ExecutionContextImpl implements ExecutionContext {
-    private final Map<Variable, Long> variableState;
+    private  final Map<Variable, Long> variableState;
 
     public ExecutionContextImpl() {
         this.variableState = new HashMap<>();

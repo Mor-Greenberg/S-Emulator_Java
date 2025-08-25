@@ -1,16 +1,6 @@
 package programDisplay;
 
-import logic.Variable.Variable;
-import logic.Variable.VariableImpl;
-import logic.Variable.VariableType;
-import logic.instruction.DecreaseInstruction;
-import logic.instruction.IncreaseInstruction;
-import logic.instruction.InstructionData;
-import logic.instruction.SInstruction;
 import logic.label.Label;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class InstructionFormat {
     int instructionNumber;

@@ -4,7 +4,7 @@ import logic.Variable.Variable;
 import logic.execution.ExecutionContext;
 import logic.label.Label;
 
-public interface SInstruction {
+public interface Instruction {
     String getName();
     Label execute(ExecutionContext context);
     int cycles();

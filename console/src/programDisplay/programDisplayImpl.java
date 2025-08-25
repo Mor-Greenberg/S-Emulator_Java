@@ -2,18 +2,17 @@ package programDisplay;
 
 import logic.Variable.Variable;
 import logic.Variable.VariableType;
-import logic.instruction.InstructionType;
-import logic.instruction.SInstruction;
+import logic.instruction.Instruction;
 import logic.label.FixedLabel;
 import logic.label.Label;
-import logic.program.SProgram;
+import logic.program.Program;
 
 import java.util.List;
 
 public class programDisplayImpl implements programDisplay {
-    SProgram program;
+    Program program;
 
-    public programDisplayImpl(SProgram program)
+    public programDisplayImpl(Program program)
     {
         this.program = program;
 
@@ -49,8 +48,8 @@ public class programDisplayImpl implements programDisplay {
     public void printInstructions()
     {
         int instructionCounter=0;
-       List <SInstruction>  instructions =  program.getInstructions();
-       for (SInstruction instruction : instructions) {
+       List <Instruction>  instructions =  program.getInstructions();
+       for (Instruction instruction : instructions) {
           InstructionFormat formattedInst = new InstructionFormat(instructionCounter,
                   instruction.getType().toString(),
                   instruction.getLabel(),

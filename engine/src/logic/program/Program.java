@@ -1,15 +1,15 @@
 package logic.program;
 
 import logic.Variable.Variable;
-import logic.instruction.SInstruction;
+import logic.instruction.Instruction;
 import logic.label.Label;
 
 import java.util.List;
 
-public interface SProgram {
+public interface Program {
     String getName();
-    void addInstruction(SInstruction instruction);
-    List<SInstruction> getInstructions();
+    void addInstruction(Instruction instruction);
+    List<Instruction> getInstructions();
     List<Variable> getVars();
     List<Label> getLabels();
     int getNextIndexByLabel(Label nextLabel);

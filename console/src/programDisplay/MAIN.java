@@ -5,13 +5,14 @@ import logic.Variable.VariableImpl;
 import logic.Variable.VariableType;
 import logic.instruction.DecreaseInstruction;
 import logic.instruction.IncreaseInstruction;
-import logic.instruction.SInstruction;
-import logic.label.Label;
+import logic.instruction.Instruction;
 import logic.label.LabelImpl;
-import logic.program.SProgramImpl;
+import logic.program.ProgramImpl;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static logic.label.Label.labels;
 
 public class MAIN {
     public static void main(String[] args) {
@@ -19,14 +20,14 @@ public class MAIN {
 
 
         // יצירת הוראות
-        List<SInstruction> instructions = new ArrayList<>();
-        instructions.add(new IncreaseInstruction(var));
+        List<Instruction> instructions = new ArrayList<>();
+        instructions.add(new IncreaseInstruction(var,new LabelImpl(1)));
         instructions.add(new DecreaseInstruction(var));
 
-        List<Label> labels = new ArrayList<>();
-        labels.add(new LabelImpl(1));
 
-        SProgramImpl prog = new SProgramImpl("MyTestProgram", List.of(var), labels);
+
+
+        ProgramImpl prog = new ProgramImpl("MyTestProgram", List.of(var), labels);
 
         programDisplayImpl display = new programDisplayImpl(prog);
 

@@ -1,18 +1,18 @@
 package logic.execution;
 
 import logic.Variable.Variable;
-import logic.instruction.SInstruction;
+import logic.instruction.Instruction;
 import logic.label.FixedLabel;
 import logic.label.Label;
-import logic.program.SProgram;
+import logic.program.Program;
 
 import java.util.Map;
 
 public class ProgramExecutorImpl implements ProgramExecutor {
-    private final SProgram program;
+    private final Program program;
 
     private Map<Variable, Long> variableState;
-    public ProgramExecutorImpl(SProgram program, Map<Variable, Long> variableState) {
+    public ProgramExecutorImpl(Program program, Map<Variable, Long> variableState) {
         this.program = program;
         this.variableState = variableState;
     }
@@ -29,7 +29,7 @@ public class ProgramExecutorImpl implements ProgramExecutor {
 
         Label nextLabel;
         do {
-            SInstruction currentInstruction=program.getInstructions().get(pc);
+            Instruction currentInstruction=program.getInstructions().get(pc);
             nextLabel = currentInstruction.execute(context);
 
             if (nextLabel == FixedLabel.EMPTY) {
