@@ -1,5 +1,6 @@
 package logic.instruction;
 
+
 public enum InstructionData {
     INCREASE("INCREASE", 1),
     DECREASE("DECREASE", 1),
@@ -15,6 +16,7 @@ public enum InstructionData {
         this.name = name;
         this.cycles = cycles;
     }
+
 
     public String getName() {
         return name;

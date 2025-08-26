@@ -9,14 +9,16 @@ public class LabelImpl implements Label {
     private int number;
 
     public LabelImpl(int number) {
+        this.number = number;
         label = "L" + number;
     }
-    public int getNumber() {
-        return number;
-    }
+
 
     public String getLabelRepresentation() {
-        return label;
+        String strNum = String.valueOf(number);
+        String strLabel = "L" + strNum;
+
+        return strLabel;
     }
 
     @Override
@@ -28,13 +30,14 @@ public class LabelImpl implements Label {
         if (this == o) return true;
         if (!(o instanceof LabelImpl)) return false;
         LabelImpl that = (LabelImpl) o;
-        return number == that.number;
+        return this.number == that.number;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(number);
+        return Integer.hashCode(number);
     }
+
 
     @Override
     public String toString() {

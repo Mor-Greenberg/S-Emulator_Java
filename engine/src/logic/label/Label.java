@@ -9,4 +9,6 @@ public interface Label {
     default List<Label> getLabels() {
         return labels;
     }
+
+   // int getNumber();
 }

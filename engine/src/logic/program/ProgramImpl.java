@@ -5,19 +5,21 @@ import logic.instruction.Instruction;
 import logic.label.Label;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ProgramImpl implements Program {
     private final String name;
-    private final List<Instruction> instructions;
-    private final List<Variable> variables;
-    private final List<Label> labels;
+    public List<Instruction> instructions;
+    public Set<Variable> variables;
+    public Set<Label> labels;
 
-    public ProgramImpl(String name, List<Variable> variables, List<Label> labels) {
+    public ProgramImpl(String name) { //TODO only name
         this.name = name;
-        this.variables = variables;
-        this.labels = labels;
         instructions = new ArrayList<>();
+        variables = new HashSet<>();
+        labels = new HashSet<>();
     }
 
     @Override
@@ -52,13 +54,28 @@ public class ProgramImpl implements Program {
         return 0;
     }
     @Override
-    public List<Variable> getVars(){
+    public Set<Variable> getVars(){
         return variables;
 
     }
     @Override
-    public List<Label> getLabels(){
+    public Set<Label> getLabels(){
         return labels;
+    }
+
+    public void setVariables(Set<Variable> variables) {
+        this.variables = variables;
+    }
+    public void setLabels(Set<Label> labels) {
+        this.labels = labels;
+    }
+    @Override
+    public void addVar(Variable variable) {
+        this.variables.add(variable);
+    }
+    @Override
+    public void addLabel(Label label) {
+        this.labels.add(label);
     }
 
     @Override
@@ -72,6 +89,7 @@ public class ProgramImpl implements Program {
         throw new IllegalArgumentException("Label not found: " + nextLabel);
 
     }
+
 
 
 

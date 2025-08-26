@@ -22,17 +22,16 @@ public class programDisplayImpl implements programDisplay {
     {
         System.out.println(program.getName());
         for (Variable variable : program.getVars()){
-            if(variable.getType()== VariableType.INPUT){
-                System.out.println(variable.toString());
-            }
+            System.out.println(variable.toString());
+
         }
         int exitCounter=0;
 
         for(Label label:program.getLabels()){
-            if(label != FixedLabel.EXIT) {
+            if(label != FixedLabel.EXIT && label != FixedLabel.EMPTY) {
                 System.out.println(label.toString());
             }
-            else {
+            else if(label == FixedLabel.EXIT) {
                 exitCounter++;
             }
 
@@ -47,7 +46,7 @@ public class programDisplayImpl implements programDisplay {
 
     public void printInstructions()
     {
-        int instructionCounter=0;
+        int instructionCounter=1;
        List <Instruction>  instructions =  program.getInstructions();
        for (Instruction instruction : instructions) {
           InstructionFormat formattedInst = new InstructionFormat(instructionCounter,
