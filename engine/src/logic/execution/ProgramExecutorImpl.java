@@ -6,15 +6,16 @@ import logic.label.FixedLabel;
 import logic.label.Label;
 import logic.program.Program;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class ProgramExecutorImpl implements ProgramExecutor {
     private final Program program;
 
     private Map<Variable, Long> variableState;
-    public ProgramExecutorImpl(Program program, Map<Variable, Long> variableState) {
+    public ProgramExecutorImpl(Program program) {
         this.program = program;
-        this.variableState = variableState;
+        this.variableState = new HashMap<Variable, Long>();
     }
 
     @Override

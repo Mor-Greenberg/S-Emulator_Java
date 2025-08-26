@@ -25,6 +25,13 @@ import java.util.Optional;
 public class XmlLoader {
 
     public static SProgram loadFromFile(String path) {
+        if( (XmlValidation.validateXmlFilePath(path)) == 1) {
+           System.out.println("XML file does not exist");
+           return null;
+        } else if (XmlValidation.validateXmlFilePath(path) == 2) {
+            System.out.println("XML file does not end with .xml");
+            return null;
+        }
         try {
             JAXBContext context = JAXBContext.newInstance(SProgram.class);
             Unmarshaller unmarshaller = context.createUnmarshaller();
@@ -86,6 +93,7 @@ public class XmlLoader {
         String rest = str.substring(1);
         int number = Integer.parseInt(rest);
         Label label = new LabelImpl(number);
+
         return Optional.of(label);
     }
 
@@ -155,7 +163,7 @@ public class XmlLoader {
 
     public Program SprogramToProgram(SProgram Sprogram) {
         Program program = new ProgramImpl(Sprogram.getName());
-        int argCounter = 0;
+
 
 
         List<SInstruction> sInstructionsList = Sprogram.getSInstructions().getSInstruction();
@@ -172,7 +180,6 @@ public class XmlLoader {
             Variable variable = StringToVariable(sVariable);
             program.addVar(variable);
             String sLabel = sinstruction.getSLabel();
-            //Optional<Label> jnzLabel = handelJumpNotZero(Sarg.getValue());
             Optional<Label> optionalLabel = StringToLabel(sLabel);
             Label label = optionalLabel.orElse(FixedLabel.EMPTY);
 
