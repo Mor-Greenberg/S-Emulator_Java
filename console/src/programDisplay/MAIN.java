@@ -23,10 +23,7 @@ public class MAIN {
     public static void main(String[] args) {
         String path = "C:\\Users\\Mor\\Desktop\\computer science\\java\\S-Emulator_sub\\S-Emulator_sub\\badic.xml";
         SProgram sProgram = XmlLoader.loadFromFile(path);
-        if (sProgram != null) {
-            System.out.println("Program loaded successfully!");
-            System.out.println("Program name: " + sProgram.getName());
-        }
+
         XmlLoader xmlLoader = new XmlLoader();
         Program realProgram=xmlLoader.SprogramToProgram(sProgram);
         programDisplayImpl display= new programDisplayImpl(realProgram);

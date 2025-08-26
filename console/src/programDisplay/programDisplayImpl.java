@@ -20,13 +20,15 @@ public class programDisplayImpl implements programDisplay {
 
     public void printProgram()
     {
-        System.out.println(program.getName());
+        System.out.println("Program Name: " + program.getName());
+        System.out.println("*Variables*");
         for (Variable variable : program.getVars()){
             System.out.println(variable.toString());
 
         }
         int exitCounter=0;
 
+        System.out.println("*Labels*");
         for(Label label:program.getLabels()){
             if(label != FixedLabel.EXIT && label != FixedLabel.EMPTY) {
                 System.out.println(label.toString());
@@ -39,10 +41,12 @@ public class programDisplayImpl implements programDisplay {
         if(exitCounter!=0){
             System.out.println(FixedLabel.EXIT.toString());
         }
+        System.out.println("*Instructions*");
 
         printInstructions();
 
     }
+
 
     public void printInstructions()
     {

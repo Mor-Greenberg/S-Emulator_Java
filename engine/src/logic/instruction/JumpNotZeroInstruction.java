@@ -6,7 +6,7 @@ import logic.label.FixedLabel;
 import logic.label.Label;
 
 public class JumpNotZeroInstruction extends AbstractInstruction{
-    private final Label jnzLabel;
+    private Label jnzLabel;
     public InstructionType type = InstructionType.B;
 
 
@@ -36,7 +36,11 @@ public class JumpNotZeroInstruction extends AbstractInstruction{
     @Override
     public String commandDisplay(){
         Variable variable = getVariable();
-        String output = "IF" + variable.toString() + "!= 0 GOTO" + jnzLabel.toString();
+        String output = "IF " + variable.toString() + " != 0 GOTO " + jnzLabel.toString();
         return output;
+    }
+
+    public void setJnzLabel(Label jnzLabel) {
+        this.jnzLabel=jnzLabel;
     }
 }
