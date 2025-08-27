@@ -5,6 +5,6 @@ import logic.Variable.Variable;
 import java.util.Map;
 
 public interface ProgramExecutor {
-    long run();
+    long run(ExecutionContext context);
     Map<Variable, Long> getVariableState();
 }

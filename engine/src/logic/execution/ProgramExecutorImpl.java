@@ -30,17 +30,15 @@ public class ProgramExecutorImpl implements ProgramExecutor {
         return instructionsActivated;
     }
 
-    public long run() {
+    public long run(ExecutionContext context) {
 
         int pc = 0;
-        ExecutionContext context = new ExecutionContextImpl(variableState);
 
         Label nextLabel = FixedLabel.EMPTY;
-        boolean b = nextLabel != FixedLabel.EXIT && (pc == program.getInstructions().size());
-        do {
+        boolean b = (nextLabel != FixedLabel.EXIT && (pc < program.getInstructions().size()));
+        while (nextLabel != FixedLabel.EXIT && (pc < program.getInstructions().size())) {
             Instruction currentInstruction = program.getInstructions().get(pc);
             instructionsActivated.add(currentInstruction);
-
 
             nextLabel = currentInstruction.execute(context);
             if (nextLabel == FixedLabel.EMPTY) {
@@ -48,7 +46,8 @@ public class ProgramExecutorImpl implements ProgramExecutor {
             } else if (nextLabel != FixedLabel.EXIT) {
                 pc = program.getNextIndexByLabel(nextLabel);
             }
-        } while (b);
+        }
+
 
         return context.getVariableValue(Variable.RESULT);
     }

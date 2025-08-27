@@ -186,6 +186,7 @@ public class XmlLoader {
             String sLabel = sinstruction.getSLabel();
             Optional<Label> optionalLabel = StringToLabel(sLabel);
             Label label = optionalLabel.orElse(FixedLabel.EMPTY);
+            program.addLabel(label);
 
 
             Optional<Label> jumpLabel = Optional.empty();
