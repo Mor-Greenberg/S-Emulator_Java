@@ -2,15 +2,18 @@ package logic.execution;
 
 import logic.Variable.Variable;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class ExecutionContextImpl implements ExecutionContext {
     public Map<Variable, Long> variableState;
+    public ExecutionContextImpl(Map<Variable, Long> variableState) {
+        this.variableState = variableState;
+    }
+
 
     @Override
     public long getVariableValue(Variable v) {
-        return variableState.get(v);
+        return variableState.getOrDefault(v, 0L);
     }
 
     @Override

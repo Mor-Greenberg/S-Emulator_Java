@@ -43,15 +43,15 @@ public class programDisplayImpl implements programDisplay {
         }
         System.out.println("*Instructions*");
 
-        printInstructions();
+        printInstructions(program.getInstructions());
 
     }
 
 
-    public void printInstructions()
+    public void printInstructions(List<Instruction> instructions)
     {
         int instructionCounter=1;
-       List <Instruction>  instructions =  program.getInstructions();
+
        for (Instruction instruction : instructions) {
           InstructionFormat formattedInst = new InstructionFormat(instructionCounter,
                   instruction.getType().toString(),

@@ -6,42 +6,53 @@ import logic.label.FixedLabel;
 import logic.label.Label;
 import logic.program.Program;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ProgramExecutorImpl implements ProgramExecutor {
     private final Program program;
+    public List <Instruction> instructionsActivated;
 
     private Map<Variable, Long> variableState;
     public ProgramExecutorImpl(Program program) {
         this.program = program;
         this.variableState = new HashMap<Variable, Long>();
+        this.instructionsActivated = new ArrayList<Instruction>();
+    }
+    private void initVarsInMap(){
+        for (Variable var : program.getVars()){
+            variableState.put(var,0L);
+        }
+    }
+    public List <Instruction> getInstructionsActivated(){
+        return instructionsActivated;
     }
 
-    @Override
-    public long run(Long... input) {
-        int pc=0;
+    public long run() {
 
-        ExecutionContext context = new ExecutionContextImpl();// create the context with inputs.
-//        List<Variable> inputVars = program.getInputVariables(); // אם קיים
-//        for (int i = 0; i < input.length; i++) {
-//            context.updateVariable(inputVars.get(i), input[i]);
-//        }
+        int pc = 0;
+        ExecutionContext context = new ExecutionContextImpl(variableState);
 
-        Label nextLabel;
+        Label nextLabel = FixedLabel.EMPTY;
+        boolean b = nextLabel != FixedLabel.EXIT && (pc == program.getInstructions().size());
         do {
-            Instruction currentInstruction=program.getInstructions().get(pc);
-            nextLabel = currentInstruction.execute(context);
+            Instruction currentInstruction = program.getInstructions().get(pc);
+            instructionsActivated.add(currentInstruction);
 
+
+            nextLabel = currentInstruction.execute(context);
             if (nextLabel == FixedLabel.EMPTY) {
                 pc++;
             } else if (nextLabel != FixedLabel.EXIT) {
-                pc = program.getNextIndexByLabel(nextLabel); // נדרש מימוש
+                pc = program.getNextIndexByLabel(nextLabel);
             }
-        } while (nextLabel != FixedLabel.EXIT);
+        } while (b);
 
         return context.getVariableValue(Variable.RESULT);
     }
+
 
     @Override
     public Map<Variable, Long> getVariableState(){

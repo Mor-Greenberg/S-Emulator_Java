@@ -15,7 +15,7 @@ public class ProgramImpl implements Program {
     public Set<Variable> variables;
     public Set<Label> labels;
 
-    public ProgramImpl(String name) { //TODO only name
+    public ProgramImpl(String name) {
         this.name = name;
         instructions = new ArrayList<>();
         variables = new HashSet<>();

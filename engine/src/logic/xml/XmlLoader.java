@@ -85,9 +85,12 @@ public class XmlLoader {
             return Optional.empty();
         }
 
-        char first = str.charAt(0);
-        if (first != 'L') {
-            throw new IllegalArgumentException("Unknown label type: " + first);
+        if (str.equals("EXIT")) {
+            return Optional.of(FixedLabel.EXIT); // או איך שאת מגדירה את Label ה־EXIT
+        }
+
+        if (str.charAt(0) != 'L') {
+            throw new IllegalArgumentException("Unknown label type: " + str);
         }
 
         String rest = str.substring(1);
@@ -96,6 +99,7 @@ public class XmlLoader {
 
         return Optional.of(label);
     }
+
 
 
     public Instruction StringToInstruction(String str, Variable variable, Label label) {
