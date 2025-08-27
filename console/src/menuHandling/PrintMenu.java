@@ -5,21 +5,22 @@ import logic.Variable.Variable;
 import logic.execution.ExecutionContext;
 import logic.execution.ExecutionContextImpl;
 import logic.execution.ProgramExecutorImpl;
+import logic.history.RunHistoryEntry;
 import logic.instruction.Instruction;
-import logic.instruction.InstructionData;
 import logic.jaxb.schema.generated.SProgram;
 import logic.menu.Menu;
 import logic.program.Program;
 import logic.xml.XmlLoader;
 import programDisplay.programDisplayImpl;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 public class PrintMenu {
     private Program program;
     boolean xmlLoded = false;
+    private final List<RunHistoryEntry> history = new ArrayList<>();
+    private int runCounter = 1;
+
 
     public void printMenu() {
         Menu menu = new Menu();
@@ -41,72 +42,7 @@ public class PrintMenu {
         }
         return sc.nextInt();
     }
-//    public boolean handleChoice(int choice, Program program) {
-//        Scanner sc = new Scanner(System.in);
-//        programDisplayImpl programDisplayImpl = new programDisplayImpl(program);
-//
-//        switch (choice) {
-//            case 1:
-//                System.out.println("Please enter full XML path:");
-//
-//                String path = sc.nextLine();
-//                path = path.replace("\"", "").trim(); // מסיר גרשיים מיותרים
-//
-//
-//                SProgram sProgram = XmlLoader.loadFromFile(path);
-//                if (sProgram != null) {
-//                    this.program = new XmlLoader().SprogramToProgram(sProgram);
-//                    System.out.println("XML loaded successfully!");
-//                    xmlLoded=true;
-//                } else {
-//                    System.out.println("Failed to load XML.");
-//                }
-//                break;
-//            case 2:
-//                programDisplayImpl.printProgram();
-//                break;
-//            case 3:
-//                // expand
-//                System.out.println("Expanding...");
-//                break;
-//            case 4:
-//                if (program == null) {
-//                    System.out.println("No program loaded yet.");
-//                    break;
-//                }
-//
-//                Map<Variable, Long> variableState = new HashMap<>();
-//
-//                ExecutionContext context = new ExecutionContextImpl(variableState);
-//
-//                HandleExecution handleExecution = new HandleExecution(program);
-//                handleExecution.collectInputFromUser(program, context);
-//
-//                ProgramExecutorImpl executor = new ProgramExecutorImpl(program);
-//                long result = executor.run();
-//                System.out.println("Instructions activated:");
-//                programDisplayImpl.printInstructions(executor.getInstructionsActivated());
-//
-//                System.out.println("Program result(y): " + result);
-//
-//                System.out.println("Variable values:");
-//                for (Map.Entry<Variable, Long> entry : variableState.entrySet()) {
-//                    System.out.println(entry.getKey() + " = " + entry.getValue());
-//                }
-//
-//                break;
-//
-//            case 5:
-//                System.out.println("Showing stats...");
-//                break;
-//            case 6:
-//                System.out.println("Exiting...");
-//                return false;
-//            default:
-//                System.out.println("Invalid choice.");
-//        }
-//        return true;
-//    }
+
 
     public boolean handleChoice(int choice, Program program) {
         Scanner sc = new Scanner(System.in);
@@ -143,7 +79,19 @@ public class PrintMenu {
         System.out.println("Expanding...");
     }
     private void showStats() {
-        System.out.println("Showing stats...");
+        for (RunHistoryEntry entry : history) {
+            System.out.println("Run #" + entry.getRunNumber());
+
+            System.out.println("Inputs:");
+            for (Map.Entry<Variable, Long> varEntry : entry.getInputs().entrySet()) {
+                System.out.println("  " + varEntry.getKey() + " = " + varEntry.getValue());
+            }
+
+            System.out.println("Result (y): " + entry.getResultY());
+            System.out.println("Total Cycles: " + entry.getTotalCycles());
+            System.out.println("---------------------------");
+        }
+
     }
 
     private void runProgram(Program program, programDisplayImpl programDisplay) {
@@ -182,6 +130,15 @@ public class PrintMenu {
             sumCycles += cycles;
         }
         System.out.println("Number of cycles: " + sumCycles);
+        List<Instruction> instructions = executor.getInstructionsActivated();
+        int totalCycles = instructions.stream()
+                .mapToInt(Instruction::cycles)
+                .sum();
+
+
+        RunHistoryEntry entry = new RunHistoryEntry(runCounter++, handleExecution.getInputsMap(), result, totalCycles);
+        history.add(entry);
+
 
 
 

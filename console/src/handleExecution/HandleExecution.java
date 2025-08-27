@@ -6,11 +6,14 @@ import logic.execution.ExecutionContext;
 import logic.execution.ExecutionContextImpl;
 import logic.program.Program;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 public class HandleExecution {
     Program program;
+    Map<Variable, Long> inputs =  new HashMap<Variable, Long>();
     // ExecutionContext executionContext = new ExecutionContextImpl();
     public HandleExecution(Program program)
     {
@@ -88,7 +91,7 @@ public class HandleExecution {
         String[] values = line.split(",");
 
         for (int i = 0; i < inputVars.size(); i++) {
-            int value = 0;
+            long value = 0;
             if (i < values.length) {
                 try {
                     value = Integer.parseInt(values[i].trim());
@@ -97,11 +100,15 @@ public class HandleExecution {
                 }
             }
             context.updateVariable(inputVars.get(i), value);
+            inputs.put(inputVars.get(i), value);
         }
 
         System.out.println("Input values updated successfully.");
     }
 
+    public Map<Variable,Long> getInputsMap(){
+        return inputs;
+    }
 
 
 }
