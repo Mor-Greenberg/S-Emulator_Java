@@ -116,6 +116,14 @@ public class PrintMenu {
         System.out.println("Instructions activated:");
         programDisplay.printInstructions(executor.getInstructionsActivated());
 
+        System.out.println("Instructions expanded:");
+        for (Instruction instr: executor.getInstructionsActivated()){
+            if (instr.hasOrigin()) {
+                System.out.print("  <<<  " + instr.getOrigin().commandDisplay());
+            }
+        }
+
+
         System.out.println("Program result (y): " + result);
 
         System.out.println("Variable values:");
@@ -124,7 +132,7 @@ public class PrintMenu {
         System.out.println("Number of cycles:");
         int sumCycles = 0;
         for (Instruction instruction : executor.getInstructionsActivated()) {
-            int cycles = instruction.cycles(); // ← מפעיל את getter מה־Abstract
+            int cycles = instruction.getCycles(); // ← מפעיל את getter מה־Abstract
 
             System.out.println("Instruction: " + instruction.getName() + ", Cycles: " + cycles);
             sumCycles += cycles;
@@ -132,7 +140,7 @@ public class PrintMenu {
         System.out.println("Number of cycles: " + sumCycles);
         List<Instruction> instructions = executor.getInstructionsActivated();
         int totalCycles = instructions.stream()
-                .mapToInt(Instruction::cycles)
+                .mapToInt(Instruction::getCycles)
                 .sum();
 
 

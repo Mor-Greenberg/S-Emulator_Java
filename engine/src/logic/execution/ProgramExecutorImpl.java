@@ -6,20 +6,23 @@ import logic.label.FixedLabel;
 import logic.label.Label;
 import logic.program.Program;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ProgramExecutorImpl implements ProgramExecutor {
     private final Program program;
     public List <Instruction> instructionsActivated;
+
+//    public Set<Label> activeLabels;
+//    public Set<Variable> activeVariables;
+
 
     private Map<Variable, Long> variableState;
     public ProgramExecutorImpl(Program program) {
         this.program = program;
         this.variableState = new HashMap<Variable, Long>();
         this.instructionsActivated = new ArrayList<Instruction>();
+//        activeLabels = new HashSet<>();
+//        activeVariables = new HashSet<>();
     }
     private void initVarsInMap(){
         for (Variable var : program.getVars()){
@@ -29,6 +32,7 @@ public class ProgramExecutorImpl implements ProgramExecutor {
     public List <Instruction> getInstructionsActivated(){
         return instructionsActivated;
     }
+
 
     public long run(ExecutionContext context) {
 
@@ -57,6 +61,24 @@ public class ProgramExecutorImpl implements ProgramExecutor {
     public Map<Variable, Long> getVariableState(){
         return variableState;
     }
+//    @Override
+//    public void addActiveVariable(Variable variable) {
+//        this.activeVariables.add(variable);
+//    }
+//    @Override
+//    public void addActiveLabel(Label label) {
+//        this.activeLabels.add(label);
+//    }
+//
+//    @Override
+//    public Set<Variable> getActiveVariables() {
+//        return activeVariables;
+//    }
+//
+//    @Override
+//    public Set<Label> getActiveLabels() {
+//        return activeLabels;
+//    }
 
 
 

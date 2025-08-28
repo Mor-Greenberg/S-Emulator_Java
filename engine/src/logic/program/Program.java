@@ -17,6 +17,8 @@ public interface Program {
     void addVar(Variable variable);
      void addLabel(Label label) ;
 
+     //Variable getFreshWorkVariable(Set<Variable> activeVariables);
+
         boolean validate();
     int calculateMaxDegree();
     int calculateCycles();

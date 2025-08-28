@@ -1,7 +1,6 @@
 package programDisplay;
 
 import logic.Variable.Variable;
-import logic.Variable.VariableType;
 import logic.instruction.Instruction;
 import logic.label.FixedLabel;
 import logic.label.Label;
@@ -45,6 +44,7 @@ public class programDisplayImpl implements programDisplay {
 
         printInstructions(program.getInstructions());
 
+
     }
 
 
@@ -57,7 +57,7 @@ public class programDisplayImpl implements programDisplay {
                   instruction.getType().toString(),
                   instruction.getLabel(),
                   instruction.commandDisplay(),
-                  instruction.cycles());
+                  instruction.getCycles());
           formattedInst.printInstruction();
           instructionCounter++;
        }

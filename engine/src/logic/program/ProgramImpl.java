@@ -1,6 +1,8 @@
 package logic.program;
 
 import logic.Variable.Variable;
+import logic.Variable.VariableImpl;
+import logic.Variable.VariableType;
 import logic.instruction.Instruction;
 import logic.label.Label;
 
@@ -20,6 +22,7 @@ public class ProgramImpl implements Program {
         instructions = new ArrayList<>();
         variables = new HashSet<>();
         labels = new HashSet<>();
+
     }
 
     @Override
@@ -89,6 +92,7 @@ public class ProgramImpl implements Program {
         throw new IllegalArgumentException("Label not found: " + nextLabel);
 
     }
+
 
 
 

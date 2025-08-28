@@ -1,5 +1,3 @@
-package programDisplay;
-
 import menuHandling.PrintMenu;
 
 

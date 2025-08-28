@@ -6,9 +6,11 @@ import logic.label.Label;
 
 public abstract class AbstractInstruction implements Instruction {
     private final InstructionData instructionData;
-    private final Label label;
+    private Label label;
     private final Variable variable;
     public InstructionType type;
+    protected int degree;
+    protected AbstractInstruction origin = null;
 
 
     public AbstractInstruction(InstructionData instructionData, Variable variable) {
@@ -27,7 +29,7 @@ public abstract class AbstractInstruction implements Instruction {
     }
 
     @Override
-    public int cycles() {
+    public int getCycles() {
         return instructionData.getCycles();
     }
 
@@ -48,4 +50,32 @@ public abstract class AbstractInstruction implements Instruction {
     public String commandDisplay(){
        return "";
     }
+    public int getDegree() {
+        return degree;
+    }
+    public void setDegree(int d) {
+        degree = d;
+    }
+
+    public void setLabel(Label l) {
+        this.label=l;
+    }
+    public void setOrigin(AbstractInstruction origin) {
+        this.origin = origin;
+    }
+
+    public AbstractInstruction getOrigin() {
+        return origin;
+    }
+
+    public boolean hasOrigin() {
+        return origin != null;
+    }
+    protected void markAsDerivedFrom(AbstractInstruction derived, AbstractInstruction source) {
+        derived.setOrigin(source);
+    }
+
+
+
+
 }

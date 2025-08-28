@@ -6,8 +6,6 @@ import jakarta.xml.bind.Unmarshaller;
 import logic.Variable.Variable;
 import logic.Variable.VariableImpl;
 import logic.Variable.VariableType;
-import logic.execution.ExecutionContext;
-import logic.execution.ExecutionContextImpl;
 import logic.instruction.*;
 import logic.jaxb.schema.generated.*;
 import logic.label.FixedLabel;
@@ -17,9 +15,7 @@ import logic.program.Program;
 import logic.program.ProgramImpl;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 public class XmlLoader {
@@ -118,6 +114,9 @@ public class XmlLoader {
             case "NEUTRAL":
                 instruction = new NoOpInstruction(variable, label);
                 break;
+            case "ZERO_VARIABLE":
+                instruction = new ZeroVariableInstruction(variable, label);
+                break;
             default:
                 throw new IllegalArgumentException("Unknown instruction: " + str);
         }
@@ -187,7 +186,6 @@ public class XmlLoader {
             Optional<Label> optionalLabel = StringToLabel(sLabel);
             Label label = optionalLabel.orElse(FixedLabel.EMPTY);
             program.addLabel(label);
-
 
             Optional<Label> jumpLabel = Optional.empty();
 

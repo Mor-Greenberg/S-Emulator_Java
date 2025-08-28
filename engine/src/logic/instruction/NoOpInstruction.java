@@ -10,10 +10,12 @@ public class NoOpInstruction extends AbstractInstruction {
 
     public NoOpInstruction(Variable variable) {
         super(InstructionData.NO_OP, variable);
+        this.degree=0;
     }
 
     public NoOpInstruction(Variable variable, Label label) {
         super(InstructionData.NO_OP, variable, label);
+        this.degree=0;
     }
 
     @Override
