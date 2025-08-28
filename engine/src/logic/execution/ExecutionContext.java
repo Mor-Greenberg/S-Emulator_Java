@@ -11,4 +11,5 @@ public interface ExecutionContext {
     long getVariableValue(Variable v);
     void updateVariable(Variable v, long value);
      Label findAvailableLabel();
+     Variable findAvailableVariable();
 }

@@ -5,6 +5,8 @@ import logic.execution.ExecutionContext;
 import logic.label.FixedLabel;
 import logic.label.Label;
 
+import java.util.List;
+
 public class JumpZero extends AbstractInstruction {
     private Label zLabel;
     public InstructionType type = InstructionType.S;
@@ -20,9 +22,12 @@ public class JumpZero extends AbstractInstruction {
     }
 
     @Override
-    public Label execute(ExecutionContext context) { //TODO
-        return null;
+    public Label execute(ExecutionContext context) {
+        return FixedLabel.EMPTY;
     }
+//    public List<AbstractInstruction> expand(ExecutionContext context){
+//
+//    }
     @Override
     public String commandDisplay(){
         Variable variable = getVariable();

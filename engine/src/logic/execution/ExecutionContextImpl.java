@@ -1,6 +1,8 @@
 package logic.execution;
 
 import logic.Variable.Variable;
+import logic.Variable.VariableImpl;
+import logic.Variable.VariableType;
 import logic.label.Label;
 import logic.label.LabelImpl;
 
@@ -34,4 +36,18 @@ public class ExecutionContextImpl implements ExecutionContext {
         } while (labels.contains(newLabel));
         return newLabel;
     }
+    @Override
+    public Variable findAvailableVariable() {
+        int index = 1;
+        Variable candidate;
+
+        do {
+            candidate = new VariableImpl(VariableType.WORK,index);
+            index++;
+        } while (variableState.containsKey(candidate));
+
+        variableState.put(candidate,0L);
+        return candidate;
+    }
+
 }
