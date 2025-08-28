@@ -49,24 +49,24 @@ public class GoToLabelInstruction extends AbstractInstruction {
         return output;
     }
     public List<AbstractInstruction> expand(ExecutionContext context) {
-        // 1. צור משתנה עזר חדש z
+        // create new variable
         Variable z = context.findAvailableVariable();
 
-        // 2. צור את שתי הפקודות
+       //basic instructions
         AbstractInstruction inc = new IncreaseInstruction(z);
         AbstractInstruction jnz = new JumpNotZeroInstruction(z, goToLabel);
 
-        // 3. אם יש תווית לפקודת המקור – שים אותה על הראשונה
+        // keep the label
         if (getLabel() != FixedLabel.EMPTY) {
             inc.setLabel(getLabel());
             this.setLabel(FixedLabel.EMPTY);
         }
 
-        // 4. קשר בין הפקודה המקורית לפקודות החדשות
+
         markAsDerivedFrom(inc, this);
         markAsDerivedFrom(jnz, this);
 
-        // 5. החזר את הפקודות
+
         return Arrays.asList(inc, jnz);
     }
 
@@ -78,17 +78,28 @@ public class GoToLabelInstruction extends AbstractInstruction {
         // 2. צור תווית יעד לקפיצה
         Label targetLabel = new LabelImpl(1);
 
-        // 3. צור פקודת GoToLabelInstruction (x סתם משתנה placeholder לצורך הבנאי)
+        // 3. צור פקודת GoToLabelInstruction
         Variable dummy = new VariableImpl(VariableType.INPUT, 1);
         GoToLabelInstruction goTo = new GoToLabelInstruction(dummy, targetLabel);
 
         // 4. בצע expand
         List<AbstractInstruction> expanded = goTo.expand(context);
 
-        // 5. הדפס את הפקודות שהתקבלו
-        System.out.println("Expanded instructions:");
+        // 5. הרץ את הפקודות בפועל
+        System.out.println("Executing expanded instructions:");
+        Label jumpResult = FixedLabel.EMPTY;
         for (AbstractInstruction instr : expanded) {
             System.out.println(instr.commandDisplay() + "  |  Label: " + instr.getLabel());
+            jumpResult = instr.execute(context);
         }
+
+        // 6. הדפס ערכי משתנים
+        System.out.println("\n🔍 Variable state after execution:");
+        for (Variable v : context.variableState.keySet()) {
+            System.out.println(v + " = " + context.getVariableValue(v));
+        }
+
+        // 7. בדוק לאן קפצנו
+        System.out.println("\n🚀 Jump result: " + jumpResult);
     }
 }
