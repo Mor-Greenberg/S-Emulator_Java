@@ -29,9 +29,10 @@ public class ZeroVariableInstruction extends AbstractInstruction {
 
     @Override
     public Label execute(ExecutionContext context) {
+        context.updateVariable(getVariable(), 0);  // ← זה האיפוס החשוב
         return FixedLabel.EMPTY;
-
     }
+
     @Override
     public String commandDisplay(){
         Variable variable = getVariable();

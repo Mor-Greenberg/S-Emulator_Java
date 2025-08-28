@@ -31,6 +31,7 @@ public class GoToLabelInstruction extends AbstractInstruction {
         this.goToLabel = goToLabel;
         this.degree=1;
     }
+
     public Label getGotoLabel() {
         return goToLabel;
     }
@@ -40,8 +41,9 @@ public class GoToLabelInstruction extends AbstractInstruction {
     }
     @Override
     public Label execute(ExecutionContext context) {
-        return FixedLabel.EMPTY;
+        return goToLabel;
     }
+
     @Override
     public String commandDisplay(){
         Variable variable = getVariable();
