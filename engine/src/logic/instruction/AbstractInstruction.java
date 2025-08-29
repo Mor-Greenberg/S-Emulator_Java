@@ -1,8 +1,11 @@
 package logic.instruction;
 
 import logic.Variable.Variable;
+import logic.execution.ExecutionContext;
 import logic.label.FixedLabel;
 import logic.label.Label;
+
+import java.util.List;
 
 public abstract class AbstractInstruction implements Instruction {
     private final InstructionData instructionData;
@@ -51,6 +54,7 @@ public abstract class AbstractInstruction implements Instruction {
     public String commandDisplay(){
        return "";
     }
+    @Override
     public int getDegree() {
         return degree;
     }
@@ -74,6 +78,9 @@ public abstract class AbstractInstruction implements Instruction {
     }
     protected void markAsDerivedFrom(AbstractInstruction derived, AbstractInstruction source) {
         derived.setOrigin(source);
+    }
+    public List<AbstractInstruction> expand(ExecutionContext context){
+        return null;
     }
 
 

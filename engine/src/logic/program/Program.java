@@ -1,6 +1,7 @@
 package logic.program;
 
 import logic.Variable.Variable;
+import logic.execution.ExecutionContext;
 import logic.instruction.Instruction;
 import logic.label.Label;
 
@@ -17,8 +18,12 @@ public interface Program {
     void addVar(Variable variable);
      void addLabel(Label label) ;
 
-     //Variable getFreshWorkVariable(Set<Variable> activeVariables);
-
+    public Program expandToDegree(int maxDegree);
+     void expandToDegree(int maxDegree, ExecutionContext context) ;
+        //Variable getFreshWorkVariable(Set<Variable> activeVariables);
+        public Program expandOnce();
+     boolean hasSyntheticInstructions();
+    public List<Instruction> getActiveInstructions();
         boolean validate();
     int calculateMaxDegree();
     int calculateCycles();

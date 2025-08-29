@@ -18,4 +18,6 @@ public interface Instruction {
     //public List<AbstractInstruction> expand( ExecutionContext context);
      boolean hasOrigin();
      AbstractInstruction getOrigin();
+     int getDegree();
+     List<AbstractInstruction> expand(ExecutionContext context);
 }

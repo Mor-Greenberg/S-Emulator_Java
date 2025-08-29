@@ -3,7 +3,10 @@ package logic.program;
 import logic.Variable.Variable;
 import logic.Variable.VariableImpl;
 import logic.Variable.VariableType;
+import logic.execution.ExecutionContext;
+import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
+import logic.instruction.InstructionType;
 import logic.label.Label;
 
 import java.util.ArrayList;
@@ -16,6 +19,8 @@ public class ProgramImpl implements Program {
     public List<Instruction> instructions;
     public Set<Variable> variables;
     public Set<Label> labels;
+    private List<AbstractInstruction> expandedInstructions = null;
+
 
     public ProgramImpl(String name) {
         this.name = name;
@@ -47,8 +52,12 @@ public class ProgramImpl implements Program {
 
     @Override
     public int calculateMaxDegree() {
-        // traverse all commands and find maximum degree
-        return 0;
+        int maxDegree = 0;
+       for (Instruction instruction : instructions) {
+           instruction.getDegree();
+           maxDegree = Math.max(maxDegree, instruction.getDegree());
+       }
+       return maxDegree;
     }
 
     @Override
@@ -92,6 +101,84 @@ public class ProgramImpl implements Program {
         throw new IllegalArgumentException("Label not found: " + nextLabel);
 
     }
+    @Override
+    public void expandToDegree(int maxDegree, ExecutionContext context) {
+        List<AbstractInstruction> result = new ArrayList<>();
+
+        for (Instruction inst : instructions) {
+            if (inst instanceof AbstractInstruction abs) {
+                // אם זו פקודה סינתטית והדרגה שלה פחות מהמקסימום - נרחיב
+                if (abs.getType() == InstructionType.S && abs.getDegree() < maxDegree) {
+                    List<AbstractInstruction> expandedList = abs.expand(context);
+
+                    for (AbstractInstruction derived : expandedList) {
+                        derived.setDegree(abs.getDegree() + 1);
+                        derived.setOrigin(abs);
+                        result.add(derived);
+                    }
+
+                } else {
+                    // בסיסית או סינתטית בדרגה מספקת – נשאיר אותה כמות שהיא
+                    result.add(abs);
+                }
+
+            } else {
+                // אם זו פקודה שלא יורשת מ־AbstractInstruction – נתעלם או נטפל אחרת
+                throw new IllegalStateException("Instruction does not extend AbstractInstruction: " + inst.getClass());
+            }
+        }
+
+        expandedInstructions = result;
+    }
+
+    @Override
+    public List<Instruction> getActiveInstructions() {
+        return (expandedInstructions != null) ? new ArrayList<>(expandedInstructions) : instructions;
+    }
+    @Override
+    public boolean hasSyntheticInstructions() {
+        for (Instruction instr : instructions) {
+            if (instr.getType() == InstructionType.S)
+                return true;
+        }
+        return false;
+    }
+    @Override
+    public Program expandOnce() {
+        ProgramImpl expandedProgram = new ProgramImpl(this.name);
+
+        for (Instruction instr : instructions) {
+            if (instr.getType() == InstructionType.B) {
+                expandedProgram.addInstruction(instr);
+            } else if (instr instanceof AbstractInstruction absInstr) {
+                List<AbstractInstruction> expandedInstructions = absInstr.expand(null);
+                for (AbstractInstruction expanded : expandedInstructions) {
+                    expanded.setOrigin(absInstr);
+                    expanded.setDegree(absInstr.getDegree() + 1);
+                    expandedProgram.addInstruction(expanded);
+                }
+            } else {
+                throw new IllegalStateException("Instruction is not instance of AbstractInstruction: " + instr.getClass());
+            }
+        }
+
+
+        return expandedProgram;
+    }
+
+    @Override
+    public Program expandToDegree(int maxDegree) {
+        Program current = this;
+
+        while (current.hasSyntheticInstructions() && current.calculateMaxDegree() < maxDegree) {
+            current = current.expandOnce();
+        }
+
+        return current;
+    }
+
+
+
 
 
 

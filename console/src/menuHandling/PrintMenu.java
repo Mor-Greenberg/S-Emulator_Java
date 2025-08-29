@@ -14,6 +14,7 @@ import logic.xml.XmlLoader;
 import programDisplay.programDisplayImpl;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class PrintMenu {
     private Program program;
@@ -51,7 +52,7 @@ public class PrintMenu {
         switch (choice) {
             case 1 -> loadXml(sc);
             case 2 -> programDisplay.printProgram();
-            case 3 -> expandProgram(); // כרגע רק פלט
+            case 3 -> expandProgram(program,programDisplay); // כרגע רק פלט
             case 4 -> runProgram(program, programDisplay);
             case 5 -> showStats(); // כרגע רק פלט
             case 6 -> {
@@ -75,21 +76,70 @@ public class PrintMenu {
             System.out.println("Failed to load XML.");
         }
     }
-    private void expandProgram() {
-        System.out.println("Expanding...");
-    }
-    private void showStats() {
-        for (RunHistoryEntry entry : history) {
-            System.out.println("Run #" + entry.getRunNumber());
+    private void expandProgram(Program program, programDisplayImpl display) {
+        if (program == null) {
+            System.out.println("No valid program loaded.");
+            return;
+        }
 
-            System.out.println("Inputs:");
-            for (Map.Entry<Variable, Long> varEntry : entry.getInputs().entrySet()) {
-                System.out.println("  " + varEntry.getKey() + " = " + varEntry.getValue());
+        int maxDegree = program.calculateMaxDegree();
+        int chosenDegree = askForDegree(program);
+
+        if (chosenDegree == 0) {
+            display.printProgram();
+            return;
+        }
+
+        Map<Variable, Long> variableState = program.getVars().stream()
+                .collect(Collectors.toMap(v -> v, v -> 0L));
+
+        ExecutionContext context = new ExecutionContextImpl(variableState);
+
+
+        program.expandToDegree(chosenDegree, context);
+        display.printProgramWithOrigins(program);
+    }
+
+
+    private int askForDegree(Program program) {
+        int maxDegree = program.calculateMaxDegree();
+        System.out.println("Max degree:" + maxDegree);
+        System.out.println("Choose degree (0 to" + maxDegree + "):");
+
+
+        Scanner scanner = new Scanner(System.in);
+
+        int degree;
+        while (true) {
+            try {
+                degree = Integer.parseInt(scanner.nextLine());
+                if (degree < 0 || degree > maxDegree) {
+                    System.out.print("Invalid degree.");
+                } else {
+                    break;
+                }
+            } catch (NumberFormatException e) {
+                System.out.print("Insert valid degree. ");
             }
 
+        }
+        return degree;
+    }
+
+
+    private void showStats() {
+        System.out.println("--- Run History ---");
+
+        for (RunHistoryEntry entry : history) {
+            System.out.println("Run #" + entry.getRunNumber());
+            System.out.println("Expansion degree: " + entry.getExpansionDegree());
+            System.out.println("Inputs:");
+            for (Map.Entry<Variable, Long> input : entry.getInputs().entrySet()) {
+                System.out.println("  " + input.getKey().getRepresentation() + " = " + input.getValue());
+            }
             System.out.println("Result (y): " + entry.getResultY());
             System.out.println("Total Cycles: " + entry.getTotalCycles());
-            System.out.println("---------------------------");
+
         }
 
     }
@@ -99,58 +149,57 @@ public class PrintMenu {
             System.out.println("No program loaded yet.");
             return;
         }
+            int degree=askForDegree(program);
 
-        // ניצור את מפת המשתנים ונעביר אותה להקשר
-        Map<Variable, Long> variableState = new HashMap<>();
-        ExecutionContext context = new ExecutionContextImpl(variableState);
+            // ניצור את מפת המשתנים ונעביר אותה להקשר
+            Map<Variable, Long> variableState = new HashMap<>();
+            ExecutionContext context = new ExecutionContextImpl(variableState);
 
-        // נאסוף קלט מהמשתמש
-        HandleExecution handleExecution = new HandleExecution(program);
-        handleExecution.collectInputFromUser(program, context);
+            HandleExecution handleExecution = new HandleExecution(program);
+            handleExecution.collectInputFromUser(program, context);
 
-        // נריץ את התוכנית
-        ProgramExecutorImpl executor = new ProgramExecutorImpl(program);
-        long result = executor.run(context); // נעביר את ההקשר לפונקציה run
+            // נריץ את התוכנית
+            ProgramExecutorImpl executor = new ProgramExecutorImpl(program);
+            long result = executor.run(context); // נעביר את ההקשר לפונקציה run
 
-        // הצגת תוצאות
-        System.out.println("Instructions activated:");
-        programDisplay.printInstructions(executor.getInstructionsActivated());
+            // הצגת תוצאות
+            System.out.println("Instructions activated:");
+            programDisplay.printInstructions(executor.getInstructionsActivated());
 
-        System.out.println("Instructions expanded:");
-        for (Instruction instr: executor.getInstructionsActivated()){
-            if (instr.hasOrigin()) {
-                System.out.print("  <<<  " + instr.getOrigin().commandDisplay());
+            System.out.println("Instructions expanded:");
+            for (Instruction instr : executor.getInstructionsActivated()) {
+                if (instr.hasOrigin()) {
+                    System.out.print("  <<<  " + instr.getOrigin().commandDisplay());
+                }
             }
+
+
+            System.out.println("Program result (y): " + result);
+
+            System.out.println("Variable values:");
+            variableState.forEach((var, val) -> System.out.println(var + " = " + val));
+
+            System.out.println("Number of cycles:");
+            int sumCycles = 0;
+            for (Instruction instruction : executor.getInstructionsActivated()) {
+                int cycles = instruction.getCycles(); // ← מפעיל את getter מה־Abstract
+
+                System.out.println("Instruction: " + instruction.getName() + ", Cycles: " + cycles);
+                sumCycles += cycles;
+            }
+            System.out.println("Number of cycles: " + sumCycles);
+            List<Instruction> instructions = executor.getInstructionsActivated();
+            int totalCycles = instructions.stream()
+                    .mapToInt(Instruction::getCycles)
+                    .sum();
+
+
+            RunHistoryEntry entry = new RunHistoryEntry(runCounter++,degree ,handleExecution.getInputsMap(), result, totalCycles);
+            history.add(entry);
+
+
         }
 
-
-        System.out.println("Program result (y): " + result);
-
-        System.out.println("Variable values:");
-        variableState.forEach((var, val) -> System.out.println(var + " = " + val));
-
-        System.out.println("Number of cycles:");
-        int sumCycles = 0;
-        for (Instruction instruction : executor.getInstructionsActivated()) {
-            int cycles = instruction.getCycles(); // ← מפעיל את getter מה־Abstract
-
-            System.out.println("Instruction: " + instruction.getName() + ", Cycles: " + cycles);
-            sumCycles += cycles;
-        }
-        System.out.println("Number of cycles: " + sumCycles);
-        List<Instruction> instructions = executor.getInstructionsActivated();
-        int totalCycles = instructions.stream()
-                .mapToInt(Instruction::getCycles)
-                .sum();
-
-
-        RunHistoryEntry entry = new RunHistoryEntry(runCounter++, handleExecution.getInputsMap(), result, totalCycles);
-        history.add(entry);
-
-
-
-
-    }
 
 
     public void handleMenu() {

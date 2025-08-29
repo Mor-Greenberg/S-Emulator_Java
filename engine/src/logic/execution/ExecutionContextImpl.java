@@ -3,6 +3,7 @@ package logic.execution;
 import logic.Variable.Variable;
 import logic.Variable.VariableImpl;
 import logic.Variable.VariableType;
+import logic.instruction.Instruction;
 import logic.label.Label;
 import logic.label.LabelImpl;
 
@@ -11,9 +12,11 @@ import java.util.*;
 public class ExecutionContextImpl implements ExecutionContext {
     public Map<Variable, Long> variableState;
     public Set<Label> labels;
+    public List<Instruction> activetedInstructions;
     public ExecutionContextImpl(Map<Variable, Long> variableState) {
         this.variableState = variableState;
         this.labels =  new HashSet<>();
+        this.activetedInstructions = new ArrayList<>();
     }
 
 
@@ -49,5 +52,14 @@ public class ExecutionContextImpl implements ExecutionContext {
         variableState.put(candidate,0L);
         return candidate;
     }
+    @Override
+    public List<Instruction> getActivetedInstructions() {
+        return activetedInstructions;
+    }
+    @Override
+    public void addActivetedInstruction(Instruction instruction) {
+        activetedInstructions.add(instruction);
+    }
+
 
 }

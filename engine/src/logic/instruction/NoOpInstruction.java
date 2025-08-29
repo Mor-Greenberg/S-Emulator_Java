@@ -5,6 +5,8 @@ import logic.execution.ExecutionContext;
 import logic.label.FixedLabel;
 import logic.label.Label;
 
+import java.util.List;
+
 public class NoOpInstruction extends AbstractInstruction {
 
     public NoOpInstruction(Variable variable) {
