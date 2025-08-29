@@ -7,7 +7,6 @@ import logic.label.Label;
 
 public class JumpNotZeroInstruction extends AbstractInstruction{
     private Label jnzLabel;
-    public InstructionType type = InstructionType.B;
 
 
     public JumpNotZeroInstruction(Variable variable, Label jnzLabel) {
@@ -15,7 +14,7 @@ public class JumpNotZeroInstruction extends AbstractInstruction{
     }
 
     public JumpNotZeroInstruction(Variable variable, Label jnzLabel, Label label) {
-        super(InstructionData.JUMP_NOT_ZERO, variable, label);
+        super(InstructionData.JUMP_NOT_ZERO, variable, label,InstructionType.B);
         this.jnzLabel = jnzLabel;
     }
 

@@ -15,9 +15,6 @@ import java.util.List;
 import java.util.Map;
 
 public class JumpEqualConstantInstruction extends AbstractInstruction {
-
-    public InstructionType type = InstructionType.S;
-
     private Label JEConstantLabel;
     public long constantValue ;
 
@@ -28,7 +25,7 @@ public class JumpEqualConstantInstruction extends AbstractInstruction {
     }
 
     public JumpEqualConstantInstruction(Variable variable, Label JEConstantLabel, Label label, long constantValue) {
-        super(InstructionData.JUMP_EQUAL_CONSTANT, variable, label);
+        super(InstructionData.JUMP_EQUAL_CONSTANT, variable, label,InstructionType.S);
         this.JEConstantLabel = JEConstantLabel;
         this.constantValue = constantValue;
         this.degree = 3;

@@ -18,7 +18,6 @@ import java.util.Map;
 public class GoToLabelInstruction extends AbstractInstruction {
 
     private Label goToLabel;
-    public InstructionType type = InstructionType.S;
 
 
     public GoToLabelInstruction(Variable variable, Label goToLabel) {
@@ -27,7 +26,7 @@ public class GoToLabelInstruction extends AbstractInstruction {
     }
 
     public GoToLabelInstruction(Variable variable, Label goToLabel, Label label) {
-        super(InstructionData.GOTO_LABEL, variable, label);
+        super(InstructionData.GOTO_LABEL, variable, label,InstructionType.S);
         this.goToLabel = goToLabel;
         this.degree=1;
     }

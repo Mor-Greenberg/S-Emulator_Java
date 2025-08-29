@@ -6,14 +6,13 @@ import logic.label.FixedLabel;
 import logic.label.Label;
 
 public class IncreaseInstruction extends AbstractInstruction {
-    public InstructionType type = InstructionType.B;
 
     public IncreaseInstruction(Variable variable) {
-        super(InstructionData.INCREASE, variable);
+        super(InstructionData.INCREASE, variable,InstructionType.B);
     }
 
     public IncreaseInstruction(Variable variable, Label label) {
-        super(InstructionData.INCREASE, variable, label);
+        super(InstructionData.INCREASE, variable, label,InstructionType.B);
     }
 
     @Override

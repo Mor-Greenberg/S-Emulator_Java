@@ -14,19 +14,18 @@ import java.util.List;
 import java.util.Map;
 
 public class AssignmentInstruction extends AbstractInstruction {
-    InstructionType type = InstructionType.S;
     private final Variable destination; // ← V
     private final Variable source;      // ← V′
 
     public AssignmentInstruction(Variable destination, Variable source) {
-        super(InstructionData.ASSIGNMENT,source);
+        super(InstructionData.ASSIGNMENT,source,InstructionType.S);
         this.destination = destination;
         this.source = source;
         this.degree=2;
     }
 
     public AssignmentInstruction(Label label, Variable destination, Variable source) {
-        super(InstructionData.ASSIGNMENT,source, label);
+        super(InstructionData.ASSIGNMENT,source, label,InstructionType.S);
         this.destination = destination;
         this.source = source;
         this.degree=2;

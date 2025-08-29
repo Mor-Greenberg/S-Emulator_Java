@@ -6,14 +6,13 @@ import logic.label.FixedLabel;
 import logic.label.Label;
 
 public class DecreaseInstruction extends AbstractInstruction {
-    public InstructionType type = InstructionType.B;
 
     public DecreaseInstruction(Variable variable) {
-        super(InstructionData.DECREASE, variable);
+        super(InstructionData.DECREASE, variable,InstructionType.B);
     }
 
     public DecreaseInstruction(Variable variable, Label label) {
-        super(InstructionData.DECREASE, variable, label);
+        super(InstructionData.DECREASE, variable, label,InstructionType.B);
     }
 
     @Override
@@ -24,10 +23,6 @@ public class DecreaseInstruction extends AbstractInstruction {
         context.updateVariable(getVariable(), variableValue);
 
         return FixedLabel.EMPTY;
-    }
-    @Override
-    public InstructionType getType(){
-        return type;
     }
 
     @Override

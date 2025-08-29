@@ -25,7 +25,7 @@ public class JumpZeroInstruction extends AbstractInstruction {
     }
 
     public JumpZeroInstruction(Variable variable, Label zLabel, Label label) {
-        super(InstructionData.JUMP_NOT_ZERO, variable, label);
+        super(InstructionData.JUMP_NOT_ZERO, variable, label,InstructionType.S);
         this.JZLabel = zLabel;
         this.degree = 2;
     }

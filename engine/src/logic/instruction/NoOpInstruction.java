@@ -6,15 +6,14 @@ import logic.label.FixedLabel;
 import logic.label.Label;
 
 public class NoOpInstruction extends AbstractInstruction {
-    public InstructionType type = InstructionType.B;
 
     public NoOpInstruction(Variable variable) {
-        super(InstructionData.NO_OP, variable);
+        super(InstructionData.NO_OP, variable,InstructionType.B);
         this.degree=0;
     }
 
     public NoOpInstruction(Variable variable, Label label) {
-        super(InstructionData.NO_OP, variable, label);
+        super(InstructionData.NO_OP, variable, label,InstructionType.B);
         this.degree=0;
     }
 
@@ -23,10 +22,7 @@ public class NoOpInstruction extends AbstractInstruction {
         return FixedLabel.EMPTY;
 
     }
-    @Override
-    public InstructionType getType(){
-        return type;
-    }
+
     @Override
     public String commandDisplay(){
         Variable variable = getVariable();

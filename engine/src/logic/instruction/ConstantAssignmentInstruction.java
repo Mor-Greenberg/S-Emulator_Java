@@ -15,18 +15,17 @@ import java.util.Map;
 
 public class ConstantAssignmentInstruction extends AbstractInstruction {
 
-    InstructionType type = InstructionType.S;
     private final int constantValue;
 
 
     public ConstantAssignmentInstruction(Variable variable, int constantValue) {
-        super(InstructionData.CONSTANT_ASSIGNMENT, variable);
+        super(InstructionData.CONSTANT_ASSIGNMENT, variable,InstructionType.S);
         this.constantValue = constantValue;
         this.degree = 2;
     }
 
     public ConstantAssignmentInstruction(Variable variable, Label label ,  int constantValue) {
-        super(InstructionData.CONSTANT_ASSIGNMENT, variable, label);
+        super(InstructionData.CONSTANT_ASSIGNMENT, variable, label,InstructionType.S);
         this.constantValue = constantValue;
         this.degree = 2;
     }

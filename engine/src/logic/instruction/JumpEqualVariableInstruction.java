@@ -15,13 +15,12 @@ import java.util.List;
 import java.util.Map;
 
 public class JumpEqualVariableInstruction extends AbstractInstruction{
-    public InstructionType type = InstructionType.S;
     private Label JEVariableLabel;
     private Variable variableName; // second variable: V′
 
     // Main constructor
     public JumpEqualVariableInstruction(Variable v, Variable vPrime, Label JEVariableLabel, Label label) {
-        super(InstructionData.JUMP_EQUAL_VARIABLE, v, label);
+        super(InstructionData.JUMP_EQUAL_VARIABLE, v, label,InstructionType.S);
         this.JEVariableLabel = JEVariableLabel;
         this.variableName = vPrime;
     }
@@ -99,36 +98,6 @@ public class JumpEqualVariableInstruction extends AbstractInstruction{
         return result;
     }
 
-    public static void main(String[] args) {
-        Map<Variable, Long> variableMap = new HashMap<>();
-        ExecutionContext context = new ExecutionContextImpl(variableMap);
 
-        // Create variables
-        Variable v = new VariableImpl(VariableType.INPUT, 1);      // x1
-        Variable vPrime = new VariableImpl(VariableType.INPUT, 2); // x2
-
-        // Set values
-        context.updateVariable(v, 5);
-        context.updateVariable(vPrime, 3); // try 3 to test unequal case
-
-        // Create label to jump to
-        Label targetLabel = new LabelImpl(42);
-
-        // Create instruction using updated constructor
-        JumpEqualVariableInstruction instr = new JumpEqualVariableInstruction(v, vPrime, targetLabel);
-
-        // Run execute() test
-        Label resultLabel = instr.execute(context);
-        System.out.println("Result from execute(): " +
-                (resultLabel == targetLabel ? "JUMPED to " + resultLabel : "NO JUMP"));
-
-        // Run expand() and print the generated instructions
-        List<AbstractInstruction> expanded = instr.expand(context);
-        System.out.println("\nExpanded instructions:");
-        for (AbstractInstruction ins : expanded) {
-            String labelStr = ins.getLabel() != FixedLabel.EMPTY ? " [Label: " + ins.getLabel() + "]" : "";
-            System.out.println(ins.commandDisplay() + labelStr);
-        }
-    }
 
 }

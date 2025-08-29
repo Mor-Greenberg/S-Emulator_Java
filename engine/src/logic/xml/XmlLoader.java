@@ -21,9 +21,9 @@ import java.util.Optional;
 public class XmlLoader {
 
     public static SProgram loadFromFile(String path) {
-        if( (XmlValidation.validateXmlFilePath(path)) == 1) {
-           System.out.println("XML file does not exist");
-           return null;
+        if ((XmlValidation.validateXmlFilePath(path)) == 1) {
+            System.out.println("XML file does not exist");
+            return null;
         } else if (XmlValidation.validateXmlFilePath(path) == 2) {
             System.out.println("XML file does not end with .xml");
             return null;
@@ -96,32 +96,106 @@ public class XmlLoader {
         return Optional.of(label);
     }
 
+    private String getArgValueByName(SInstructionArguments args, String name) {
+        if (args == null || args.getSInstructionArgument() == null)
+            return null;
+
+        for (SInstructionArgument arg : args.getSInstructionArgument()) {
+            if (arg.getName().equals(name)) {
+                return arg.getValue();
+            }
+        }
+
+        return null;
+    }
 
 
-    public Instruction StringToInstruction(String str, Variable variable, Label label) {
-
+    public Instruction StringToInstruction(String str, Variable variable, Label label, SInstructionArguments sArgs) {
         Instruction instruction;
+
         switch (str) {
             case "INCREASE":
                 instruction = new IncreaseInstruction(variable, label);
                 break;
+
             case "DECREASE":
                 instruction = new DecreaseInstruction(variable, label);
                 break;
+
             case "JUMP_NOT_ZERO":
                 instruction = new JumpNotZeroInstruction(variable, label);
                 break;
+
             case "NEUTRAL":
                 instruction = new NoOpInstruction(variable, label);
                 break;
+
             case "ZERO_VARIABLE":
                 instruction = new ZeroVariableInstruction(variable, label);
                 break;
+
+            case "GOTO_LABEL":
+                instruction = new GoToLabelInstruction(variable, label);
+                break;
+
+            case "ASSIGNMENT":
+                String assignedVarStr = getArgValueByName(sArgs, "assignedVariable");
+                if (assignedVarStr == null)
+                    throw new IllegalArgumentException("Missing 'assignedVariable' argument for ASSIGNMENT");
+
+                Variable source = StringToVariable(assignedVarStr);
+                instruction = new AssignmentInstruction(label, variable, source);
+                break;
+
+            case "CONSTANT_ASSIGNMENT":
+                String constantStr = getArgValueByName(sArgs, "constantValue");
+                if (constantStr == null)
+                    throw new IllegalArgumentException("Missing 'constantValue' argument for CONSTANT_ASSIGNMENT");
+
+                int constant = Integer.parseInt(constantStr);
+                instruction = new ConstantAssignmentInstruction(variable, label, constant);
+                break;
+
+            case "JUMP_EQUAL_CONSTANT":
+                String valueStr = getArgValueByName(sArgs, "constantValue");
+                String targetLabelStr = getArgValueByName(sArgs, "JEConstantLabel");
+
+                if (valueStr == null || targetLabelStr == null)
+                    throw new IllegalArgumentException("Missing argument(s) for JUMP_EQUAL_CONSTANT");
+
+                int cmpValue = Integer.parseInt(valueStr);
+                Label targetLabel = StringToLabel(targetLabelStr).orElse(FixedLabel.EMPTY);
+                instruction = new JumpEqualConstantInstruction(variable, targetLabel,cmpValue);
+                break;
+            case "JUMP_ZERO":
+                String jzLabelStr = getArgValueByName(sArgs, "JZLabel");
+                if (jzLabelStr == null)
+                    throw new IllegalArgumentException("Missing 'JZLabel' argument for JUMP_ZERO");
+
+                Label jzTarget = StringToLabel(jzLabelStr).orElse(FixedLabel.EMPTY);
+                instruction = new JumpZeroInstruction(variable, jzTarget);
+                break;
+            case "JUMP_EQUAL_VARIABLE":
+                String cmpVarStr = getArgValueByName(sArgs, "variableName");
+                String jeLabelStr = getArgValueByName(sArgs, "JEVariableLabel");
+
+                if (cmpVarStr == null || jeLabelStr == null)
+                    throw new IllegalArgumentException("Missing arguments for JUMP_EQUAL_VARIABLE");
+
+                Variable cmpVar = StringToVariable(cmpVarStr);
+                Label jeLabel = StringToLabel(jeLabelStr).orElse(FixedLabel.EMPTY);
+                instruction = new JumpEqualVariableInstruction(variable, cmpVar, jeLabel);
+                break;
+
+
+
             default:
                 throw new IllegalArgumentException("Unknown instruction: " + str);
         }
+
         return instruction;
     }
+
 
     public InstructionType StringToInstructionType(String str) {
         InstructionType instructionType;
@@ -156,18 +230,8 @@ public class XmlLoader {
 
     }
 
-    public Label handleSargument(SInstructionArgument sargument) {
-        String name = sargument.getName();
-        String value = sargument.getValue();
-        int number = Integer.parseInt(value);
-        Label resultLabel = new LabelImpl(number);
-        return resultLabel;
-    }
-
     public Program SprogramToProgram(SProgram Sprogram) {
         Program program = new ProgramImpl(Sprogram.getName());
-
-
 
         List<SInstruction> sInstructionsList = Sprogram.getSInstructions().getSInstruction();
         for (int i = 0; i < sInstructionsList.size(); i++) {
@@ -204,8 +268,7 @@ public class XmlLoader {
 
 
             }
-            program.addInstruction(StringToInstruction(sInstuctionName, variable, jumpLabel.orElse(label)));
-
+            program.addInstruction(StringToInstruction(sInstuctionName, variable, jumpLabel.orElse(label), sArgs));
 
         }
 

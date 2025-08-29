@@ -8,19 +8,20 @@ public abstract class AbstractInstruction implements Instruction {
     private final InstructionData instructionData;
     private Label label;
     private final Variable variable;
-    public InstructionType type;
+    protected InstructionType type;
     protected int degree;
     protected AbstractInstruction origin = null;
 
 
-    public AbstractInstruction(InstructionData instructionData, Variable variable) {
-        this(instructionData, variable, FixedLabel.EMPTY);
+    public AbstractInstruction(InstructionData instructionData, Variable variable,InstructionType type) {
+        this(instructionData, variable, FixedLabel.EMPTY, type);
     }
 
-    public AbstractInstruction(InstructionData instructionData, Variable variable, Label label) {
+    public AbstractInstruction(InstructionData instructionData, Variable variable, Label label,InstructionType type) {
         this.instructionData = instructionData;
         this.label = label;
         this.variable = variable;
+        this.type=type;
     }
 
     @Override
