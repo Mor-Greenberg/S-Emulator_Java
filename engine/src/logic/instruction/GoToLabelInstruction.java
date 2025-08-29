@@ -71,36 +71,4 @@ public class GoToLabelInstruction extends AbstractInstruction {
         return Arrays.asList(inc, jnz);
     }
 
-    public static void main(String[] args) {
-        // 1. צור ExecutionContext עם מפה ריקה
-        Map<Variable, Long> map = new HashMap<>();
-        ExecutionContextImpl context = new ExecutionContextImpl(map);
-
-        // 2. צור תווית יעד לקפיצה
-        Label targetLabel = new LabelImpl(1);
-
-        // 3. צור פקודת GoToLabelInstruction
-        Variable dummy = new VariableImpl(VariableType.INPUT, 1);
-        GoToLabelInstruction goTo = new GoToLabelInstruction(dummy, targetLabel);
-
-        // 4. בצע expand
-        List<AbstractInstruction> expanded = goTo.expand(context);
-
-        // 5. הרץ את הפקודות בפועל
-        System.out.println("Executing expanded instructions:");
-        Label jumpResult = FixedLabel.EMPTY;
-        for (AbstractInstruction instr : expanded) {
-            System.out.println(instr.commandDisplay() + "  |  Label: " + instr.getLabel());
-            jumpResult = instr.execute(context);
-        }
-
-        // 6. הדפס ערכי משתנים
-        System.out.println("\n🔍 Variable state after execution:");
-        for (Variable v : context.variableState.keySet()) {
-            System.out.println(v + " = " + context.getVariableValue(v));
-        }
-
-        // 7. בדוק לאן קפצנו
-        System.out.println("\n🚀 Jump result: " + jumpResult);
-    }
 }

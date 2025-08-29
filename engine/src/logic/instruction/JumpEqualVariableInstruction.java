@@ -1,31 +1,23 @@
 package logic.instruction;
 
 import logic.Variable.Variable;
-import logic.Variable.VariableImpl;
-import logic.Variable.VariableType;
 import logic.execution.ExecutionContext;
-import logic.execution.ExecutionContextImpl;
 import logic.label.FixedLabel;
 import logic.label.Label;
-import logic.label.LabelImpl;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class JumpEqualVariableInstruction extends AbstractInstruction{
     private Label JEVariableLabel;
     private Variable variableName; // second variable: V′
 
-    // Main constructor
     public JumpEqualVariableInstruction(Variable v, Variable vPrime, Label JEVariableLabel, Label label) {
         super(InstructionData.JUMP_EQUAL_VARIABLE, v, label,InstructionType.S);
         this.JEVariableLabel = JEVariableLabel;
         this.variableName = vPrime;
     }
 
-    // Constructor without optional label (defaults to EMPTY)
     public JumpEqualVariableInstruction(Variable v, Variable vPrime, Label JEVariableLabel) {
         this(v, vPrime, JEVariableLabel, FixedLabel.EMPTY);
     }
@@ -44,7 +36,7 @@ public class JumpEqualVariableInstruction extends AbstractInstruction{
     @Override
     public String commandDisplay(){
         Variable variable = getVariable();
-        String output = "IF " + variable.toString() + " = "+ variableName.getRepresentation()+ "GOTO "+ JEVariableLabel.toString();
+        String output = "IF " + variable.toString() + " = "+ variableName.getRepresentation()+ " GOTO "+ JEVariableLabel.toString();
         return output;
     }
 
@@ -94,6 +86,11 @@ public class JumpEqualVariableInstruction extends AbstractInstruction{
         AbstractInstruction exit = new NoOpInstruction(z1);
         exit.setLabel(L1);
         result.add(exit);
+
+        for (AbstractInstruction instr : result) {
+            markAsDerivedFrom(instr, this);
+        }
+
 
         return result;
     }

@@ -24,10 +24,7 @@ public class IncreaseInstruction extends AbstractInstruction {
 
         return FixedLabel.EMPTY;
     }
-    @Override
-    public InstructionType getType(){
-        return type;
-    }
+
     @Override
     public String commandDisplay(){
         Variable variable = getVariable();

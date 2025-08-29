@@ -1,18 +1,13 @@
 package logic.instruction;
 
 import logic.Variable.Variable;
-import logic.Variable.VariableImpl;
-import logic.Variable.VariableType;
+
 import logic.execution.ExecutionContext;
-import logic.execution.ExecutionContextImpl;
 import logic.label.FixedLabel;
 import logic.label.Label;
-import logic.label.LabelImpl;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class JumpEqualConstantInstruction extends AbstractInstruction {
     private Label JEConstantLabel;
@@ -41,7 +36,7 @@ public class JumpEqualConstantInstruction extends AbstractInstruction {
     @Override
     public String commandDisplay(){
         Variable variable = getVariable();
-        String output = "IF " + variable.toString() + " = " + constantValue+ "GOTO"+JEConstantLabel.toString();
+        String output = "IF " + variable.toString() + " = " + constantValue+ " GOTO "+JEConstantLabel.toString();
         return output;
     }
 
@@ -76,42 +71,11 @@ public class JumpEqualConstantInstruction extends AbstractInstruction {
         AbstractInstruction noOp = new NoOpInstruction(z1);
         noOp.setLabel(exitLabel);
         result.add(noOp);
+        for (AbstractInstruction instr : result) {
+            markAsDerivedFrom(instr, this);
+        }
 
         return result;
-    }
-
-    public static void main(String[] args) {
-        Map<Variable, Long> variableMap = new HashMap<>();
-        ExecutionContext context = new ExecutionContextImpl(variableMap);
-
-        // Create variable V (x1)
-        Variable v = new VariableImpl(VariableType.INPUT, 1);
-
-        // Set value to V
-        context.updateVariable(v, 3); // Try 3 for match, or another number for mismatch
-
-        // Define constant to compare against
-        long constant = 2;
-
-        // Define target label
-        Label targetLabel = new LabelImpl(99);
-
-        // Create instruction
-        JumpEqualConstantInstruction instr =
-                new JumpEqualConstantInstruction(v, targetLabel, constant);
-
-        // Run execute() test
-        Label resultLabel = instr.execute(context);
-        System.out.println("Result from execute(): " +
-                (resultLabel == targetLabel ? "JUMPED to " + resultLabel : "NO JUMP"));
-
-        // Run expand() and print the expanded instructions
-        List<AbstractInstruction> expanded = instr.expand(context);
-        System.out.println("\nExpanded instructions:");
-        for (AbstractInstruction ins : expanded) {
-            String labelStr = ins.getLabel() != FixedLabel.EMPTY ? " [Label: " + ins.getLabel() + "]" : "";
-            System.out.println(ins.commandDisplay() + labelStr);
-        }
     }
 
 

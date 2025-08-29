@@ -21,6 +21,8 @@ import java.util.Optional;
 public class XmlLoader {
 
     public static SProgram loadFromFile(String path) {
+        AbstractInstruction.resetIdCounter();
+
         if ((XmlValidation.validateXmlFilePath(path)) == 1) {
             System.out.println("XML file does not exist");
             return null;
@@ -110,91 +112,66 @@ public class XmlLoader {
     }
 
 
-    public Instruction StringToInstruction(String str, Variable variable, Label label, SInstructionArguments sArgs) {
-        Instruction instruction;
-
-        switch (str) {
+    public Instruction StringToInstruction(String name, Variable variable, Label regularLabel, Label jumpLabel, SInstructionArguments sArgs) {
+        switch (name) {
             case "INCREASE":
-                instruction = new IncreaseInstruction(variable, label);
-                break;
+                return new IncreaseInstruction(variable, regularLabel);
 
             case "DECREASE":
-                instruction = new DecreaseInstruction(variable, label);
-                break;
+                return new DecreaseInstruction(variable, regularLabel);
 
             case "JUMP_NOT_ZERO":
-                instruction = new JumpNotZeroInstruction(variable, label);
-                break;
+                return new JumpNotZeroInstruction(variable, jumpLabel,regularLabel);
 
             case "NEUTRAL":
-                instruction = new NoOpInstruction(variable, label);
-                break;
+                return new NoOpInstruction(variable, regularLabel);
 
             case "ZERO_VARIABLE":
-                instruction = new ZeroVariableInstruction(variable, label);
-                break;
+                return new ZeroVariableInstruction(variable, regularLabel);
 
             case "GOTO_LABEL":
-                instruction = new GoToLabelInstruction(variable, label);
-                break;
+                return new GoToLabelInstruction(variable, jumpLabel,regularLabel);
 
-            case "ASSIGNMENT":
+            case "ASSIGNMENT": {
                 String assignedVarStr = getArgValueByName(sArgs, "assignedVariable");
                 if (assignedVarStr == null)
                     throw new IllegalArgumentException("Missing 'assignedVariable' argument for ASSIGNMENT");
-
                 Variable source = StringToVariable(assignedVarStr);
-                instruction = new AssignmentInstruction(label, variable, source);
-                break;
+                return new AssignmentInstruction(regularLabel, variable, source);
+            }
 
-            case "CONSTANT_ASSIGNMENT":
+            case "CONSTANT_ASSIGNMENT": {
                 String constantStr = getArgValueByName(sArgs, "constantValue");
                 if (constantStr == null)
                     throw new IllegalArgumentException("Missing 'constantValue' argument for CONSTANT_ASSIGNMENT");
-
                 int constant = Integer.parseInt(constantStr);
-                instruction = new ConstantAssignmentInstruction(variable, label, constant);
-                break;
+                return new ConstantAssignmentInstruction(variable, regularLabel, constant);
+            }
 
-            case "JUMP_EQUAL_CONSTANT":
+            case "JUMP_EQUAL_CONSTANT": {
                 String valueStr = getArgValueByName(sArgs, "constantValue");
-                String targetLabelStr = getArgValueByName(sArgs, "JEConstantLabel");
-
-                if (valueStr == null || targetLabelStr == null)
-                    throw new IllegalArgumentException("Missing argument(s) for JUMP_EQUAL_CONSTANT");
-
+                if (valueStr == null)
+                    throw new IllegalArgumentException("Missing 'constantValue' for JUMP_EQUAL_CONSTANT");
                 int cmpValue = Integer.parseInt(valueStr);
-                Label targetLabel = StringToLabel(targetLabelStr).orElse(FixedLabel.EMPTY);
-                instruction = new JumpEqualConstantInstruction(variable, targetLabel,cmpValue);
-                break;
+                return new JumpEqualConstantInstruction(variable, jumpLabel, regularLabel, cmpValue);
+            }
+
             case "JUMP_ZERO":
-                String jzLabelStr = getArgValueByName(sArgs, "JZLabel");
-                if (jzLabelStr == null)
-                    throw new IllegalArgumentException("Missing 'JZLabel' argument for JUMP_ZERO");
+                return new JumpZeroInstruction(variable, jumpLabel,regularLabel);
 
-                Label jzTarget = StringToLabel(jzLabelStr).orElse(FixedLabel.EMPTY);
-                instruction = new JumpZeroInstruction(variable, jzTarget);
-                break;
-            case "JUMP_EQUAL_VARIABLE":
+            case "JUMP_EQUAL_VARIABLE": {
                 String cmpVarStr = getArgValueByName(sArgs, "variableName");
-                String jeLabelStr = getArgValueByName(sArgs, "JEVariableLabel");
-
-                if (cmpVarStr == null || jeLabelStr == null)
-                    throw new IllegalArgumentException("Missing arguments for JUMP_EQUAL_VARIABLE");
-
+                if (cmpVarStr == null)
+                    throw new IllegalArgumentException("Missing 'variableName' for JUMP_EQUAL_VARIABLE");
                 Variable cmpVar = StringToVariable(cmpVarStr);
-                Label jeLabel = StringToLabel(jeLabelStr).orElse(FixedLabel.EMPTY);
-                instruction = new JumpEqualVariableInstruction(variable, cmpVar, jeLabel);
-                break;
-
-
+                return new JumpEqualVariableInstruction(variable, cmpVar, jumpLabel, regularLabel);
+            }
 
             default:
-                throw new IllegalArgumentException("Unknown instruction: " + str);
+                throw new IllegalArgumentException("Unknown instruction: " + name);
         }
-
-        return instruction;
     }
+
 
 
     public InstructionType StringToInstructionType(String str) {
@@ -213,67 +190,55 @@ public class XmlLoader {
         return instructionType;
     }
 
-    public Optional<Label> handelJumpNotZero(String str) {
-
-        if (str == null || str.isEmpty()) {
-            return Optional.empty();
-        }
-        char first = str.charAt(0);
-        if (first != 'L') {
-            throw new IllegalArgumentException("Unknown label type: " + first);
-        }
-
-        String rest = str.substring(1);
-        int number = Integer.parseInt(rest);
-        Label label = new LabelImpl(number);
-        return Optional.of(label);
-
-    }
 
     public Program SprogramToProgram(SProgram Sprogram) {
         Program program = new ProgramImpl(Sprogram.getName());
 
         List<SInstruction> sInstructionsList = Sprogram.getSInstructions().getSInstruction();
-        for (int i = 0; i < sInstructionsList.size(); i++) {
-
-            SInstruction sinstruction = sInstructionsList.get(i);//JAXB
+        for (SInstruction sinstruction : sInstructionsList) {
             String sInstuctionName = sinstruction.getName();
-
             SInstructionArguments sArgs = sinstruction.getSInstructionArguments();
 
             String sType = sinstruction.getType();
             InstructionType instructionType = StringToInstructionType(sType);
+
+            // Variable
             String sVariable = sinstruction.getSVariable();
             Variable variable = StringToVariable(sVariable);
             program.addVar(variable);
+
+            // Regular label (S-Label)
             String sLabel = sinstruction.getSLabel();
-            Optional<Label> optionalLabel = StringToLabel(sLabel);
-            Label label = optionalLabel.orElse(FixedLabel.EMPTY);
-            program.addLabel(label);
+            Optional<Label> optionalRegularLabel = StringToLabel(sLabel);
+            Label regularLabel = optionalRegularLabel.orElse(FixedLabel.EMPTY);
+            program.addLabel(regularLabel);
 
+            // Jump label (from arguments)
             Optional<Label> jumpLabel = Optional.empty();
-
             if (sArgs != null && sArgs.getSInstructionArgument() != null) {
                 for (SInstructionArgument sArg : sArgs.getSInstructionArgument()) {
                     String argName = sArg.getName();
                     String argValue = sArg.getValue();
 
-                    if (argName.equals("JNZLabel")) {
+                    if (argName.equals("JNZLabel") || argName.equals("gotoLabel") ||
+                            argName.equals("JEConstantLabel") || argName.equals("JZLabel") ||
+                            argName.equals("JEVariableLabel")) {
                         jumpLabel = StringToLabel(argValue);
-                        program.addLabel(jumpLabel.orElse(label));
+                        program.addLabel(jumpLabel.orElse(FixedLabel.EMPTY));
                     }
-
-
                 }
-
-
             }
-            program.addInstruction(StringToInstruction(sInstuctionName, variable, jumpLabel.orElse(label), sArgs));
 
+            // Create the instruction with both labels
+            Instruction instruction = StringToInstruction(
+                    sInstuctionName, variable, regularLabel, jumpLabel.orElse(FixedLabel.EMPTY), sArgs
+            );
+            program.addInstruction(instruction);
         }
 
         return program;
     }
+
 }
 
 

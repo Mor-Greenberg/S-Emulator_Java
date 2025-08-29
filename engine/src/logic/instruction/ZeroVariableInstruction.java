@@ -1,17 +1,12 @@
 package logic.instruction;
 
 import logic.Variable.Variable;
-import logic.Variable.VariableImpl;
-import logic.Variable.VariableType;
 import logic.execution.ExecutionContext;
-import logic.execution.ExecutionContextImpl;
 import logic.label.FixedLabel;
 import logic.label.Label;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class ZeroVariableInstruction extends AbstractInstruction {
 
@@ -28,7 +23,7 @@ public class ZeroVariableInstruction extends AbstractInstruction {
 
     @Override
     public Label execute(ExecutionContext context) {
-        context.updateVariable(getVariable(), 0);  // ← זה האיפוס החשוב
+        context.updateVariable(getVariable(), 0);
         return FixedLabel.EMPTY;
     }
 
@@ -38,10 +33,7 @@ public class ZeroVariableInstruction extends AbstractInstruction {
         String output = variable.toString() +"<-" + "0";
         return output;
     }
-    @Override
-    public InstructionType getType() {
-        return InstructionType.S;
-    }
+
 
 
     public List<AbstractInstruction> expand(ExecutionContext context) {
@@ -54,7 +46,6 @@ public class ZeroVariableInstruction extends AbstractInstruction {
             this.setLabel(FixedLabel.EMPTY);
         }
 
-        // 6. סימון מקור ל־<<< אם יש לך מנגנון כזה
         markAsDerivedFrom(dec, this);
         markAsDerivedFrom(jnz, this);
 

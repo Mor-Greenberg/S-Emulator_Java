@@ -10,5 +10,4 @@ public interface Label {
         return labels;
     }
 
-   // int getNumber();
 }

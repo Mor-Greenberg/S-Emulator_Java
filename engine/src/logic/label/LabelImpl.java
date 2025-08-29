@@ -1,7 +1,5 @@
 package logic.label;
 
-import java.util.List;
-import java.util.Objects;
 
 public class LabelImpl implements Label {
 
@@ -21,10 +19,6 @@ public class LabelImpl implements Label {
         return strLabel;
     }
 
-    @Override
-    public List<Label> getLabels() {
-        return labels;
-    }
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

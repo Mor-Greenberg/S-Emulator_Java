@@ -15,7 +15,6 @@ public interface Instruction {
     Variable getVariable();
     InstructionType getType();
     String commandDisplay();
-    //public List<AbstractInstruction> expand( ExecutionContext context);
      boolean hasOrigin();
      AbstractInstruction getOrigin();
      int getDegree();

@@ -12,23 +12,14 @@ public class ProgramExecutorImpl implements ProgramExecutor {
     private final Program program;
     public List <Instruction> instructionsActivated;
 
-//    public Set<Label> activeLabels;
-//    public Set<Variable> activeVariables;
-
 
     private Map<Variable, Long> variableState;
     public ProgramExecutorImpl(Program program) {
         this.program = program;
         this.variableState = new HashMap<Variable, Long>();
         this.instructionsActivated = new ArrayList<Instruction>();
-//        activeLabels = new HashSet<>();
-//        activeVariables = new HashSet<>();
     }
-    private void initVarsInMap(){
-        for (Variable var : program.getVars()){
-            variableState.put(var,0L);
-        }
-    }
+
     public List <Instruction> getInstructionsActivated(){
         return instructionsActivated;
     }
@@ -61,24 +52,6 @@ public class ProgramExecutorImpl implements ProgramExecutor {
     public Map<Variable, Long> getVariableState(){
         return variableState;
     }
-//    @Override
-//    public void addActiveVariable(Variable variable) {
-//        this.activeVariables.add(variable);
-//    }
-//    @Override
-//    public void addActiveLabel(Label label) {
-//        this.activeLabels.add(label);
-//    }
-//
-//    @Override
-//    public Set<Variable> getActiveVariables() {
-//        return activeVariables;
-//    }
-//
-//    @Override
-//    public Set<Label> getActiveLabels() {
-//        return activeLabels;
-//    }
 
 
 

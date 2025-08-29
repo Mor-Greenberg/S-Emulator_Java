@@ -14,7 +14,6 @@ import java.util.Scanner;
 public class HandleExecution {
     Program program;
     Map<Variable, Long> inputs =  new HashMap<Variable, Long>();
-    // ExecutionContext executionContext = new ExecutionContextImpl();
     public HandleExecution(Program program)
     {
         this.program = program;

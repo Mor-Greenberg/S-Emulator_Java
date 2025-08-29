@@ -1,22 +1,16 @@
 package logic.instruction;
 
 import logic.Variable.Variable;
-import logic.Variable.VariableImpl;
-import logic.Variable.VariableType;
+
 import logic.execution.ExecutionContext;
-import logic.execution.ExecutionContextImpl;
 import logic.label.FixedLabel;
 import logic.label.Label;
-import logic.label.LabelImpl;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class JumpZeroInstruction extends AbstractInstruction {
     private Label JZLabel;
-    public InstructionType type = InstructionType.S;
 
 
     public JumpZeroInstruction(Variable variable, Label zLabel) {
@@ -79,28 +73,5 @@ public class JumpZeroInstruction extends AbstractInstruction {
 
         return result;
     }
-    public static void main(String[] args) {
-        // יצירת משתנה עם ערך 0
-        Variable x = new VariableImpl(VariableType.INPUT, 1);
-        Map<Variable, Long> vars = new HashMap<>();
-        ExecutionContext context = new ExecutionContextImpl(vars);
-        context.updateVariable(x, 0);  // שימי לב: ערך 0
-
-        // תווית ליעד הקפיצה
-        Label targetLabel = new LabelImpl(42); // לדוגמה L42
-
-        // יצירת פקודת JumpZero
-        JumpZeroInstruction jzInstr = new JumpZeroInstruction(x, targetLabel);
-
-        // הפעלת הפקודה
-        Label result = jzInstr.execute(context);
-
-        // הדפסת תוצאה
-        System.out.println("Variable x = " + context.getVariableValue(x));
-        System.out.println("Command: " + jzInstr.commandDisplay());
-        System.out.println("Jump result: " + result);  // אמור להיות L42
-    }
-
-
 
 }

@@ -28,10 +28,7 @@ public class JumpNotZeroInstruction extends AbstractInstruction{
         return FixedLabel.EMPTY;
 
     }
-    @Override
-    public InstructionType getType(){
-        return type;
-    }
+
     @Override
     public String commandDisplay(){
         Variable variable = getVariable();
@@ -39,7 +36,4 @@ public class JumpNotZeroInstruction extends AbstractInstruction{
         return output;
     }
 
-    public void setJnzLabel(Label jnzLabel) {
-        this.jnzLabel=jnzLabel;
-    }
 }

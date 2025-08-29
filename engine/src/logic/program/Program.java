@@ -16,15 +16,13 @@ public interface Program {
     Set<Label> getLabels();
     int getNextIndexByLabel(Label nextLabel);
     void addVar(Variable variable);
-     void addLabel(Label label) ;
+    void addLabel(Label label) ;
 
-    public Program expandToDegree(int maxDegree);
      void expandToDegree(int maxDegree, ExecutionContext context) ;
-        //Variable getFreshWorkVariable(Set<Variable> activeVariables);
-        public Program expandOnce();
+     Program expandOnce();
      boolean hasSyntheticInstructions();
-    public List<Instruction> getActiveInstructions();
-        boolean validate();
-    int calculateMaxDegree();
-    int calculateCycles();
+     List<Instruction> getActiveInstructions();
+     boolean validate();
+     int calculateMaxDegree();
+     int calculateCycles();
 }

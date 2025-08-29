@@ -1,17 +1,12 @@
 package logic.instruction;
 
 import logic.Variable.Variable;
-import logic.Variable.VariableImpl;
-import logic.Variable.VariableType;
 import logic.execution.ExecutionContext;
-import logic.execution.ExecutionContextImpl;
 import logic.label.FixedLabel;
 import logic.label.Label;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class AssignmentInstruction extends AbstractInstruction {
     private final Variable destination; // ← V
@@ -41,6 +36,7 @@ public class AssignmentInstruction extends AbstractInstruction {
         return output;
     }
 
+    @Override
     public List<AbstractInstruction> expand(ExecutionContext context) {
         List<AbstractInstruction> result = new ArrayList<>();
 
@@ -109,42 +105,6 @@ public class AssignmentInstruction extends AbstractInstruction {
         return result;
     }
 
-    public static void main(String[] args) {
-        // 1. הגדר משתנים
-        Variable x2 = new VariableImpl(VariableType.INPUT, 2); // V′
-        Variable y = new VariableImpl(VariableType.RESULT);   // V
 
-        // 2. צור מפה עם ערך התחלתי ל־x2
-        Map<Variable, Long> state = new HashMap<>();
-        state.put(x2, 3L); // נניח שהערך המקורי הוא 3
-
-        // 3. צור ExecutionContext
-        ExecutionContextImpl context = new ExecutionContextImpl(state);
-
-        // 4. צור את פקודת AssignmentInstruction (y ← x2)
-        AssignmentInstruction instr = new AssignmentInstruction(y, x2);
-
-        // 5. קרא ל-expand
-        List<AbstractInstruction> expanded = instr.expand(context);
-
-        // 6. הדפס את הפקודות שהתקבלו
-        System.out.println("🔧 Expanded instructions:");
-        for (AbstractInstruction ai : expanded) {
-            System.out.println((ai.getLabel().equals(FixedLabel.EMPTY) ? "" : ai.getLabel() + ": ") +
-                    ai.commandDisplay());
-        }
-
-        // 7. הרץ את כל הפקודות
-        System.out.println("\n🚀 Executing...");
-        for (AbstractInstruction ai : expanded) {
-            ai.execute(context);
-        }
-
-        // 8. הדפס מצב משתנים סופי
-        System.out.println("\n📦 Final state:");
-        for (Map.Entry<Variable, Long> entry : context.variableState.entrySet()) {
-            System.out.println(entry.getKey() + " = " + entry.getValue());
-        }
-    }
 
 }

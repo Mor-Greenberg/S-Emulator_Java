@@ -14,6 +14,9 @@ public abstract class AbstractInstruction implements Instruction {
     protected InstructionType type;
     protected int degree;
     protected AbstractInstruction origin = null;
+    private static int nextId = 1;
+    private final int uniqueId;
+
 
 
     public AbstractInstruction(InstructionData instructionData, Variable variable,InstructionType type) {
@@ -25,7 +28,10 @@ public abstract class AbstractInstruction implements Instruction {
         this.label = label;
         this.variable = variable;
         this.type=type;
+        this.uniqueId = nextId++;
     }
+
+
 
     @Override
     public String getName() {
@@ -40,6 +46,14 @@ public abstract class AbstractInstruction implements Instruction {
     @Override
     public Label getLabel() {
         return label;
+    }
+
+    public int getUniqueId() {
+        return uniqueId;
+    }
+
+    public static void resetIdCounter() {
+        nextId = 0;
     }
 
     @Override
