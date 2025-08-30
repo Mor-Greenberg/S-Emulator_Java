@@ -29,6 +29,11 @@ public class ProgramImpl implements Program {
     }
 
     @Override
+    public List <AbstractInstruction> getExpandedInstructions(){
+        return expandedInstructions;
+    }
+
+    @Override
     public String getName() {
         return name;
     }
@@ -53,7 +58,7 @@ public class ProgramImpl implements Program {
         int maxDegree = 0;
         for (Instruction instruction : instructions) {
             instruction.getDegree();
-            maxDegree = Math.max(maxDegree, instruction.getDegree());
+            maxDegree = Math.max(maxDegree, instruction.getDegree()+1);
         }
         return maxDegree;
     }
@@ -108,7 +113,6 @@ public class ProgramImpl implements Program {
 
     }
 
-    @Override
     public void expandToDegree(int maxDegree, ExecutionContext context) {
         List<AbstractInstruction> result = new ArrayList<>();
 
@@ -116,24 +120,22 @@ public class ProgramImpl implements Program {
             if (inst instanceof AbstractInstruction abs) {
                 if (abs.getType() == InstructionType.S && abs.getDegree() < maxDegree) {
                     List<AbstractInstruction> expandedList = abs.expand(context);
-
                     for (AbstractInstruction derived : expandedList) {
                         derived.setDegree(abs.getDegree() + 1);
                         derived.setOrigin(abs);
                         result.add(derived);
                     }
-
                 } else {
                     result.add(abs);
                 }
-
             } else {
                 throw new IllegalStateException("Instruction does not extend AbstractInstruction: " + inst.getClass());
             }
         }
 
-        expandedInstructions = result;
+        this.expandedInstructions = result;
     }
+
 
     @Override
     public List<Instruction> getActiveInstructions() {
@@ -149,31 +151,6 @@ public class ProgramImpl implements Program {
         return false;
     }
 
-    @Override
-    public Program expandOnce() {
-        ProgramImpl expandedProgram = new ProgramImpl(this.name);
 
-        for (Instruction instr : instructions) {
-            if (instr.getType() == InstructionType.B) {
-                expandedProgram.addInstruction(instr);
-            } else if (instr instanceof AbstractInstruction absInstr) {
-                AbstractInstruction origin = absInstr.hasOrigin()
-                        ? absInstr.getOrigin()
-                        : absInstr;
-
-                List<AbstractInstruction> expandedInstructions = absInstr.expand(null);
-
-                for (AbstractInstruction expanded : expandedInstructions) {
-                    expanded.setOrigin(origin);
-                    expanded.setDegree(absInstr.getDegree() + 1);
-                    expandedProgram.addInstruction(expanded);
-                }
-            } else {
-                throw new IllegalStateException("Instruction is not instance of AbstractInstruction: " + instr.getClass());
-            }
-        }
-
-        return expandedProgram;
-    }
 
 }

@@ -20,12 +20,14 @@ public class ProgramExecutorImpl implements ProgramExecutor {
         this.instructionsActivated = new ArrayList<Instruction>();
     }
 
+
     public List <Instruction> getInstructionsActivated(){
         return instructionsActivated;
     }
 
 
     public long run(ExecutionContext context) {
+
 
         int pc = 0;
 

@@ -16,19 +16,26 @@ public class PrintExpansion {
 
     public void printProgramWithOrigins(Program program) {
         List<Instruction> instructions = program.getActiveInstructions();
+        int counter = 1;
 
+        int nextId = 1;
+        for (Instruction instr : instructions) {
+            if (instr instanceof AbstractInstruction absInstr && absInstr.getUniqueId() == 0) {
+                absInstr.setUniqueId(nextId++);
+            }
+        }
         for (Instruction instr : instructions) {
             StringBuilder line = new StringBuilder();
 
-            int id = (instr instanceof AbstractInstruction absInstr) ? absInstr.getUniqueId() : -1;
-            line.append("#").append(String.format("%-3d", id)).append(" (")
+            int id = (instr instanceof Instruction absInstr) ? absInstr.getUniqueId() : -1;
+            line.append("#").append(String.format("%-3d", counter)).append(" (")
                     .append(instr.getType()).append(") ");
 
             String labelStr = "";
             if (instr.getLabel() != null && !instr.getLabel().equals(FixedLabel.EMPTY)) {
                 labelStr = instr.getLabel().toString();
             }
-            line.append("[").append(String.format("%-8s", labelStr)).append("] ");
+            line.append("[").append(String.format("%-5s", labelStr)).append("] ");
 
             line.append(instr.commandDisplay());
 
@@ -43,7 +50,7 @@ public class PrintExpansion {
                             .append(" (").append(origin.getType()).append(") ")
                             .append("[")
                             .append(String.format(
-                                    "%-8s",
+                                    "%-5s",
                                     (origin.getLabel() != null && !origin.getLabel().equals(FixedLabel.EMPTY))
                                             ? origin.getLabel().toString()
                                             : ""
@@ -54,6 +61,7 @@ public class PrintExpansion {
                 }
             }
 
+            counter++;
             System.out.println(line);
         }
     }

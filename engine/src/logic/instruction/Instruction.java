@@ -19,4 +19,6 @@ public interface Instruction {
      AbstractInstruction getOrigin();
      int getDegree();
      List<AbstractInstruction> expand(ExecutionContext context);
-}
+     int getUniqueId();
+     void  setUniqueId (int id);
+    }

@@ -73,5 +73,9 @@ public class JumpZeroInstruction extends AbstractInstruction {
 
         return result;
     }
+    public Label getTargetLabel() {
+        return JZLabel;
+    }
+
 
 }

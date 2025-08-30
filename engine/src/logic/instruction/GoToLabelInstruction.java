@@ -30,6 +30,9 @@ public class GoToLabelInstruction extends AbstractInstruction {
         this.goToLabel = goToLabel;
         this.degree=1;
     }
+    public Label getTargetLabel() {
+        return goToLabel;
+    }
 
     public Label getGotoLabel() {
         return goToLabel;

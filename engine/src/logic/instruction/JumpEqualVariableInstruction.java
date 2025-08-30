@@ -21,6 +21,9 @@ public class JumpEqualVariableInstruction extends AbstractInstruction{
     public JumpEqualVariableInstruction(Variable v, Variable vPrime, Label JEVariableLabel) {
         this(v, vPrime, JEVariableLabel, FixedLabel.EMPTY);
     }
+    public Label getTargetLabel() {
+        return JEVariableLabel;
+    }
 
     @Override
     public Label execute(ExecutionContext context) {

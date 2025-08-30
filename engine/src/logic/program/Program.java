@@ -2,6 +2,7 @@ package logic.program;
 
 import logic.Variable.Variable;
 import logic.execution.ExecutionContext;
+import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
 import logic.label.Label;
 
@@ -19,10 +20,10 @@ public interface Program {
     void addLabel(Label label) ;
 
      void expandToDegree(int maxDegree, ExecutionContext context) ;
-     Program expandOnce();
      boolean hasSyntheticInstructions();
      List<Instruction> getActiveInstructions();
      boolean validate();
      int calculateMaxDegree();
      int calculateCycles();
-}
+    public List <AbstractInstruction> getExpandedInstructions();
+    }

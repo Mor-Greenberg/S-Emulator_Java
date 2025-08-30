@@ -18,6 +18,9 @@ public class JumpEqualConstantInstruction extends AbstractInstruction {
         this.degree = 3;
 
     }
+    public Label getTargetLabel() {
+        return JEConstantLabel;
+    }
 
     public JumpEqualConstantInstruction(Variable variable, Label JEConstantLabel, Label label, long constantValue) {
         super(InstructionData.JUMP_EQUAL_CONSTANT, variable, label,InstructionType.S);

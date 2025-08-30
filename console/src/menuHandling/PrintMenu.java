@@ -6,6 +6,7 @@ import logic.execution.ExecutionContext;
 import logic.execution.ExecutionContextImpl;
 import logic.execution.ProgramExecutorImpl;
 import logic.instruction.AbstractInstruction;
+import logic.xml.XmlValidation;
 import printExpand.expansion.PrintExpansion;
 import logic.history.RunHistoryEntry;
 import logic.instruction.Instruction;
@@ -23,6 +24,7 @@ public class PrintMenu {
     boolean xmlLoded = false;
     private final List<RunHistoryEntry> history = new ArrayList<>();
     private int runCounter = 1;
+
 
 
     public void printMenu() {
@@ -70,14 +72,25 @@ public class PrintMenu {
         String path = sc.nextLine().replace("\"", "").trim();
 
         SProgram sProgram = XmlLoader.loadFromFile(path);
+
         if (sProgram != null) {
+            this.history.clear();
+            this.runCounter = 1;
+            AbstractInstruction.resetIdCounter();
             this.program = new XmlLoader().SprogramToProgram(sProgram);
+            boolean validXML = XmlValidation.validateLabels(program.getInstructions());
+            if(!validXML){
+                System.out.println("Invalid label reference");
+                return;
+            }
+
             System.out.println("XML loaded successfully!");
             xmlLoded = true;
         } else {
             System.out.println("Failed to load XML.");
         }
     }
+
     private void expandProgram(Program program, ProgramDisplayImpl display) {
         if (!xmlLoded) {
             System.out.println("XML is not loaded, returning");
@@ -107,27 +120,31 @@ public class PrintMenu {
     private int askForDegree(Program program) {
         int maxDegree = program.calculateMaxDegree();
         System.out.println("Max degree:" + maxDegree);
-        System.out.println("Choose degree (0 to" + maxDegree + "):");
-
+        System.out.println("Choose degree (0 to " + maxDegree + "):");
 
         Scanner scanner = new Scanner(System.in);
-
         int degree;
+
         while (true) {
             try {
-                degree = Integer.parseInt(scanner.nextLine());
+                String input = scanner.nextLine();
+                degree = Integer.parseInt(input);
+
                 if (degree < 0 || degree > maxDegree) {
-                    System.out.print("Invalid degree.");
+                    System.out.print("Invalid degree. ");
                 } else {
                     break;
                 }
             } catch (NumberFormatException e) {
-                System.out.print("Insert valid degree. ");
+                System.out.print("Invalid input. ");
             }
 
+            System.out.print("Insert valid degree: ");
         }
+
         return degree;
     }
+
 
 
     private void showStats() {
@@ -178,6 +195,8 @@ public class PrintMenu {
         if(degree!=0){
             System.out.println("Instructions expanded:");
             PrintExpansion expansion = new PrintExpansion(expandedProgram);
+            AbstractInstruction.resetIdCounter();
+
             expansion.printProgramWithOrigins(expandedProgram);
         }
 

@@ -1,7 +1,6 @@
 package programDisplay;
 
 import logic.Variable.Variable;
-import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
 import logic.label.FixedLabel;
 import logic.label.Label;
@@ -9,7 +8,7 @@ import logic.program.Program;
 
 import java.util.List;
 
-public class ProgramDisplayImpl implements ProgramDisplay {
+public class ProgramDisplayImpl {
     Program program;
 
     public ProgramDisplayImpl(Program program)
@@ -55,16 +54,9 @@ public class ProgramDisplayImpl implements ProgramDisplay {
 
     public void printInstructions(List<Instruction> instructions)
     {
-        int instructionCounter=1;
-
        for (Instruction instruction : instructions) {
-          InstructionFormat formattedInst = new InstructionFormat(instructionCounter,
-                  instruction.getType().toString(),
-                  instruction.getLabel(),
-                  instruction.commandDisplay(),
-                  instruction.getCycles());
+          InstructionFormat formattedInst = new InstructionFormat(instruction);
           formattedInst.printInstruction();
-          instructionCounter++;
        }
 
     }

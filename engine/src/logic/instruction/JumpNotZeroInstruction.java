@@ -35,5 +35,8 @@ public class JumpNotZeroInstruction extends AbstractInstruction{
         String output = "IF " + variable.toString() + " != 0 GOTO " + jnzLabel.toString();
         return output;
     }
+    public Label getTargetLabel() {
+        return jnzLabel;
+    }
 
 }

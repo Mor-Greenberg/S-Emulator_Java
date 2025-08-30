@@ -21,7 +21,6 @@ import java.util.Optional;
 public class XmlLoader {
 
     public static SProgram loadFromFile(String path) {
-        AbstractInstruction.resetIdCounter();
 
         if ((XmlValidation.validateXmlFilePath(path)) == 1) {
             System.out.println("XML file does not exist");
