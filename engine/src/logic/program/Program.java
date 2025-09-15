@@ -19,6 +19,7 @@ public interface Program {
     void addVar(Variable variable);
     void addLabel(Label label) ;
 
+     int askForDegree() ;
      void expandToDegree(int maxDegree, ExecutionContext context) ;
      boolean hasSyntheticInstructions();
      List<Instruction> getActiveInstructions();

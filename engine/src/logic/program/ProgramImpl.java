@@ -1,5 +1,8 @@
 package logic.program;
 
+import javafx.geometry.Insets;
+import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
 import logic.Variable.Variable;
 import logic.execution.ExecutionContext;
 import logic.instruction.AbstractInstruction;
@@ -7,10 +10,9 @@ import logic.instruction.Instruction;
 import logic.instruction.InstructionType;
 import logic.label.Label;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+
+import static utils.Utils.showError;
 
 public class ProgramImpl implements Program {
     private final String name;
@@ -151,6 +153,37 @@ public class ProgramImpl implements Program {
         return false;
     }
 
+    public int askForDegree() {
+        int maxDegree = calculateMaxDegree();
+        Dialog<Integer> dialog = new Dialog<>();
+        dialog.setTitle("Choose Expansion Degree");
+        dialog.setHeaderText("Select a degree between 0 and " + maxDegree);
+
+        // OK button
+        ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
+
+        // Spinner for degree selection
+        Spinner<Integer> degreeSpinner = new Spinner<>(0, maxDegree, 0);
+        degreeSpinner.setEditable(true);
+
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(10));
+        content.getChildren().add(degreeSpinner);
+
+        dialog.getDialogPane().setContent(content);
+
+        // Convert result
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == okButtonType) {
+                return degreeSpinner.getValue();
+            }
+            return null;
+        });
+
+        Optional<Integer> result = dialog.showAndWait();
+        return result.orElse(-1); // -1 means cancelled
+    }
 
 
 }

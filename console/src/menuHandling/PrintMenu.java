@@ -1,5 +1,6 @@
 package menuHandling;
 
+import gui.ExecutionRunner;
 import handleExecution.HandleExecution;
 import logic.Variable.Variable;
 import logic.execution.ExecutionContext;
@@ -98,7 +99,7 @@ public class PrintMenu {
         }
 
         int maxDegree = program.calculateMaxDegree();
-        int chosenDegree = askForDegree(program);
+        int chosenDegree = program.askForDegree();
 
         if (chosenDegree == 0) {
             display.printProgram(xmlLoded);
@@ -117,33 +118,7 @@ public class PrintMenu {
     }
 
 
-    private int askForDegree(Program program) {
-        int maxDegree = program.calculateMaxDegree();
-        System.out.println("Max degree:" + maxDegree);
-        System.out.println("Choose degree (0 to " + maxDegree + "):");
 
-        Scanner scanner = new Scanner(System.in);
-        int degree;
-
-        while (true) {
-            try {
-                String input = scanner.nextLine();
-                degree = Integer.parseInt(input);
-
-                if (degree < 0 || degree > maxDegree) {
-                    System.out.print("Invalid degree. ");
-                } else {
-                    break;
-                }
-            } catch (NumberFormatException e) {
-                System.out.print("Invalid input. ");
-            }
-
-            System.out.print("Insert valid degree: ");
-        }
-
-        return degree;
-    }
 
 
 
@@ -168,69 +143,74 @@ public class PrintMenu {
 
     }
 
-    private void runProgram(Program program, ProgramDisplayImpl programDisplay) {
-       if (!xmlLoded) {
-           System.out.println("XML is not loaded, returning");
-           return;
-       }
+//    private void runProgram(Program program, ProgramDisplayImpl programDisplay) {
+//       if (!xmlLoded) {
+//           System.out.println("XML is not loaded, returning");
+//           return;
+//       }
+//
+//        int degree = program.askForDegree();
+//
+//        Map<Variable, Long> variableState = new HashMap<>();
+//        ExecutionContext context = new ExecutionContextImpl(variableState);
+//        program.expandToDegree(degree, context);
+//        Program expandedProgram = program;
+//
+//
+//        HandleExecution handleExecution = new HandleExecution(expandedProgram);
+//        handleExecution.collectInputFromUser(expandedProgram, context);
+//
+//        ProgramExecutorImpl executor = new ProgramExecutorImpl(expandedProgram);
+//        long result = executor.run(context);
+//
+//
+//        System.out.println("Instructions activated:");
+//        programDisplay.printInstructions(executor.getInstructionsActivated());
+//
+//        if(degree!=0){
+//            System.out.println("Instructions expanded:");
+//            PrintExpansion expansion = new PrintExpansion(expandedProgram);
+//            AbstractInstruction.resetIdCounter();
+//
+//            expansion.printProgramWithOrigins(expandedProgram);
+//        }
+//
+//        System.out.println("\nProgram result (y): " + result);
+//
+//        System.out.println("Variable values:");
+//
+//        variableState.entrySet().stream()
+//                .sorted((e1, e2) -> {
+//                    String v1 = e1.getKey().getRepresentation();
+//                    String v2 = e2.getKey().getRepresentation();
+//
+//                    if (v1.equals("y")) return -1;
+//                    if (v2.equals("y")) return 1;
+//
+//
+//                    if (v1.startsWith("x") && v2.startsWith("z")) return -1;
+//                    if (v1.startsWith("z") && v2.startsWith("x")) return 1;
+//
+//                    int num1 = Integer.parseInt(v1.substring(1));
+//                    int num2 = Integer.parseInt(v2.substring(1));
+//                    return Integer.compare(num1, num2);
+//                })
+//                .forEach(entry -> System.out.println(entry.getKey().getRepresentation() + " = " + entry.getValue()));
+//
+//        int sumCycles = executor.getInstructionsActivated().stream()
+//                .mapToInt(Instruction::getCycles)
+//                .sum();
+//        System.out.println("Number of cycles: " + sumCycles);
+//
+//        RunHistoryEntry entry = new RunHistoryEntry(runCounter++, degree,
+//                handleExecution.getInputsMap(), result, sumCycles);
+//        history.add(entry);
+//    }
 
-        int degree = askForDegree(program);
-
-        Map<Variable, Long> variableState = new HashMap<>();
-        ExecutionContext context = new ExecutionContextImpl(variableState);
-        program.expandToDegree(degree, context);
-        Program expandedProgram = program;
-
-
-        HandleExecution handleExecution = new HandleExecution(expandedProgram);
-        handleExecution.collectInputFromUser(expandedProgram, context);
-
-        ProgramExecutorImpl executor = new ProgramExecutorImpl(expandedProgram);
-        long result = executor.run(context);
-
-
-        System.out.println("Instructions activated:");
-        programDisplay.printInstructions(executor.getInstructionsActivated());
-
-        if(degree!=0){
-            System.out.println("Instructions expanded:");
-            PrintExpansion expansion = new PrintExpansion(expandedProgram);
-            AbstractInstruction.resetIdCounter();
-
-            expansion.printProgramWithOrigins(expandedProgram);
+        private void runProgram(Program program, ProgramDisplayImpl programDisplay) {
+            ExecutionRunner.runProgram(program, programDisplay);
         }
 
-        System.out.println("\nProgram result (y): " + result);
-
-        System.out.println("Variable values:");
-
-        variableState.entrySet().stream()
-                .sorted((e1, e2) -> {
-                    String v1 = e1.getKey().getRepresentation();
-                    String v2 = e2.getKey().getRepresentation();
-
-                    if (v1.equals("y")) return -1;
-                    if (v2.equals("y")) return 1;
-
-
-                    if (v1.startsWith("x") && v2.startsWith("z")) return -1;
-                    if (v1.startsWith("z") && v2.startsWith("x")) return 1;
-
-                    int num1 = Integer.parseInt(v1.substring(1));
-                    int num2 = Integer.parseInt(v2.substring(1));
-                    return Integer.compare(num1, num2);
-                })
-                .forEach(entry -> System.out.println(entry.getKey().getRepresentation() + " = " + entry.getValue()));
-
-        int sumCycles = executor.getInstructionsActivated().stream()
-                .mapToInt(Instruction::getCycles)
-                .sum();
-        System.out.println("Number of cycles: " + sumCycles);
-
-        RunHistoryEntry entry = new RunHistoryEntry(runCounter++, degree,
-                handleExecution.getInputsMap(), result, sumCycles);
-        history.add(entry);
-    }
 
 
     public void handleMenu() {
