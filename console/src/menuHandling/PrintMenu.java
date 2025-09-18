@@ -50,24 +50,24 @@ public class PrintMenu {
     }
 
 
-    public boolean handleChoice(int choice, Program program) {
-        Scanner sc = new Scanner(System.in);
-        ProgramDisplayImpl programDisplay = new ProgramDisplayImpl(program);
-
-        switch (choice) {
-            case 1 -> loadXml(sc);
-            case 2 -> programDisplay.printProgram(xmlLoded);
-            case 3 -> expandProgram(program,programDisplay);
-            case 4 -> runProgram(program, programDisplay);
-            case 5 -> showStats();
-            case 6 -> {
-                System.out.println("Exiting...");
-                return false;
-            }
-            default -> System.out.println("Invalid choice.");
-        }
-        return true;
-    }
+//    public boolean handleChoice(int choice, Program program) {
+//        Scanner sc = new Scanner(System.in);
+//        //ProgramDisplayImpl programDisplay = new ProgramDisplayImpl(program);
+//
+//        switch (choice) {
+//            case 1 -> loadXml(sc);
+//            case 2 -> programDisplay.printProgram(xmlLoded);
+//            case 3 -> expandProgram(program,programDisplay);
+//            case 4 -> runProgram(program, programDisplay);
+//            case 5 -> showStats();
+//            case 6 -> {
+//                System.out.println("Exiting...");
+//                return false;
+//            }
+//            default -> System.out.println("Invalid choice.");
+//        }
+//        return true;
+//    }
     private void loadXml(Scanner sc) {
         System.out.println("Please enter full XML path:");
         String path = sc.nextLine().replace("\"", "").trim();
@@ -213,13 +213,13 @@ public class PrintMenu {
 
 
 
-    public void handleMenu() {
-        boolean continueRunning = true;
-        while (continueRunning) {
-            printMenu();
-            int choice = usersChoice();
-            continueRunning = handleChoice(choice, program);
-        }
-    }
+//    public void handleMenu() {
+//        boolean continueRunning = true;
+//        while (continueRunning) {
+//            printMenu();
+//            int choice = usersChoice();
+//            continueRunning = handleChoice(choice, program);
+//        }
+//    }
 
 }

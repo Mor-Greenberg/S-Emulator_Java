@@ -1,53 +1,68 @@
 package gui;
 
-import handleExecution.HandleExecution;
+import gui.instructionTable.InstructionRow;
 import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.event.ActionEvent;
 import javafx.scene.control.*;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
-import logic.Variable.Variable;
-import logic.execution.ExecutionContext;
-import logic.execution.ExecutionContextImpl;
-import logic.execution.ProgramExecutorImpl;
+
+import logic.instruction.AbstractInstruction;
+import logic.instruction.Instruction;
 import logic.jaxb.schema.generated.SProgram;
+import logic.label.FixedLabel;
 import logic.program.Program;
 import logic.xml.XmlLoader;
 import programDisplay.ProgramDisplayImpl;
-import utils.Utils;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
-import static utils.Utils.showError;
-import static utils.Utils.toHex;
+import static utils.Utils.*;
 
 public class MainScreenController {
 
-    @FXML
-    private Button loadFileButton;
+    @FXML private Button loadFileButton;
     private SProgram loadedSProgram;
     private Program loadedProgram;
-    private ProgramDisplayImpl programDisplay = new ProgramDisplayImpl(loadedProgram);
+    private ProgramDisplayImpl programDisplay;
+    public void setProgramDisplay(ProgramDisplayImpl programDisplay) {
+        this.programDisplay = programDisplay;
+    }
 
     @FXML private Label xmlPathLabel;
     @FXML private ProgressBar loadingProgressBar;
     @FXML private Label statusLabel;
-    private Timeline loadingTimeline;
+
+
+    @FXML private TableView<InstructionRow> instructionTable;
+    @FXML private TableColumn<InstructionRow, Number> colNumber;
+    @FXML private TableColumn<InstructionRow, String> colType;
+    @FXML private TableColumn<InstructionRow, String> colLabel;
+    @FXML private TableColumn<InstructionRow, String> colCommand;
+    @FXML private TableColumn<InstructionRow, Number> colCycles;
 
     @FXML private ToggleButton animationToggleButton;
 
     private boolean enableLoadingAnimation = true; // set to false to skip animation
+
     @FXML
     public void initialize() {
         animationToggleButton.setSelected(true);
         animationToggleButton.setText("Animations Off");
+        colNumber.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getNumber()));
+        colType.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getType()));
+        colLabel.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getLabel()));
+        colCommand.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getCommand()));
+        colCycles.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getCycles()));
     }
 
 
@@ -64,32 +79,28 @@ public class MainScreenController {
         if (selectedFile != null) {
             new Thread(() -> {
                 try {
-                    // התחלת טעינה
                     Platform.runLater(() -> {
                         statusLabel.setText("Loading...");
                         xmlPathLabel.setText(selectedFile.getAbsolutePath());
 
                         if (enableLoadingAnimation) {
-                            loadingProgressBar.setProgress(0); // נתחיל באנימציה רגילה
-                            animateProgressBar(2.0);
+                            loadingProgressBar.setProgress(0);
+                            animateProgressBar(2.0, enableLoadingAnimation, loadingProgressBar);
                         } else {
                             loadingProgressBar.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS); // אין אנימציה
                         }
                     });
 
-                    // זמן טעינה מזויף
                     Thread.sleep(500);
 
-                    // טעינת הקובץ
                     loadedSProgram = XmlLoader.loadFromFile(selectedFile.getAbsolutePath());
                     loadedProgram = new XmlLoader().SprogramToProgram(loadedSProgram);
 
                     Platform.runLater(() -> {
                         if (!enableLoadingAnimation) {
-                            loadingProgressBar.setProgress(1.0); // במידה ואין אנימציה
+                            loadingProgressBar.setProgress(1.0);
                             statusLabel.setText("Done!");
                         } else {
-                            // נקבע פעולה בסיום האנימציה: עדכון סטטוס
                             Timeline timeline = new Timeline(
                                     new KeyFrame(Duration.seconds(2.0),
                                             e -> statusLabel.setText("Done!")) // רק אחרי שהאנימציה הסתיימה
@@ -124,6 +135,11 @@ public class MainScreenController {
             return;
         }
 
+        if (programDisplay == null) {
+            showError("Program display not initialized.");
+            return;
+        }
+
         ExecutionRunner.runProgram(loadedProgram, programDisplay);
     }
 
@@ -142,37 +158,6 @@ public class MainScreenController {
     private void resumeExecution(ActionEvent event) {
         System.out.println("Resume Execution");
     }
-    private void animateProgressBar(double durationInSeconds) {
-        if (!enableLoadingAnimation) {
-            loadingProgressBar.setProgress(1.0);
-            loadingProgressBar.setStyle("-fx-accent: pink;");
-            return;
-        }
-
-        loadingProgressBar.setProgress(0);
-
-        Timeline timeline = new Timeline();
-        int frames = 60; // 60 steps
-        for (int i = 0; i <= frames; i++) {
-            double progress = (double) i / frames;
-            Duration time = Duration.seconds(progress * durationInSeconds);
-
-            // גוון צבע לפי ההתקדמות (Hue בין 0 ל-360)
-            double hue = progress * 360;
-            Color color = Color.hsb(hue, 0.7, 1.0);
-            String hexColor = toHex(color);
-
-            KeyFrame frame = new KeyFrame(time, e -> {
-                loadingProgressBar.setProgress(progress);
-                loadingProgressBar.setStyle("-fx-accent: " + hexColor + ";");
-            });
-            timeline.getKeyFrames().add(frame);
-        }
-
-        timeline.setCycleCount(1);
-        timeline.play();
-    }
-
 
     @FXML
     private void toggleAnimations(ActionEvent event) {
@@ -185,6 +170,31 @@ public class MainScreenController {
     }
 
 
+
+    public void printInstructions(List<Instruction> instructions) {
+        ObservableList<InstructionRow> rows = FXCollections.observableArrayList();
+
+        int counter = 1;
+        int nextId = 1;
+        for (Instruction instr : instructions) {
+            if (instr instanceof AbstractInstruction absInstr && absInstr.getUniqueId() == 0) {
+                absInstr.setUniqueId(nextId++);
+            }
+        }
+
+        for (Instruction instr : instructions) {
+            String type = instr.getType().toString();
+            String label = (instr.getLabel() != null && !instr.getLabel().equals(FixedLabel.EMPTY))
+                    ? instr.getLabel().toString()
+                    : "";
+            String command = instr.commandDisplay();
+            int cycles = instr.getCycles();
+
+            rows.add(new InstructionRow(counter++, type, label, command, cycles));
+        }
+
+        instructionTable.setItems(rows);
+    }
 
 
 }

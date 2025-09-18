@@ -60,7 +60,7 @@ public class ProgramImpl implements Program {
         int maxDegree = 0;
         for (Instruction instruction : instructions) {
             instruction.getDegree();
-            maxDegree = Math.max(maxDegree, instruction.getDegree()+1);
+            maxDegree = Math.max(maxDegree, instruction.getDegree());
         }
         return maxDegree;
     }
