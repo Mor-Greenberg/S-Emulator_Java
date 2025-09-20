@@ -27,12 +27,9 @@ public class ProgramExecutorImpl implements ProgramExecutor {
 
 
     public long run(ExecutionContext context) {
-
-
         int pc = 0;
 
         Label nextLabel = FixedLabel.EMPTY;
-        boolean b = (nextLabel != FixedLabel.EXIT && (pc < program.getInstructions().size()));
         while (nextLabel != FixedLabel.EXIT && (pc < program.getInstructions().size())) {
             Instruction currentInstruction = program.getInstructions().get(pc);
             instructionsActivated.add(currentInstruction);

@@ -3,12 +3,19 @@ package gui.instructionTable;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 public class InstructionRow {
     private final SimpleIntegerProperty number;
     private final SimpleStringProperty type;
     private final SimpleStringProperty label;
     private final SimpleStringProperty command;
     private final SimpleIntegerProperty cycles;
+
 
     public InstructionRow(int number, String type, String label, String command, int cycles) {
         this.number = new SimpleIntegerProperty(number);
@@ -23,6 +30,31 @@ public class InstructionRow {
     public String getLabel() { return label.get(); }
     public String getCommand() { return command.get(); }
     public int getCycles() { return cycles.get(); }
+
+
+
+    public static List<String> getAllLabels(List<InstructionRow> rows) {
+        return rows.stream()
+                .map(InstructionRow::getLabel)
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+
+    public static List<String> getAllVariables(List<InstructionRow> rows) {
+        Set<String> keywords = Set.of("IF", "GOTO", "EXIT"); // מילים שמורות
+        return rows.stream()
+                .map(InstructionRow::getCommand)
+                .flatMap(cmd -> Arrays.stream(cmd.split("[^a-zA-Z0-9_]")))
+                .filter(s -> s.matches("[a-zA-Z_][a-zA-Z0-9_]*"))
+                .filter(s -> !keywords.contains(s))
+                .filter(s -> !s.matches("L\\d+"))
+                .distinct()
+                .collect(Collectors.toList());
+    }
 
 }
 

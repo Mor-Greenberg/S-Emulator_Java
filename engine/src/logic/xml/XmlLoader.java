@@ -1,5 +1,9 @@
 package logic.xml;
 
+import jaxbV2.jaxb.v2.SInstruction;
+import jaxbV2.jaxb.v2.SInstructionArgument;
+import jaxbV2.jaxb.v2.SInstructionArguments;
+import jaxbV2.jaxb.v2.SProgram;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Unmarshaller;
@@ -7,7 +11,6 @@ import logic.Variable.Variable;
 import logic.Variable.VariableImpl;
 import logic.Variable.VariableType;
 import logic.instruction.*;
-import logic.jaxb.schema.generated.*;
 import logic.label.FixedLabel;
 import logic.label.Label;
 import logic.label.LabelImpl;

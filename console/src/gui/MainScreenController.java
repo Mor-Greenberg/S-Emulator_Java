@@ -1,5 +1,15 @@
 package gui;
 
+import gui.highlightSelectionPopup.HighlightAction;
+import gui.highlightSelectionPopup.HighlightChoiceController;
+import gui.highlightSelectionPopup.HighlightChoiceListener;
+import gui.highlightSelectionPopup.HighlightSelectionController;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import jaxbV2.jaxb.v2.SProgram;
 import gui.instructionTable.InstructionRow;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -11,22 +21,26 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.event.ActionEvent;
 import javafx.scene.control.*;
-import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
 
 import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
-import logic.jaxb.schema.generated.SProgram;
 import logic.label.FixedLabel;
 import logic.program.Program;
 import logic.xml.XmlLoader;
 import programDisplay.ProgramDisplayImpl;
 
 import java.io.File;
+import java.io.IOException;
+
 import java.util.List;
 
+import static gui.instructionTable.InstructionRow.getAllLabels;
+import static gui.instructionTable.InstructionRow.getAllVariables;
 import static utils.Utils.*;
+
+
 
 public class MainScreenController {
 
@@ -49,6 +63,10 @@ public class MainScreenController {
     @FXML private TableColumn<InstructionRow, String> colLabel;
     @FXML private TableColumn<InstructionRow, String> colCommand;
     @FXML private TableColumn<InstructionRow, Number> colCycles;
+    @FXML private Label summaryLabel;
+
+
+    private ObservableList<InstructionRow> instructionData = FXCollections.observableArrayList();
 
     @FXML private ToggleButton animationToggleButton;
 
@@ -63,6 +81,8 @@ public class MainScreenController {
         colLabel.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getLabel()));
         colCommand.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getCommand()));
         colCycles.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getCycles()));
+        instructionTable.setItems(instructionData);
+
     }
 
 
@@ -170,7 +190,6 @@ public class MainScreenController {
     }
 
 
-
     public void printInstructions(List<Instruction> instructions) {
         ObservableList<InstructionRow> rows = FXCollections.observableArrayList();
 
@@ -194,7 +213,75 @@ public class MainScreenController {
         }
 
         instructionTable.setItems(rows);
+        summaryLabel.setText(generateSummary(instructions));
+
+
     }
+    @FXML
+    void onHighlightSelectionClicked() throws IOException {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/gui/highlightSelectionPopup/highlight_selection_popup.fxml"));
+        Parent root = loader.load();
+
+        HighlightAction highlightAction = new HighlightAction(instructionTable);
+        List<InstructionRow> rows = instructionTable.getItems();
+        HighlightSelectionController controller = loader.getController();
+
+        controller.setListener(new HighlightChoiceListener() {
+            @Override
+            public void onLabelChosen() {
+                try {
+                    List<String> labelOptions = getAllLabels(rows);
+                    String selected = showChoicePopup(labelOptions, "Highlight by Label");
+                    if (selected != null) {
+                        highlightAction.highlightByLabel(selected);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onVariableChosen() {
+                try {
+                    List<String> variableOptions = getAllVariables(rows);
+                    String selected = showChoicePopup(variableOptions, "Highlight by Variable");
+                    if (selected != null) {
+                        highlightAction.highlightByVariable(selected);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            @Override
+            public void onClearHighlight() {
+                highlightAction.clearHighlight();
+            }
+        });
+
+        Stage stage = new Stage();
+        stage.setTitle("Highlight Selection");
+        stage.setScene(new Scene(root));
+        stage.initModality(Modality.APPLICATION_MODAL);
+        stage.showAndWait();
+    }
+
+    private String showChoicePopup(List<String> choices, String title) throws IOException {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/gui/highlightSelectionPopup/highlight_choice_popup.fxml"));
+        Parent root = loader.load();
+
+        HighlightChoiceController controller = loader.getController();
+        controller.setChoices(choices);
+
+        Stage stage = new Stage();
+        stage.setTitle(title);
+        stage.setScene(new Scene(root));
+        stage.initModality(Modality.APPLICATION_MODAL);
+        stage.showAndWait();
+
+        return controller.getSelectedChoice();
+    }
+
+
 
 
 }

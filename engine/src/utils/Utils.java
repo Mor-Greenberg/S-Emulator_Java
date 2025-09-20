@@ -7,6 +7,12 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
+import logic.instruction.Instruction;
+import logic.instruction.InstructionType;
+
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class Utils {
     public static void showError(String message) {
@@ -59,6 +65,28 @@ public class Utils {
         timeline.setCycleCount(1);
         timeline.play();
     }
+    public static String generateSummary(List<Instruction> instructions) {
+        long basicCount = instructions.stream()
+                .filter(instr -> instr.getType() == InstructionType.B)
+                .count();
+
+        long syntheticCount = instructions.stream()
+                .filter(instr -> instr.getType() == InstructionType.S)
+                .count();
+        long cyclesCount = instructions.stream()
+                .mapToLong(Instruction::getCycles)
+                .sum();
+
+
+        return "SUMMARY: Total instructions: " + instructions.size()
+                + " | Basic: " + basicCount
+                + " | Synthetic: " + syntheticCount
+                + " | cycles: " + cyclesCount;
+    }
+
+
+
+
 
 
 }

@@ -39,7 +39,7 @@ public class ExecutionRunner {
         long result = executor.run(context);
 
         System.out.println("Instructions activated:");
-        programDisplay.printInstructions(executor.getInstructionsActivated());
+        programDisplay.printInstructions(program.getActiveInstructions());
 
         if (degree != 0) {
             System.out.println("Instructions expanded:");

@@ -6,7 +6,6 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
-<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
@@ -42,7 +41,7 @@
                   <Button mnemonicParsing="false" text="Collapse" />
                   <Button mnemonicParsing="false" text="Current / Maximum degree" />
                   <Button mnemonicParsing="false" text="Expand" />
-                  <Button mnemonicParsing="false" text="Highlight selection" />
+                  <Button fx:id="highlightButton" text="Highlight selection" onAction="#onHighlightSelectionClicked"/>
                </children>
             </HBox>
          </children>
@@ -105,7 +104,7 @@
                   </VBox>
                </children>
             </HBox>
-            <TextField prefHeight="25.0" prefWidth="401.0" promptText="Summary line" text="Summary line" />
+            <Label fx:id="summaryLabel" prefHeight="17.0" prefWidth="374.0" text="Summary will appear here" textFill="#fb09f6" />
          </children>
       </VBox>
    </center>
