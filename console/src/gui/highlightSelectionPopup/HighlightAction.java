@@ -1,8 +1,16 @@
 package gui.highlightSelectionPopup;
 
 import gui.instructionTable.InstructionRow;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+
+import java.io.IOException;
+import java.util.List;
 import java.util.regex.Pattern;
 
 public class HighlightAction {
@@ -76,6 +84,24 @@ public class HighlightAction {
         initRowFactory();
         instructionTable.refresh();
     }
+
+
+    public String showChoicePopup(List<String> choices, String title) throws IOException {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/gui/highlightSelectionPopup/highlight_choice_popup.fxml"));
+        Parent root = loader.load();
+
+        HighlightChoiceController controller = loader.getController();
+        controller.setChoices(choices);
+
+        Stage stage = new Stage();
+        stage.setTitle(title);
+        stage.setScene(new Scene(root));
+        stage.initModality(Modality.APPLICATION_MODAL);
+        stage.showAndWait();
+
+        return controller.getSelectedChoice();
+    }
+
 
 
 

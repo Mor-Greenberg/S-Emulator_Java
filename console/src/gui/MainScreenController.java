@@ -1,12 +1,12 @@
 package gui;
 
 import gui.highlightSelectionPopup.HighlightAction;
-import gui.highlightSelectionPopup.HighlightChoiceController;
 import gui.highlightSelectionPopup.HighlightChoiceListener;
 import gui.highlightSelectionPopup.HighlightSelectionController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.layout.Region;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import jaxbV2.jaxb.v2.SProgram;
@@ -24,6 +24,7 @@ import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
 
+import logic.Variable.Variable;
 import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
 import logic.label.FixedLabel;
@@ -34,7 +35,9 @@ import programDisplay.ProgramDisplayImpl;
 import java.io.File;
 import java.io.IOException;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import static gui.instructionTable.InstructionRow.getAllLabels;
 import static gui.instructionTable.InstructionRow.getAllVariables;
@@ -66,6 +69,7 @@ public class MainScreenController {
     @FXML private Label summaryLabel;
 
 
+
     private ObservableList<InstructionRow> instructionData = FXCollections.observableArrayList();
 
     @FXML private ToggleButton animationToggleButton;
@@ -89,7 +93,6 @@ public class MainScreenController {
 
     @FXML
     private void loadFilePressed(ActionEvent event) {
-        System.out.println("Load File button pressed");
 
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Choose XML File");
@@ -128,7 +131,6 @@ public class MainScreenController {
                             timeline.play();
                         }
 
-                        System.out.println("Program loaded successfully from: " + selectedFile.getAbsolutePath());
                     });
 
                 } catch (Exception e) {
@@ -144,9 +146,6 @@ public class MainScreenController {
             System.out.println("File selection was cancelled.");
         }
     }
-
-
-
 
     @FXML
     private void startExecution(ActionEvent event) {
@@ -231,7 +230,7 @@ public class MainScreenController {
             public void onLabelChosen() {
                 try {
                     List<String> labelOptions = getAllLabels(rows);
-                    String selected = showChoicePopup(labelOptions, "Highlight by Label");
+                    String selected = highlightAction.showChoicePopup(labelOptions, "Highlight by Label");
                     if (selected != null) {
                         highlightAction.highlightByLabel(selected);
                     }
@@ -244,7 +243,7 @@ public class MainScreenController {
             public void onVariableChosen() {
                 try {
                     List<String> variableOptions = getAllVariables(rows);
-                    String selected = showChoicePopup(variableOptions, "Highlight by Variable");
+                    String selected = highlightAction.showChoicePopup(variableOptions, "Highlight by Variable");
                     if (selected != null) {
                         highlightAction.highlightByVariable(selected);
                     }
@@ -264,22 +263,47 @@ public class MainScreenController {
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.showAndWait();
     }
-
-    private String showChoicePopup(List<String> choices, String title) throws IOException {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/gui/highlightSelectionPopup/highlight_choice_popup.fxml"));
-        Parent root = loader.load();
-
-        HighlightChoiceController controller = loader.getController();
-        controller.setChoices(choices);
-
-        Stage stage = new Stage();
-        stage.setTitle(title);
-        stage.setScene(new Scene(root));
-        stage.initModality(Modality.APPLICATION_MODAL);
-        stage.showAndWait();
-
-        return controller.getSelectedChoice();
+    @FXML
+    void onShowStatusClicked() {
+        Map<Variable, Long> allVariables = ExecutionRunner.getExecutionContextMap();
+        showVariablesPopup(allVariables);
     }
+
+    private void showVariablesPopup(Map<Variable, Long> allVariables) {
+        if (allVariables == null || allVariables.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("No Variables");
+            alert.setHeaderText("No variables to display");
+            alert.setContentText("Please run the program first.");
+            alert.showAndWait();
+            return;
+        }
+
+        StringBuilder content = new StringBuilder();
+
+        allVariables.entrySet().stream()
+                .sorted(Comparator.comparing(e -> {
+                    String name = e.getKey().getRepresentation();
+                    if (name.equals("y")) return "0";
+                    if (name.startsWith("x")) return "1" + name.substring(1);
+                    if (name.startsWith("z")) return "2" + name.substring(1);
+                    return name;
+                }))
+                .forEach(entry -> {
+                    String name = entry.getKey().getRepresentation();
+                    Long value = entry.getValue();
+                    content.append(name).append(" = ").append(value).append("\n");
+                });
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("All Variables");
+        alert.setHeaderText("Variables After Execution");
+        alert.setContentText(content.toString());
+        alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+        alert.showAndWait();
+    }
+
+
 
 
 

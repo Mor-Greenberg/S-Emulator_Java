@@ -16,6 +16,9 @@ import java.util.*;
 
 public class ExecutionRunner {
 
+    private static Map<Variable, Long> lastVariableState = new HashMap<>();
+
+
     private static int runCounter = 1;
     private static final List<RunHistoryEntry> history = new ArrayList<>();
 
@@ -69,9 +72,15 @@ public class ExecutionRunner {
         RunHistoryEntry entry = new RunHistoryEntry(runCounter++, degree,
                 handleExecution.getInputsMap(), result, sumCycles);
         history.add(entry);
+        lastVariableState = new HashMap<>(variableState);
+
     }
 
     public static List<RunHistoryEntry> getHistory() {
         return history;
     }
+    public static Map<Variable, Long> getExecutionContextMap() {
+        return lastVariableState;
+    }
+
 }
