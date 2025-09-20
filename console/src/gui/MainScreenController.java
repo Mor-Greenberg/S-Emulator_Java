@@ -3,10 +3,13 @@ package gui;
 import gui.highlightSelectionPopup.HighlightAction;
 import gui.highlightSelectionPopup.HighlightChoiceListener;
 import gui.highlightSelectionPopup.HighlightSelectionController;
+import gui.instructionTable.ExpandedTable;
+import gui.showStatus.Status;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import jaxbV2.jaxb.v2.SProgram;
@@ -41,6 +44,10 @@ import java.util.Map;
 
 import static gui.instructionTable.InstructionRow.getAllLabels;
 import static gui.instructionTable.InstructionRow.getAllVariables;
+import static gui.showStatus.Status.animateStatusButton;
+import static gui.showStatus.Status.showVariablesPopup;
+import static gui.stats.ShowStats.presentStatistics;
+import static printExpand.expansion.PrintExpansion.getInstructionHistoryChain;
 import static utils.Utils.*;
 
 
@@ -59,6 +66,8 @@ public class MainScreenController {
     @FXML private ProgressBar loadingProgressBar;
     @FXML private Label statusLabel;
 
+    @FXML private Button showStatusButton;
+
 
     @FXML private TableView<InstructionRow> instructionTable;
     @FXML private TableColumn<InstructionRow, Number> colNumber;
@@ -70,22 +79,46 @@ public class MainScreenController {
 
 
 
+    private final ExpandedTable expandedTable = new ExpandedTable();
+
+    @FXML
+    private VBox historyContainer;
+
+    private List<Instruction> originalInstructions;
+
     private ObservableList<InstructionRow> instructionData = FXCollections.observableArrayList();
 
     @FXML private ToggleButton animationToggleButton;
 
-    private boolean enableLoadingAnimation = true; // set to false to skip animation
+    private boolean enableAnimation = true; // set to false to skip animation
 
     @FXML
     public void initialize() {
         animationToggleButton.setSelected(true);
-        animationToggleButton.setText("Animations Off");
+        animationToggleButton.setText("Animations On");
         colNumber.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getNumber()));
         colType.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getType()));
         colLabel.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getLabel()));
         colCommand.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getCommand()));
         colCycles.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getCycles()));
         instructionTable.setItems(instructionData);
+        instructionTable.getSelectionModel().selectedItemProperty().addListener((obs, oldRow, newRow) -> {
+            if (newRow == null) {
+                historyContainer.getChildren().clear();
+                return;
+            }
+
+            Instruction matchedInstruction = findInstructionFromRow(newRow);
+            if (matchedInstruction instanceof AbstractInstruction absInstr) {
+                List<AbstractInstruction> history = getInstructionHistoryChain(absInstr);
+                TableView<AbstractInstruction> historyTable = expandedTable.buildInstructionTableFrom(history);
+                historyContainer.getChildren().setAll(historyTable);
+            } else {
+                historyContainer.getChildren().clear();
+            }
+        });
+
+
 
     }
 
@@ -106,9 +139,9 @@ public class MainScreenController {
                         statusLabel.setText("Loading...");
                         xmlPathLabel.setText(selectedFile.getAbsolutePath());
 
-                        if (enableLoadingAnimation) {
+                        if (enableAnimation) {
                             loadingProgressBar.setProgress(0);
-                            animateProgressBar(2.0, enableLoadingAnimation, loadingProgressBar);
+                            animateProgressBar(2.0, enableAnimation, loadingProgressBar);
                         } else {
                             loadingProgressBar.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS); // אין אנימציה
                         }
@@ -120,7 +153,7 @@ public class MainScreenController {
                     loadedProgram = new XmlLoader().SprogramToProgram(loadedSProgram);
 
                     Platform.runLater(() -> {
-                        if (!enableLoadingAnimation) {
+                        if (!enableAnimation) {
                             loadingProgressBar.setProgress(1.0);
                             statusLabel.setText("Done!");
                         } else {
@@ -180,11 +213,11 @@ public class MainScreenController {
 
     @FXML
     private void toggleAnimations(ActionEvent event) {
-        enableLoadingAnimation = animationToggleButton.isSelected();
-        if (enableLoadingAnimation) {
-            animationToggleButton.setText("Animations Off");
-        } else {
+        enableAnimation = animationToggleButton.isSelected();
+        if (enableAnimation) {
             animationToggleButton.setText("Animations On");
+        } else {
+            animationToggleButton.setText("Animations Off");
         }
     }
 
@@ -211,6 +244,8 @@ public class MainScreenController {
             rows.add(new InstructionRow(counter++, type, label, command, cycles));
         }
 
+        this.originalInstructions = instructions;
+
         instructionTable.setItems(rows);
         summaryLabel.setText(generateSummary(instructions));
 
@@ -221,7 +256,7 @@ public class MainScreenController {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/gui/highlightSelectionPopup/highlight_selection_popup.fxml"));
         Parent root = loader.load();
 
-        HighlightAction highlightAction = new HighlightAction(instructionTable);
+        HighlightAction highlightAction = new HighlightAction(instructionTable, enableAnimation);
         List<InstructionRow> rows = instructionTable.getItems();
         HighlightSelectionController controller = loader.getController();
 
@@ -253,7 +288,7 @@ public class MainScreenController {
             }
             @Override
             public void onClearHighlight() {
-                highlightAction.clearHighlight();
+                highlightAction.clearHighlight(enableAnimation);
             }
         });
 
@@ -266,43 +301,44 @@ public class MainScreenController {
     @FXML
     void onShowStatusClicked() {
         Map<Variable, Long> allVariables = ExecutionRunner.getExecutionContextMap();
-        showVariablesPopup(allVariables);
-    }
-
-    private void showVariablesPopup(Map<Variable, Long> allVariables) {
-        if (allVariables == null || allVariables.isEmpty()) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("No Variables");
-            alert.setHeaderText("No variables to display");
-            alert.setContentText("Please run the program first.");
-            alert.showAndWait();
-            return;
+        if (enableAnimation) {
+            Status.animateStatusButton(showStatusButton, allVariables);
+        }
+        else {
+            showVariablesPopup(allVariables);
         }
 
-        StringBuilder content = new StringBuilder();
-
-        allVariables.entrySet().stream()
-                .sorted(Comparator.comparing(e -> {
-                    String name = e.getKey().getRepresentation();
-                    if (name.equals("y")) return "0";
-                    if (name.startsWith("x")) return "1" + name.substring(1);
-                    if (name.startsWith("z")) return "2" + name.substring(1);
-                    return name;
-                }))
-                .forEach(entry -> {
-                    String name = entry.getKey().getRepresentation();
-                    Long value = entry.getValue();
-                    content.append(name).append(" = ").append(value).append("\n");
-                });
-
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("All Variables");
-        alert.setHeaderText("Variables After Execution");
-        alert.setContentText(content.toString());
-        alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
-        alert.showAndWait();
     }
 
+
+
+
+
+    public Instruction findInstructionFromRow(InstructionRow row) {
+        return originalInstructions.stream()
+                .filter(instr -> {
+                    String type = instr.getType().toString();
+                    String label = (instr.getLabel() != null && !instr.getLabel().equals(FixedLabel.EMPTY)) ? instr.getLabel().toString() : "";
+                    String command = instr.commandDisplay();
+                    int cycles = instr.getCycles();
+
+                    return row.getType().equals(type)
+                            && row.getLabel().equals(label)
+                            && row.getCommand().equals(command)
+                            && row.getCycles() == cycles;
+                })
+                .findFirst()
+                .orElse(null);
+    }
+    @FXML
+    private void onShowStatisticsClicked() {
+
+        if (loadedProgram==null) {
+            showAlert("XML is not loaded.");
+            return;
+        }
+        presentStatistics();
+    }
 
 
 

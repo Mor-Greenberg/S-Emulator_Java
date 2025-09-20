@@ -1,13 +1,16 @@
 package gui.highlightSelectionPopup;
 
 import gui.instructionTable.InstructionRow;
+import javafx.animation.FadeTransition;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.paint.Color;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.io.IOException;
 import java.util.List;
@@ -17,9 +20,11 @@ public class HighlightAction {
     private final TableView<InstructionRow> instructionTable;
     private String labelToHighlight = null;
     private String variableToHighlight = null;
+    private boolean enableLoadingAnimation;
 
-    public HighlightAction(TableView<InstructionRow> instructionTable) {
+    public HighlightAction(TableView<InstructionRow> instructionTable, boolean enableAnimation) {
         this.instructionTable = instructionTable;
+        this.enableLoadingAnimation = enableAnimation;
         initRowFactory();
     }
 
@@ -28,12 +33,30 @@ public class HighlightAction {
             @Override
             protected void updateItem(InstructionRow row, boolean empty) {
                 super.updateItem(row, empty);
+
                 if (row == null || empty) {
                     setStyle("");
-                } else if (labelToHighlight != null && row.getLabel().equals(labelToHighlight)) {
-                    setStyle("-fx-background-color: yellow;");
+                    return;
+                }
+
+                boolean shouldHighlight = false;
+
+                if (labelToHighlight != null && row.getLabel().equals(labelToHighlight)) {
+                    shouldHighlight = true;
                 } else if (variableToHighlight != null && row.getCommand().contains(variableToHighlight)) {
+                    shouldHighlight = true;
+                }
+
+                if (shouldHighlight) {
                     setStyle("-fx-background-color: yellow;");
+                    if (enableLoadingAnimation) {
+                        FadeTransition ft = new FadeTransition(Duration.seconds(0.5), this);
+                        ft.setFromValue(1.0);
+                        ft.setToValue(0.1);
+                        ft.setCycleCount(4);
+                        ft.setAutoReverse(true);
+                        ft.play();
+                    }
                 } else {
                     setStyle("");
                 }
@@ -42,49 +65,26 @@ public class HighlightAction {
     }
 
     public void highlightByLabel(String label) {
-        instructionTable.setRowFactory(tv -> new TableRow<>() {
-            @Override
-            protected void updateItem(InstructionRow row, boolean empty) {
-                super.updateItem(row, empty);
-                if (row == null || empty) {
-                    setStyle("");
-                    return;
-                }
-
-                String labelFromRow = row.getLabel() != null ? row.getLabel().trim() : "";
-                String command = row.getCommand() != null ? row.getCommand().trim() : "";
-
-                boolean isLabelDefinition = label.equalsIgnoreCase(labelFromRow);
-                boolean isLabelMentioned = Pattern.compile("\\b" + Pattern.quote(label) + "\\b")
-                        .matcher(command)
-                        .find();
-
-                if (isLabelDefinition || isLabelMentioned) {
-                    setStyle("-fx-background-color: yellow;");
-                } else {
-                    setStyle("");
-                }
-            }
-        });
-
-        instructionTable.refresh();
-    }
-
-
-
-    public void highlightByVariable(String variable) {
-        this.variableToHighlight = variable;
-        instructionTable.refresh();
-    }
-
-
-    public void clearHighlight() {
-        this.labelToHighlight = null;
+        this.labelToHighlight = label;
         this.variableToHighlight = null;
         initRowFactory();
         instructionTable.refresh();
     }
 
+    public void highlightByVariable(String variable) {
+        this.variableToHighlight = variable;
+        this.labelToHighlight = null;
+        initRowFactory();
+        instructionTable.refresh();
+    }
+
+    public void clearHighlight(boolean enableAnimation) {
+        this.labelToHighlight = null;
+        this.variableToHighlight = null;
+        this.enableLoadingAnimation = enableAnimation;
+        initRowFactory();
+        instructionTable.refresh();
+    }
 
     public String showChoicePopup(List<String> choices, String title) throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/gui/highlightSelectionPopup/highlight_choice_popup.fxml"));
@@ -101,9 +101,4 @@ public class HighlightAction {
 
         return controller.getSelectedChoice();
     }
-
-
-
-
-
 }

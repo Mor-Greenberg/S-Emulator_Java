@@ -64,9 +64,8 @@ public class ExecutionRunner {
                 }))
                 .forEach(entry -> System.out.println(entry.getKey().getRepresentation() + " = " + entry.getValue()));
 
-        int sumCycles = executor.getInstructionsActivated().stream()
-                .mapToInt(Instruction::getCycles)
-                .sum();
+        int sumCycles=program.calculateCycles();
+
         System.out.println("Number of cycles: " + sumCycles);
 
         RunHistoryEntry entry = new RunHistoryEntry(runCounter++, degree,

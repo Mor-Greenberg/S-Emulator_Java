@@ -29,6 +29,11 @@ public class Utils {
         alert.setContentText(message);
         alert.showAndWait();
     }
+    public static void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
     public static String toHex(Color color) {
         int r = (int) (color.getRed() * 255);
         int g = (int) (color.getGreen() * 255);

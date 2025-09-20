@@ -1,7 +1,13 @@
 package gui.instructionTable;
 
+import javafx.animation.FadeTransition;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.scene.Node;
+import javafx.scene.control.TableRow;
+import javafx.util.Duration;
+import logic.instruction.Instruction;
+import logic.label.FixedLabel;
 
 import java.util.Arrays;
 import java.util.List;
@@ -55,6 +61,9 @@ public class InstructionRow {
                 .distinct()
                 .collect(Collectors.toList());
     }
+
+
+
 
 }
 

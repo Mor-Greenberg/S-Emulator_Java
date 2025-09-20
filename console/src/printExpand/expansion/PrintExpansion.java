@@ -5,6 +5,8 @@ import logic.instruction.Instruction;
 import logic.label.FixedLabel;
 import logic.program.Program;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class PrintExpansion {
@@ -65,5 +67,18 @@ public class PrintExpansion {
             System.out.println(line);
         }
     }
+    public static List<AbstractInstruction> getInstructionHistoryChain(AbstractInstruction instruction) {
+        List<AbstractInstruction> history = new ArrayList<>();
+        AbstractInstruction current = instruction;
+        while (current != null) {
+            history.add(current);
+            current = current.getOrigin();
+        }
+        Collections.reverse(history);
+        return history;
+    }
+
+
+
 
 }
