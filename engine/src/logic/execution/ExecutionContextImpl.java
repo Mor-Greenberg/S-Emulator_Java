@@ -60,6 +60,11 @@ public class ExecutionContextImpl implements ExecutionContext {
     public void addActivetedInstruction(Instruction instruction) {
         activetedInstructions.add(instruction);
     }
+    @Override
+    public Map<Variable, Long> getVariableState() {
+        return variableState;
+    }
+
 
 
 }

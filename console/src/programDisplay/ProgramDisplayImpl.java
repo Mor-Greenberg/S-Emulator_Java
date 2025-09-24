@@ -108,7 +108,6 @@ public class ProgramDisplayImpl {
         if (controller != null) {
             Platform.runLater(() -> controller.printInstructions(instructions));
         } else {
-            System.out.println("⚠️ controller is null — falling back to console output");
             printInstructionsToConsole(instructions);
         }
     }

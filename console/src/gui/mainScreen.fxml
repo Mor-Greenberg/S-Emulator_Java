@@ -58,16 +58,16 @@
                         <TableColumn fx:id="colCycles" prefWidth="65.0" text="Cycles" />
                     </columns>
                   </TableView>
-                  <VBox fx:id="hboxMainTableAndDebugger" prefHeight="197.0" prefWidth="226.0">
+                  <VBox fx:id="vboxMainTableAndDebugger" prefHeight="197.0" prefWidth="226.0" spacing="30.0">
                      <children>
-                        <VBox fx:id="vboxDebuggerArea" prefHeight="115.0" prefWidth="242.0">
+                        <VBox fx:id="vboxDebuggerArea" prefHeight="190.0" prefWidth="226.0">
                            <children>
                               <Label alignment="CENTER" prefHeight="17.0" prefWidth="228.0" style="-fx-background-color: IndianRed;" text="Debugger\Execution ">
                                  <font>
                                     <Font name="System Bold" size="12.0" />
                                  </font>
                               </Label>
-                              <GridPane prefHeight="114.0" prefWidth="255.0">
+                              <GridPane hgap="5.0" prefHeight="94.0" prefWidth="226.0" vgap="5.0">
                                 <columnConstraints>
                                   <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                                   <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -78,30 +78,22 @@
                                   <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                 </rowConstraints>
                                  <children>
-                                    <Button fx:id="startRegularButton" mnemonicParsing="false" onAction="#startExecution" prefHeight="25.0" prefWidth="229.0" text="Regular Execution" />
+                                    <Button fx:id="startRegularButton" mnemonicParsing="false" onAction="#startExecution" prefHeight="39.0" prefWidth="118.0" text="Regular Execution" />
                                     <Button fx:id="stopButton" mnemonicParsing="false" onAction="#stopExecution" text="Stop" GridPane.rowIndex="1" />
-                                    <Button fx:id="stepOverButton" mnemonicParsing="false" text="step over" GridPane.rowIndex="2" />
+                                    <Button fx:id="stepOverButton" mnemonicParsing="false" onAction="#stepOverExecution" text="step over" GridPane.rowIndex="2" />
                                     <Button fx:id="startDebugButton" mnemonicParsing="false" onAction="#startDebug" text="Debug Execution" GridPane.columnIndex="1" />
                                     <Button fx:id="resumeButton" mnemonicParsing="false" onAction="#resumeExecution" text="Resume" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                     <Button mnemonicParsing="false" text="Re-run" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                  </children>
                               </GridPane>
+                              <TableView fx:id="variablesTable" prefHeight="99.0" prefWidth="226.0">
+                                <columns>
+                                  <TableColumn fx:id="variableNameCol" prefWidth="110.0" text="Variable" />
+                                  <TableColumn fx:id="variableValueCol" prefWidth="120.0" text="Value" />
+                                </columns>
+                              </TableView>
                            </children>
                         </VBox>
-                        <HBox prefHeight="100.0" prefWidth="200.0">
-                           <children>
-                              <VBox prefHeight="200.0" prefWidth="100.0" style="-fx-border-color: grey;">
-                                 <children>
-                                    <Label alignment="CENTER" prefHeight="17.0" prefWidth="100.0" style="-fx-background-color: LightPink;" text="Variables" />
-                                 </children>
-                              </VBox>
-                              <VBox prefHeight="91.0" prefWidth="128.0" style="-fx-border-color: grey;">
-                                 <children>
-                                    <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="17.0" prefWidth="130.0" style="-fx-background-color: LightSalmon;" text="Execution Inputs" />
-                                 </children>
-                              </VBox>
-                           </children>
-                        </HBox>
                      </children>
                   </VBox>
                </children>
@@ -109,9 +101,9 @@
             <HBox prefHeight="55.0" prefWidth="610.0">
                <children>
                   <Label fx:id="summaryLabel" prefHeight="17.0" prefWidth="381.0" text="Summary will appear here" textFill="#fb09f6" />
-                  <VBox prefHeight="41.0" prefWidth="234.0" style="-fx-border-color: grey;">
+                  <VBox prefHeight="25.0" prefWidth="227.0" style="-fx-border-color: grey;">
                      <children>
-                        <Label prefHeight="17.0" prefWidth="234.0" style="-fx-background-color: MediumVioletRed;" text="Cycles" />
+                        <Label fx:id="debugCycles" prefHeight="17.0" prefWidth="234.0" style="-fx-background-color: MediumVioletRed;" text="Cycles" />
                      </children>
                   </VBox>
                </children>

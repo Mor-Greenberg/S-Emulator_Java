@@ -18,4 +18,6 @@ public interface ExecutionContext {
      List<Instruction> getActivetedInstructions();
 
      void addActivetedInstruction(Instruction instruction);
+    Map<Variable, Long> getVariableState();
+
 }

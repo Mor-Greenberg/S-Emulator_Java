@@ -18,6 +18,7 @@ import java.util.Map;
 
 
 public class ShowStats {
+
     public static void presentStatistics(){
 
         VBox root = new VBox(15);
@@ -35,7 +36,8 @@ public class ShowStats {
             runBox.setPadding(new Insets(10));
             runBox.setStyle("-fx-background-color: lavender; -fx-background-radius: 10;");
 
-            Label runTitle = new Label("Run #" + entry.getRunNumber());
+            String mode = entry.isDebug() ? "Debug" : "Regular";
+            Label runTitle = new Label("Run #" + entry.getRunNumber() + " (" + mode + ")");
             runTitle.setFont(Font.font("System", FontWeight.BOLD, 14));
 
             Label degree = new Label("Expansion Degree: " + entry.getExpansionDegree());

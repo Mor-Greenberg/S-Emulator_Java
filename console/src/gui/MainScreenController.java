@@ -5,10 +5,11 @@ import gui.highlightSelectionPopup.HighlightChoiceListener;
 import gui.highlightSelectionPopup.HighlightSelectionController;
 import gui.instructionTable.ExpandedTable;
 import gui.showStatus.Status;
+import gui.variablesTable.VariableRow;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.layout.Region;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -28,6 +29,7 @@ import javafx.stage.FileChooser;
 import javafx.util.Duration;
 
 import logic.Variable.Variable;
+import logic.execution.ExecutionContext;
 import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
 import logic.label.FixedLabel;
@@ -44,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 
 import static gui.instructionTable.InstructionRow.*;
-import static gui.showStatus.Status.animateStatusButton;
 import static gui.showStatus.Status.showVariablesPopup;
 import static gui.stats.ShowStats.presentStatistics;
 import static printExpand.expansion.PrintExpansion.getInstructionHistoryChain;
@@ -77,17 +78,39 @@ public class MainScreenController {
     @FXML private Button currMaxDegreeButton;
     @FXML private Button expandButton;
     private final ExpandedTable expandedTable = new ExpandedTable();
+    @FXML
+    private TableView<VariableRow> variablesTable;
+
+    @FXML
+    private TableColumn<VariableRow, String> variableNameCol;
+
+    @FXML
+    private TableColumn<VariableRow, Number> variableValueCol;
+
+    private static MainScreenController instance;
+
+    public MainScreenController() {
+        instance = this;
+    }
+
+    public static MainScreenController getInstance() {
+        return instance;
+    }
+
 
     @FXML
     private VBox historyContainer;
 
-    public List<Instruction> originalInstructions;
-
+    public List<Instruction> originalInstructions = java.util.Collections.emptyList();
+    public void setOriginalInstructions(List<Instruction> list) {
+        this.originalInstructions = (list != null) ? list : java.util.Collections.emptyList();
+    }
     private ObservableList<InstructionRow> instructionData = FXCollections.observableArrayList();
 
     @FXML private ToggleButton animationToggleButton;
 
     private boolean enableAnimation = true; // set to false to skip animation
+
 
     @FXML
     public void initialize() {
@@ -105,7 +128,13 @@ public class MainScreenController {
                 return;
             }
 
-            Instruction matchedInstruction = findInstructionFromRow(newRow,originalInstructions);
+            // 🛡️ הגנה: אם אין לנו מקור, אין על מה למפות
+            if (originalInstructions == null || originalInstructions.isEmpty()) {
+                historyContainer.getChildren().clear();
+                return;
+            }
+
+            Instruction matchedInstruction = findInstructionFromRow(newRow, originalInstructions);
             if (matchedInstruction instanceof AbstractInstruction absInstr) {
                 List<AbstractInstruction> history = getInstructionHistoryChain(absInstr);
                 TableView<AbstractInstruction> historyTable = expandedTable.buildInstructionTableFrom(history);
@@ -114,6 +143,10 @@ public class MainScreenController {
                 historyContainer.getChildren().clear();
             }
         });
+
+        variableNameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+        variableValueCol.setCellValueFactory(new PropertyValueFactory<>("value"));
+
     }
 
     @FXML
@@ -180,22 +213,46 @@ public class MainScreenController {
         }
         ExecutionRunner.runProgram(loadedProgram, programDisplay);
     }
+    @FXML
+    private void stepOverExecution(ActionEvent e) {
+        ExecutionRunner.stepOver();
+        updateVariablesView();
+        ExecutionRunner.highlightCurrentInstruction(ExecutionRunner.getCurrentIndex(),instructionTable);
+    }
+
 
 
     @FXML
-    private void stopExecution(ActionEvent event) {
-        System.out.println("Stop Execution");
+    private void stopExecution(ActionEvent e) {
+        if (loadedProgram == null) {
+            showError("No program loaded.");
+            return;
+        }
+        ExecutionRunner.stop();
+    }
+
+
+    @FXML
+    private void startDebug(ActionEvent e) {
+        if (loadedProgram == null) {
+            showError("No program loaded.");
+            return;
+        }
+        ExecutionRunner.startDebug(loadedProgram);
+        updateVariablesView();
     }
 
     @FXML
-    private void startDebug(ActionEvent event) {
-        System.out.println("Start Debug Execution");
+    private void resumeExecution(ActionEvent e) {
+        if (loadedProgram == null) {
+            showError("No program loaded.");
+            return;
+        }
+        ExecutionRunner.resume();
+        updateVariablesView();
     }
 
-    @FXML
-    private void resumeExecution(ActionEvent event) {
-        System.out.println("Resume Execution");
-    }
+
 
     @FXML
     private void toggleAnimations(ActionEvent event) {
@@ -209,6 +266,7 @@ public class MainScreenController {
 
 
     public void printInstructions(List<Instruction> instructions) {
+
         ObservableList<InstructionRow> rows = FXCollections.observableArrayList();
 
         int counter = 1;
@@ -228,6 +286,7 @@ public class MainScreenController {
             int cycles = instr.getCycles();
 
             rows.add(new InstructionRow(counter++, type, label, command, cycles));
+
         }
         this.originalInstructions = instructions;
         instructionTable.setItems(rows);
@@ -235,6 +294,10 @@ public class MainScreenController {
     }
     @FXML
     void onHighlightSelectionClicked() throws IOException {
+        if (loadedProgram == null) {
+            showError("No program loaded.");
+            return;
+        }
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/gui/highlightSelectionPopup/highlight_selection_popup.fxml"));
         Parent root = loader.load();
 
@@ -282,38 +345,49 @@ public class MainScreenController {
     }
     @FXML
     void onShowStatusClicked() {
-        Map<Variable, Long> allVariables = ExecutionRunner.getExecutionContextMap();
-        if (enableAnimation) {
-            Status.animateStatusButton(showStatusButton, allVariables);
-        }
-        else {
-            showVariablesPopup(allVariables);
+        if (loadedProgram == null) {
+            showError("No program loaded.");
+            return;
         }
 
+        Map<Variable, Long> allVariables;
+
+        if (ExecutionRunner.isDebugMode()) {
+            // בריצת דיבאג – ניקח ישירות את ה־state מתוך ה־debugContext
+            allVariables = ExecutionRunner.getDebugContext().getVariableState();
+        } else {
+            // בריצה רגילה – מה־map האחרון ששמרנו
+            allVariables = ExecutionRunner.getExecutionContextMap();
+        }
+
+        if (enableAnimation) {
+            Status.animateStatusButton(showStatusButton, allVariables);
+        } else {
+            showVariablesPopup(allVariables);
+        }
     }
+
 
     @FXML
     private void onShowStatisticsClicked() {
-        if (loadedProgram==null) {
-            showAlert("XML is not loaded.");
+        if (loadedProgram == null) {
+            showError("No program loaded.");
             return;
         }
         presentStatistics();
     }
     @FXML
-    private void onExpandButton() // TODO
-    {
-        if (loadedProgram==null) {
-            showAlert("XML is not loaded.");
+    private void onExpandButton() {
+        if (loadedProgram == null) {
+            showError("No program loaded.");
             return;
         }
         Expand.expandAction(loadedProgram, programDisplay);
-
     }
     @FXML
     private void onCurrMaxDegreeButton() {
         int current = ExecutionRunner.getCurrentDegree();
-        int max = loadedProgram.calculateMaxDegree(); // אם יש לך פונקציה כזו
+        int max = loadedProgram.calculateMaxDegree();
 
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Expansion Degree Info");
@@ -321,6 +395,45 @@ public class MainScreenController {
         alert.setContentText("Current Degree: " + current + "\nMax Degree: " + max);
         alert.showAndWait();
     }
+
+
+    void updateVariablesView() {
+        Map<Variable, Long> vars = ExecutionRunner.getDebugContext().getVariableState();
+
+        ObservableList<VariableRow> rows = FXCollections.observableArrayList();
+        vars.entrySet().stream()
+                .sorted(Comparator.comparing(e -> e.getKey().getRepresentation()))
+                .forEach(entry -> rows.add(
+                        new VariableRow(entry.getKey().getRepresentation(), entry.getValue())
+                ));
+
+        variablesTable.setItems(rows);
+    }
+
+
+    public void highlightCurrentInstruction(int index) {
+        if (index < 0 || index >= instructionTable.getItems().size()) return;
+        instructionTable.getSelectionModel().clearAndSelect(index);
+        instructionTable.scrollTo(index);
+        instructionTable.requestFocus();
+    }
+    public void clearInstructionTable() {
+        instructionTable.getItems().clear();
+    }
+
+    public void addInstructionRow(InstructionRow row) {
+        instructionTable.getItems().add(row);
+    }
+    @FXML
+    private Label debugCycles;
+
+    public void updateCyclesView(int cycles) {
+        debugCycles.setText("Cycles: " + cycles);
+
+        List<Instruction> instructions = loadedProgram.getActiveInstructions(); // או source אחר
+        summaryLabel.setText(generateSummary(instructions));
+    }
+
 
 
 }

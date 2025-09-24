@@ -10,13 +10,17 @@ public class RunHistoryEntry {
     private final Map<Variable, Long> inputs;
     private final long resultY;
     private final int totalCycles;
+    public final boolean isDebug;
 
-    public RunHistoryEntry(int runNumber, int expansionDegree, Map<Variable, Long> inputs, long resultY, int totalCycles) {
+
+    public RunHistoryEntry(int runNumber, int expansionDegree, Map<Variable, Long> inputs, long resultY, int totalCycles, boolean isDebug) {
         this.runNumber = runNumber;
         this.expansionDegree = expansionDegree;
         this.inputs = new HashMap<>(inputs);
         this.resultY = resultY;
         this.totalCycles = totalCycles;
+        this.isDebug = isDebug;
+
     }
 
     public int getRunNumber() {
@@ -37,5 +41,9 @@ public class RunHistoryEntry {
 
     public int getTotalCycles() {
         return totalCycles;
+    }
+
+    public boolean isDebug() {
+        return isDebug;
     }
 }

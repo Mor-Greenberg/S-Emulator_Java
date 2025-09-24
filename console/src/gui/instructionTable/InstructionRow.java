@@ -39,6 +39,7 @@ public class InstructionRow {
 
 
 
+
     public static List<String> getAllLabels(List<InstructionRow> rows) {
         return rows.stream()
                 .map(InstructionRow::getLabel)
@@ -77,5 +78,20 @@ public class InstructionRow {
                 .findFirst()
                 .orElse(null);
     }
+
+    private static List<Instruction> originalInstructions;
+
+    public static void setOriginalInstructions(List<Instruction> instructions) {
+        originalInstructions = instructions;
+    }
+
+    public static List<Instruction> getOriginalInstructions() {
+        return originalInstructions;
+    }
+
+    public SimpleIntegerProperty numberProperty() {
+        return number;
+    }
+
 }
 
