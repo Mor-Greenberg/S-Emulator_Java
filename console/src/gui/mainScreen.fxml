@@ -36,8 +36,8 @@
                <children>
                   <Button mnemonicParsing="false" text="Program\function selector" />
                   <Button mnemonicParsing="false" text="Collapse" />
-                  <Button mnemonicParsing="false" text="Current / Maximum degree" />
-                  <Button mnemonicParsing="false" text="Expand" />
+                  <Button fx:id="currMaxDegreeButton" mnemonicParsing="false" onAction="#onCurrMaxDegreeButton" text="Current / Maximum degree" />
+                  <Button fx:id="expandButton" mnemonicParsing="false" onAction="#onExpandButton" text="Expand" />
                   <Button fx:id="highlightButton" onAction="#onHighlightSelectionClicked" text="Highlight selection" />
                </children>
             </HBox>

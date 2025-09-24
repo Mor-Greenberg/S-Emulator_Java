@@ -38,7 +38,7 @@ public class Utils {
         int r = (int) (color.getRed() * 255);
         int g = (int) (color.getGreen() * 255);
         int b = (int) (color.getBlue() * 255);
-        return String.format("#%02X%02X%02X", r, g, b);
+        return String.format("#%02X%02X%02X", g, r, b);
     }
     public static void animateProgressBar(double durationInSeconds, boolean enableLoadingAnimation,ProgressBar loadingProgressBar)
  {

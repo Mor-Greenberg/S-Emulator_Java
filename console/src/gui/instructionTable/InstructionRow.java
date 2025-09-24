@@ -61,9 +61,21 @@ public class InstructionRow {
                 .distinct()
                 .collect(Collectors.toList());
     }
+    public static Instruction findInstructionFromRow(InstructionRow row, List<Instruction> originalInstructions) {
+        return originalInstructions.stream()
+                .filter(instr -> {
+                    String type = instr.getType().toString();
+                    String label = (instr.getLabel() != null && !instr.getLabel().equals(FixedLabel.EMPTY)) ? instr.getLabel().toString() : "";
+                    String command = instr.commandDisplay();
+                    int cycles = instr.getCycles();
 
-
-
-
+                    return row.getType().equals(type)
+                            && row.getLabel().equals(label)
+                            && row.getCommand().equals(command)
+                            && row.getCycles() == cycles;
+                })
+                .findFirst()
+                .orElse(null);
+    }
 }
 

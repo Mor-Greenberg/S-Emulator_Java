@@ -33,6 +33,7 @@ import logic.instruction.Instruction;
 import logic.label.FixedLabel;
 import logic.program.Program;
 import logic.xml.XmlLoader;
+import printExpand.expansion.Expand;
 import programDisplay.ProgramDisplayImpl;
 
 import java.io.File;
@@ -42,15 +43,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import static gui.instructionTable.InstructionRow.getAllLabels;
-import static gui.instructionTable.InstructionRow.getAllVariables;
+import static gui.instructionTable.InstructionRow.*;
 import static gui.showStatus.Status.animateStatusButton;
 import static gui.showStatus.Status.showVariablesPopup;
 import static gui.stats.ShowStats.presentStatistics;
 import static printExpand.expansion.PrintExpansion.getInstructionHistoryChain;
 import static utils.Utils.*;
-
-
 
 public class MainScreenController {
 
@@ -76,15 +74,14 @@ public class MainScreenController {
     @FXML private TableColumn<InstructionRow, String> colCommand;
     @FXML private TableColumn<InstructionRow, Number> colCycles;
     @FXML private Label summaryLabel;
-
-
-
+    @FXML private Button currMaxDegreeButton;
+    @FXML private Button expandButton;
     private final ExpandedTable expandedTable = new ExpandedTable();
 
     @FXML
     private VBox historyContainer;
 
-    private List<Instruction> originalInstructions;
+    public List<Instruction> originalInstructions;
 
     private ObservableList<InstructionRow> instructionData = FXCollections.observableArrayList();
 
@@ -108,7 +105,7 @@ public class MainScreenController {
                 return;
             }
 
-            Instruction matchedInstruction = findInstructionFromRow(newRow);
+            Instruction matchedInstruction = findInstructionFromRow(newRow,originalInstructions);
             if (matchedInstruction instanceof AbstractInstruction absInstr) {
                 List<AbstractInstruction> history = getInstructionHistoryChain(absInstr);
                 TableView<AbstractInstruction> historyTable = expandedTable.buildInstructionTableFrom(history);
@@ -117,12 +114,7 @@ public class MainScreenController {
                 historyContainer.getChildren().clear();
             }
         });
-
-
-
     }
-
-
 
     @FXML
     private void loadFilePressed(ActionEvent event) {
@@ -186,12 +178,6 @@ public class MainScreenController {
             showError("No program loaded.");
             return;
         }
-
-        if (programDisplay == null) {
-            showError("Program display not initialized.");
-            return;
-        }
-
         ExecutionRunner.runProgram(loadedProgram, programDisplay);
     }
 
@@ -243,13 +229,9 @@ public class MainScreenController {
 
             rows.add(new InstructionRow(counter++, type, label, command, cycles));
         }
-
         this.originalInstructions = instructions;
-
         instructionTable.setItems(rows);
         summaryLabel.setText(generateSummary(instructions));
-
-
     }
     @FXML
     void onHighlightSelectionClicked() throws IOException {
@@ -310,38 +292,35 @@ public class MainScreenController {
 
     }
 
-
-
-
-
-    public Instruction findInstructionFromRow(InstructionRow row) {
-        return originalInstructions.stream()
-                .filter(instr -> {
-                    String type = instr.getType().toString();
-                    String label = (instr.getLabel() != null && !instr.getLabel().equals(FixedLabel.EMPTY)) ? instr.getLabel().toString() : "";
-                    String command = instr.commandDisplay();
-                    int cycles = instr.getCycles();
-
-                    return row.getType().equals(type)
-                            && row.getLabel().equals(label)
-                            && row.getCommand().equals(command)
-                            && row.getCycles() == cycles;
-                })
-                .findFirst()
-                .orElse(null);
-    }
     @FXML
     private void onShowStatisticsClicked() {
-
         if (loadedProgram==null) {
             showAlert("XML is not loaded.");
             return;
         }
         presentStatistics();
     }
+    @FXML
+    private void onExpandButton() // TODO
+    {
+        if (loadedProgram==null) {
+            showAlert("XML is not loaded.");
+            return;
+        }
+        Expand.expandAction(loadedProgram, programDisplay);
 
+    }
+    @FXML
+    private void onCurrMaxDegreeButton() {
+        int current = ExecutionRunner.getCurrentDegree();
+        int max = loadedProgram.calculateMaxDegree(); // אם יש לך פונקציה כזו
 
-
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Expansion Degree Info");
+        alert.setHeaderText("Current and Max Expansion Degree");
+        alert.setContentText("Current Degree: " + current + "\nMax Degree: " + max);
+        alert.showAndWait();
+    }
 
 
 }

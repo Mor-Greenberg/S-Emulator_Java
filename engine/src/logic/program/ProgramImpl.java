@@ -12,7 +12,6 @@ import logic.label.Label;
 
 import java.util.*;
 
-import static utils.Utils.showError;
 
 public class ProgramImpl implements Program {
     private final String name;

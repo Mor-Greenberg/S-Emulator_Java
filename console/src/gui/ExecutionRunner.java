@@ -17,10 +17,13 @@ import java.util.*;
 public class ExecutionRunner {
 
     private static Map<Variable, Long> lastVariableState = new HashMap<>();
-
-
+    private static int currentDegree=0;
     private static int runCounter = 1;
     private static final List<RunHistoryEntry> history = new ArrayList<>();
+
+    public static int getCurrentDegree() {
+        return currentDegree;
+    }
 
     public static void runProgram(Program program, ProgramDisplayImpl programDisplay) {
         if (program == null) {
@@ -28,11 +31,11 @@ public class ExecutionRunner {
             return;
         }
 
-        int degree = program.askForDegree();
+        currentDegree  = program.askForDegree();
 
         Map<Variable, Long> variableState = new HashMap<>();
         ExecutionContext context = new ExecutionContextImpl(variableState);
-        program.expandToDegree(degree, context);
+        program.expandToDegree(currentDegree , context);
         Program expandedProgram = program;
 
         HandleExecution handleExecution = new HandleExecution(expandedProgram);
@@ -44,7 +47,7 @@ public class ExecutionRunner {
         System.out.println("Instructions activated:");
         programDisplay.printInstructions(program.getActiveInstructions());
 
-        if (degree != 0) {
+        if (currentDegree  != 0) {
             System.out.println("Instructions expanded:");
             PrintExpansion expansion = new PrintExpansion(expandedProgram);
             AbstractInstruction.resetIdCounter();
@@ -68,7 +71,7 @@ public class ExecutionRunner {
 
         System.out.println("Number of cycles: " + sumCycles);
 
-        RunHistoryEntry entry = new RunHistoryEntry(runCounter++, degree,
+        RunHistoryEntry entry = new RunHistoryEntry(runCounter++, currentDegree ,
                 handleExecution.getInputsMap(), result, sumCycles);
         history.add(entry);
         lastVariableState = new HashMap<>(variableState);

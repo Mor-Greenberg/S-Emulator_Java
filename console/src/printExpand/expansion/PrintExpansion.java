@@ -77,6 +77,23 @@ public class PrintExpansion {
         Collections.reverse(history);
         return history;
     }
+    public List<AbstractInstruction> getExpandedInstructions() {
+        List<Instruction> instructions = program.getActiveInstructions();
+        List<AbstractInstruction> result = new ArrayList<>();
+
+        int nextId = 1;
+        for (Instruction instr : instructions) {
+            if (instr instanceof AbstractInstruction absInstr && absInstr.getUniqueId() == 0) {
+                absInstr.setUniqueId(nextId++);
+            }
+            if (instr instanceof AbstractInstruction abs) {
+                result.add(abs);
+            }
+        }
+        return result;
+    }
+
+
 
 
 
