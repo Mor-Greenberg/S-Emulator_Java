@@ -52,5 +52,17 @@ public class ZeroVariableInstruction extends AbstractInstruction {
         return Arrays.asList(dec, jnz);
     }
 
+    @Override
+    public AbstractInstruction clone() {
+        return new ZeroVariableInstruction(getVariable(),getLabel());
+    }
+
+    @Override
+    public void replaceVariables(java.util.Map<String, Variable> variableMap) {
+        String varName = getVariable().getRepresentation();
+        if (variableMap.containsKey(varName)) {
+            this.variable = variableMap.get(varName);
+        }
+    }
 
 }

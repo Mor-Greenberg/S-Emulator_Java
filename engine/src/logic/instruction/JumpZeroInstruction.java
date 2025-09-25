@@ -8,6 +8,7 @@ import logic.label.Label;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class JumpZeroInstruction extends AbstractInstruction {
     private Label JZLabel;
@@ -75,6 +76,31 @@ public class JumpZeroInstruction extends AbstractInstruction {
     }
     public Label getTargetLabel() {
         return JZLabel;
+    }
+
+    @Override
+    public AbstractInstruction clone() {
+        return new JumpZeroInstruction(getVariable(), getTargetLabel(),getLabel());
+    }
+
+    @Override
+    public void replaceVariables(Map<String, Variable> variableMap) {
+        String varName = getVariable().getRepresentation();
+        if (variableMap.containsKey(varName)) {
+            this.setVariable(variableMap.get(varName));
+        }
+    }
+
+    @Override
+    public void replaceJumpLabel(Label from, Label to) {
+        if (this.JZLabel.equals(from)) {
+            this.JZLabel = to;
+        }
+    }
+
+    @Override
+    public boolean jumpsTo(Label label) {
+        return this.JZLabel.equals(label);
     }
 
 

@@ -48,14 +48,14 @@ public class ExecutionRunner {
         return currentDegree;
     }
 
-    // ---------------- רגיל ----------------
     public static void runProgram(Program program, ProgramDisplayImpl programDisplay) {
 
 
-        currentDegree = program.askForDegree();
 
         Map<Variable, Long> variableState = new HashMap<>();
-        ExecutionContext context = new ExecutionContextImpl(variableState);
+        ExecutionContext context = new ExecutionContextImpl(variableState,program.getFunctionMap());
+        currentDegree = program.askForDegree(context);
+
         program.expandToDegree(currentDegree, context);
         Program expandedProgram = program;
 
@@ -94,10 +94,10 @@ public class ExecutionRunner {
         currentIndex = 0;
         executedCycles = 0;
 
-        currentDegree = program.askForDegree();
-        debugContext = new ExecutionContextImpl(new HashMap<>());
 
-        // 🟢 שמירה של HandleExecution לדיבאג
+        debugContext = new ExecutionContextImpl(new HashMap<>(),program.getFunctionMap());
+
+        currentDegree = program.askForDegree(debugContext);
         debugHandleExecution = new HandleExecution(program);
         debugHandleExecution.collectInputFromUserFX(program, debugContext);
 

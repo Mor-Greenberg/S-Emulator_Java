@@ -6,6 +6,7 @@ import logic.label.FixedLabel;
 import logic.label.Label;
 
 import java.util.List;
+import java.util.Map;
 
 public class NoOpInstruction extends AbstractInstruction {
 
@@ -31,4 +32,17 @@ public class NoOpInstruction extends AbstractInstruction {
         String output = variable.toString() +"<-" + variable.toString();
         return output;
     }
+    @Override
+    public AbstractInstruction clone() {
+        return new  NoOpInstruction(getVariable(),getLabel());
+    }
+    @Override
+    public void replaceVariables(Map<String, Variable> variableMap) {
+        String varName = getVariable().getRepresentation();
+        if (variableMap.containsKey(varName)) {
+            this.setVariable(variableMap.get(varName));
+        }
+    }
+
+
 }

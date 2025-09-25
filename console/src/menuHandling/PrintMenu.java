@@ -65,54 +65,54 @@ public class PrintMenu {
 //        }
 //        return true;
 //    }
-    private void loadXml(Scanner sc) {
-        System.out.println("Please enter full XML path:");
-        String path = sc.nextLine().replace("\"", "").trim();
+//    private void loadXml(Scanner sc) {
+//        System.out.println("Please enter full XML path:");
+//        String path = sc.nextLine().replace("\"", "").trim();
+//
+//        SProgram sProgram = XmlLoader.loadFromFile(path);
+//
+//        if (sProgram != null) {
+//            this.history.clear();
+//            this.runCounter = 1;
+//            AbstractInstruction.resetIdCounter();
+//            this.program = new XmlLoader().SprogramToProgram(sProgram);
+//            boolean validXML = XmlValidation.validateLabels(program.getInstructions());
+//            if(!validXML){
+//                System.out.println("Invalid label reference");
+//                return;
+//            }
+//
+//            System.out.println("XML loaded successfully!");
+//            xmlLoded = true;
+//        } else {
+//            System.out.println("Failed to load XML.");
+//        }
+//    }
 
-        SProgram sProgram = XmlLoader.loadFromFile(path);
-
-        if (sProgram != null) {
-            this.history.clear();
-            this.runCounter = 1;
-            AbstractInstruction.resetIdCounter();
-            this.program = new XmlLoader().SprogramToProgram(sProgram);
-            boolean validXML = XmlValidation.validateLabels(program.getInstructions());
-            if(!validXML){
-                System.out.println("Invalid label reference");
-                return;
-            }
-
-            System.out.println("XML loaded successfully!");
-            xmlLoded = true;
-        } else {
-            System.out.println("Failed to load XML.");
-        }
-    }
-
-    private void expandProgram(Program program, ProgramDisplayImpl display) {
-        if (!xmlLoded) {
-            System.out.println("XML is not loaded, returning");
-            return;
-        }
-
-        int maxDegree = program.calculateMaxDegree();
-        int chosenDegree = program.askForDegree();
-
-        if (chosenDegree == 0) {
-            display.printProgram(xmlLoded);
-            return;
-        }
-
-        Map<Variable, Long> variableState = program.getVars().stream()
-                .collect(Collectors.toMap(v -> v, v -> 0L));
-
-        ExecutionContext context = new ExecutionContextImpl(variableState);
-
-        PrintExpansion pE=new PrintExpansion(program);
-
-        program.expandToDegree(chosenDegree, context);
-        pE.printProgramWithOrigins(program);
-    }
+//    private void expandProgram(Program program, ProgramDisplayImpl display) {
+//        if (!xmlLoded) {
+//            System.out.println("XML is not loaded, returning");
+//            return;
+//        }
+//
+//        int maxDegree = program.calculateMaxDegree();
+//        int chosenDegree = program.askForDegree();
+//
+//        if (chosenDegree == 0) {
+//            display.printProgram(xmlLoded);
+//            return;
+//        }
+//
+//        Map<Variable, Long> variableState = program.getVars().stream()
+//                .collect(Collectors.toMap(v -> v, v -> 0L));
+//
+//        ExecutionContext context = new ExecutionContextImpl(variableState,program.getFunctionMap());
+//
+//        PrintExpansion pE=new PrintExpansion(program);
+//
+//        program.expandToDegree(chosenDegree, context);
+//        pE.printProgramWithOrigins(program);
+//    }
 
 
 

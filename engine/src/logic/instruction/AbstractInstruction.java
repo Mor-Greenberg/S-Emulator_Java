@@ -6,11 +6,12 @@ import logic.label.FixedLabel;
 import logic.label.Label;
 
 import java.util.List;
+import java.util.Map;
 
 public abstract class AbstractInstruction implements Instruction {
     private final InstructionData instructionData;
     private Label label;
-    private final Variable variable;
+    Variable variable;
     protected InstructionType type;
     protected int degree;
     protected AbstractInstruction origin = null;
@@ -32,6 +33,9 @@ public abstract class AbstractInstruction implements Instruction {
     }
 
 
+
+    @Override
+    public abstract AbstractInstruction clone();
 
     @Override
     public String getName() {
@@ -71,7 +75,6 @@ public abstract class AbstractInstruction implements Instruction {
     public String commandDisplay(){
        return "";
     }
-    @Override
     public int getDegree() {
         return degree;
     }
@@ -103,6 +106,23 @@ public abstract class AbstractInstruction implements Instruction {
     @Override
     public void  setUniqueId (int id){
         this.uniqueId=id;
+    }
+
+    @Override
+    public void replaceVariables(Map<String, Variable> variableMap) {
+    }
+
+    @Override
+    public boolean jumpsTo(Label label) {
+        return false;
+    }
+
+    @Override
+    public void replaceJumpLabel(Label from, Label to) {
+    }
+
+    public void setVariable(Variable variable) {
+        this.variable = variable;
     }
 
 

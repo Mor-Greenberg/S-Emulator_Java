@@ -7,8 +7,12 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
+import logic.execution.ExecutionContext;
+import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
 import logic.instruction.InstructionType;
+import logic.instruction.QuoteInstruction;
+import logic.program.Program;
 
 
 import java.util.List;
@@ -89,6 +93,28 @@ public class Utils {
                 + " | cycles: " + cyclesCount;
     }
 
+
+    public static int computeProgramDegree(Program program, ExecutionContext context) {
+        int maxDegree = 0;
+
+        for (Instruction instr : program.getInstructions()) {
+            if (instr instanceof QuoteInstruction q) {
+                q.computeDegree(context);
+                maxDegree = Math.max(maxDegree, q.getDegree());
+
+                // מחשבים גם את הדרגה של התוכנית המצוטטת
+                Program quoted = context.getProgramMap(q.getQuotedProgramName());
+                if (quoted != null) {
+                    maxDegree = Math.max(maxDegree, computeProgramDegree(quoted, context));
+                }
+            }
+            else if (instr instanceof AbstractInstruction ai) {
+                maxDegree = Math.max(maxDegree, ai.getDegree());
+            }
+        }
+
+        return maxDegree;
+    }
 
 
 

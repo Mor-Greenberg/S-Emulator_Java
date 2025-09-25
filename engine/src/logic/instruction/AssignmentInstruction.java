@@ -7,10 +7,11 @@ import logic.label.Label;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class AssignmentInstruction extends AbstractInstruction {
-    private final Variable destination; // ← V
-    private final Variable source;      // ← V′
+    private Variable destination; // ← V
+    private Variable source;      // ← V′
 
     public AssignmentInstruction(Variable destination, Variable source) {
         super(InstructionData.ASSIGNMENT,source,InstructionType.S);
@@ -104,6 +105,22 @@ public class AssignmentInstruction extends AbstractInstruction {
 
         return result;
     }
+    @Override
+    public AbstractInstruction clone() {
+        return new AssignmentInstruction(this.getLabel(), this.destination, this.source);
+    }
+
+
+    @Override
+    public void replaceVariables(Map<String, Variable> variableMap) {
+        if (variableMap.containsKey(destination.toString())) {
+            this.destination = variableMap.get(destination.toString());
+        }
+        if (variableMap.containsKey(source.toString())) {
+            this.source = variableMap.get(source.toString());
+        }
+    }
+
 
 
 

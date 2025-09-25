@@ -51,6 +51,10 @@ public class ProgramExecutorImpl implements ProgramExecutor {
     public Map<Variable, Long> getVariableState(){
         return variableState;
     }
+    @Override
+    public Program getProgram(){
+        return  program;
+    }
 
 
 

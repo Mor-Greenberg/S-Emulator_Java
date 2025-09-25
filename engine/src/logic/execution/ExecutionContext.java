@@ -3,6 +3,7 @@ package logic.execution;
 import logic.Variable.Variable;
 import logic.instruction.Instruction;
 import logic.label.Label;
+import logic.program.Program;
 
 import java.util.HashMap;
 import java.util.List;
@@ -14,10 +15,9 @@ public interface ExecutionContext {
     void updateVariable(Variable v, long value);
      Label findAvailableLabel();
      Variable findAvailableVariable();
-
-     List<Instruction> getActivetedInstructions();
-
-     void addActivetedInstruction(Instruction instruction);
     Map<Variable, Long> getVariableState();
 
+    Program getProgramMap(String functionName);
+
+    void setFunctionMap(Map<String, Program> functionMap);
 }

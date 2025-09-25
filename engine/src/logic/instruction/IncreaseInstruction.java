@@ -31,4 +31,25 @@ public class IncreaseInstruction extends AbstractInstruction {
         String output = variable.toString() +"<-" + variable.toString() + "+1";
         return output;
     }
+    @Override
+    public AbstractInstruction clone() {
+        return new IncreaseInstruction(this.getVariable(),this.getLabel());
+    }
+    @Override
+    public void replaceVariables(java.util.Map<String, Variable> variableMap) {
+        String varName = getVariable().getRepresentation();
+        if (variableMap.containsKey(varName)) {
+            Variable newVar = variableMap.get(varName);
+            IncreaseInstruction replaced = new IncreaseInstruction(newVar, this.getLabel());
+            replaced.setDegree(this.getDegree());
+            replaced.setUniqueId(this.getUniqueId());
+            replaced.setOrigin(this.getOrigin());
+
+            this.setLabel(replaced.getLabel());
+            this.type = replaced.getType();
+
+        }
+    }
+
+
 }

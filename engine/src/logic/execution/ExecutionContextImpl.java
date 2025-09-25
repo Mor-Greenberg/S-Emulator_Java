@@ -6,6 +6,7 @@ import logic.Variable.VariableType;
 import logic.instruction.Instruction;
 import logic.label.Label;
 import logic.label.LabelImpl;
+import logic.program.Program;
 
 import java.util.*;
 
@@ -13,10 +14,17 @@ public class ExecutionContextImpl implements ExecutionContext {
     public Map<Variable, Long> variableState;
     public Set<Label> labels;
     public List<Instruction> activetedInstructions;
-    public ExecutionContextImpl(Map<Variable, Long> variableState) {
+    public Map<String, Program> programMap;
+    public ExecutionContextImpl(Map<Variable, Long> variableState,Map<String,Program> programMap) {
         this.variableState = variableState;
         this.labels =  new HashSet<>();
         this.activetedInstructions = new ArrayList<>();
+        this.programMap = programMap;
+
+    }
+
+    public Program getProgramMap(String name) {
+        return programMap.get(name);
     }
 
 
@@ -53,18 +61,13 @@ public class ExecutionContextImpl implements ExecutionContext {
         return candidate;
     }
     @Override
-    public List<Instruction> getActivetedInstructions() {
-        return activetedInstructions;
-    }
-    @Override
-    public void addActivetedInstruction(Instruction instruction) {
-        activetedInstructions.add(instruction);
-    }
-    @Override
     public Map<Variable, Long> getVariableState() {
         return variableState;
     }
 
 
+    public void setFunctionMap(Map<String, Program> functionMap) {
+        this.programMap = functionMap;
+    }
 
 }

@@ -18,6 +18,7 @@ import logic.execution.ExecutionContextImpl;
 import logic.instruction.AbstractInstruction;
 import logic.program.Program;
 import programDisplay.ProgramDisplayImpl;
+import utils.Utils;
 
 
 import java.util.List;
@@ -27,33 +28,62 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Expand {
-    public static void expandAction (Program loadedProgram, ProgramDisplayImpl display) {
-        int maxDegree = loadedProgram.calculateMaxDegree();
-        List<Integer> choices = IntStream.rangeClosed(0, maxDegree)
-                .boxed()
-                .collect(Collectors.toList());
+//    public static void expandAction (Program loadedProgram, ProgramDisplayImpl display) {
+//        int maxDegree = loadedProgram.calculateMaxDegree();
+//        List<Integer> choices = IntStream.rangeClosed(0, maxDegree)
+//                .boxed()
+//                .collect(Collectors.toList());
+//
+//        ChoiceDialog<Integer> dialog = new ChoiceDialog<>(0, choices);
+//        dialog.setTitle("Choose Expansion Degree");
+//        dialog.setHeaderText("Select the expansion degree (0–"+maxDegree +")");
+//        dialog.setContentText("Degree:");
+//
+//        Optional<Integer> result = dialog.showAndWait();
+//        if(result.isEmpty())return;
+//
+//        int chosenDegree = result.get();
+//
+//
+//
+//        Map<Variable, Long> variableState = loadedProgram.getVars().stream()
+//                .collect(Collectors.toMap(v -> v, v -> 0L));
+//
+//        ExecutionContext context = new ExecutionContextImpl(variableState, loadedProgram.getFunctionMap());
+//
+//        loadedProgram.expandToDegree(chosenDegree,context);
+//
+//        showExpandedProgramPopup(loadedProgram);
+//    }
+public static void expandAction(Program loadedProgram, ProgramDisplayImpl display) {
+    // קודם מכינים Context ריק עם פונקציות
+    Map<Variable, Long> variableState = loadedProgram.getVars().stream()
+            .collect(Collectors.toMap(v -> v, v -> 0L));
+    ExecutionContext context = new ExecutionContextImpl(variableState, loadedProgram.getFunctionMap());
 
-        ChoiceDialog<Integer> dialog = new ChoiceDialog<>(0, choices);
-        dialog.setTitle("Choose Expansion Degree");
-        dialog.setHeaderText("Select the expansion degree (0–"+maxDegree +")");
-        dialog.setContentText("Degree:");
+    // עכשיו מחשבים דרגה מקסימלית עם רקורסיה אמיתית
+    int maxDegree = Utils.computeProgramDegree(loadedProgram, context);
 
-        Optional<Integer> result = dialog.showAndWait();
-        if(result.isEmpty())return;
+    List<Integer> choices = IntStream.rangeClosed(0, maxDegree)
+            .boxed()
+            .collect(Collectors.toList());
 
-        int chosenDegree = result.get();
+    ChoiceDialog<Integer> dialog = new ChoiceDialog<>(0, choices);
+    dialog.setTitle("Choose Expansion Degree");
+    dialog.setHeaderText("Select the expansion degree (0–" + maxDegree + ")");
+    dialog.setContentText("Degree:");
 
+    Optional<Integer> result = dialog.showAndWait();
+    if (result.isEmpty()) return;
 
-        Map<Variable, Long> variableState = loadedProgram.getVars().stream()
-                .collect(Collectors.toMap(v -> v, v -> 0L));
+    int chosenDegree = result.get();
 
-        ExecutionContext context = new ExecutionContextImpl(variableState);
+    // הרחבה בפועל
+    loadedProgram.expandToDegree(chosenDegree, context);
 
-        loadedProgram.expandToDegree(chosenDegree,context);
+    showExpandedProgramPopup(loadedProgram);
+}
 
-        // הצגת פופאפ עם טבלה
-        showExpandedProgramPopup(loadedProgram);
-    }
     private static void showExpandedProgramPopup(Program program) {
         Stage popup = new Stage();
         popup.setTitle("Expanded Program");

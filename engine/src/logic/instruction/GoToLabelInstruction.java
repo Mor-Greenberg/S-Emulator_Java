@@ -73,5 +73,42 @@ public class GoToLabelInstruction extends AbstractInstruction {
 
         return Arrays.asList(inc, jnz);
     }
+    @Override
+    public AbstractInstruction clone() {
+        return new GoToLabelInstruction(this.getVariable(), this.getGotoLabel(),this.getLabel());
+    }
+    @Override
+    public void replaceVariables(Map<String, Variable> variableMap) {
+        String varName = getVariable().getRepresentation();
+        if (variableMap.containsKey(varName)) {
+            Variable newVar = variableMap.get(varName);
+            GoToLabelInstruction replaced = new GoToLabelInstruction(newVar, this.goToLabel, this.getLabel());
+            replaced.setDegree(this.getDegree());
+            replaced.setUniqueId(this.getUniqueId());
+            replaced.setOrigin(this.getOrigin());
+
+            // נעדכן את כל השדות הנחוצים מתוך replaced לתוך this
+            this.setLabel(replaced.getLabel());
+            this.goToLabel = replaced.getGotoLabel();
+            this.type = replaced.getType();
+
+            // לא ניתן לעדכן את final variable - אבל זה בסדר, כי QuoteProcessor משתמש ב-clone
+        }
+    }
+
+
+    @Override
+    public boolean jumpsTo(Label label) {
+        return this.goToLabel.equals(label);
+    }
+
+    @Override
+    public void replaceJumpLabel(Label from, Label to) {
+        if (this.goToLabel.equals(from)) {
+            this.goToLabel = to;
+        }
+    }
+
+
 
 }

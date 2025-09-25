@@ -8,6 +8,7 @@ import logic.label.Label;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class JumpEqualConstantInstruction extends AbstractInstruction {
     private Label JEConstantLabel;
@@ -80,6 +81,31 @@ public class JumpEqualConstantInstruction extends AbstractInstruction {
 
         return result;
     }
+
+    @Override
+    public AbstractInstruction clone() {
+        return new JumpEqualConstantInstruction(this.getVariable(),this.getTargetLabel(),this.getLabel(),constantValue);
+    }
+    @Override
+    public void replaceVariables(Map<String, Variable> variableMap) {
+        String varName = getVariable().getRepresentation();
+        if (variableMap.containsKey(varName)) {
+            this.setVariable(variableMap.get(varName));
+        }
+    }
+    @Override
+    public void replaceJumpLabel(Label from, Label to) {
+        if (this.JEConstantLabel.equals(from)) {
+            this.JEConstantLabel = to;
+        }
+    }
+    @Override
+    public boolean jumpsTo(Label label) {
+        return this.JEConstantLabel.equals(label);
+    }
+
+
+
 
 
 }

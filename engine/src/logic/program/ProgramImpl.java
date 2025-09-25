@@ -8,7 +8,9 @@ import logic.execution.ExecutionContext;
 import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
 import logic.instruction.InstructionType;
+import logic.instruction.QuoteInstruction;
 import logic.label.Label;
+import utils.Utils;
 
 import java.util.*;
 
@@ -33,6 +35,16 @@ public class ProgramImpl implements Program {
     public List <AbstractInstruction> getExpandedInstructions(){
         return expandedInstructions;
     }
+    private Map<String, Program> functionMap = new HashMap<>();
+
+    public void setFunctionMap(Map<String, Program> functionMap) {
+        this.functionMap = functionMap;
+    }
+
+    public Map<String, Program> getFunctionMap() {
+        return functionMap;
+    }
+
 
     @Override
     public String getName() {
@@ -54,15 +66,22 @@ public class ProgramImpl implements Program {
         return false;
     }
 
-    @Override
-    public int calculateMaxDegree() {
+    public int calculateMaxDegree(ExecutionContext context) {
         int maxDegree = 0;
-        for (Instruction instruction : instructions) {
-            instruction.getDegree();
-            maxDegree = Math.max(maxDegree, instruction.getDegree());
+
+        for (Instruction instr : instructions) {
+            if (instr instanceof QuoteInstruction q) {
+                q.computeDegree(context);
+                maxDegree = Math.max(maxDegree, q.getDegree());
+            } else if (instr instanceof AbstractInstruction ai) {
+                maxDegree = Math.max(maxDegree, ai.getDegree());
+            }
         }
+
         return maxDegree;
     }
+
+
 
     @Override
     public int calculateCycles() {
@@ -119,7 +138,7 @@ public class ProgramImpl implements Program {
 
         for (Instruction inst : instructions) {
             if (inst instanceof AbstractInstruction abs) {
-                if (abs.getType() == InstructionType.S && abs.getDegree() < maxDegree) {
+                if (abs.getType() == InstructionType.S && abs.getDegree() <= maxDegree) {
                     List<AbstractInstruction> expandedList = abs.expand(context);
                     for (AbstractInstruction derived : expandedList) {
                         derived.setDegree(abs.getDegree() + 1);
@@ -129,6 +148,7 @@ public class ProgramImpl implements Program {
                 } else {
                     result.add(abs);
                 }
+
             } else {
                 throw new IllegalStateException("Instruction does not extend AbstractInstruction: " + inst.getClass());
             }
@@ -152,8 +172,9 @@ public class ProgramImpl implements Program {
         return false;
     }
 
-    public int askForDegree() {
-        int maxDegree = calculateMaxDegree();
+    public int askForDegree(ExecutionContext context) {
+        int maxDegree = Utils.computeProgramDegree(this, context);
+
         Dialog<Integer> dialog = new Dialog<>();
         dialog.setTitle("Choose Expansion Degree");
         dialog.setHeaderText("Select a degree between 0 and " + maxDegree);
@@ -172,7 +193,6 @@ public class ProgramImpl implements Program {
 
         dialog.getDialogPane().setContent(content);
 
-        // Convert result
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == okButtonType) {
                 return degreeSpinner.getValue();
@@ -181,7 +201,7 @@ public class ProgramImpl implements Program {
         });
 
         Optional<Integer> result = dialog.showAndWait();
-        return result.orElse(-1); // -1 means cancelled
+        return result.orElse(-1);
     }
 
 

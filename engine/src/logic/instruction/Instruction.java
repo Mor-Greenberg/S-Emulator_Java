@@ -3,11 +3,13 @@ package logic.instruction;
 import logic.Variable.Variable;
 import logic.execution.ExecutionContext;
 import logic.label.Label;
-import logic.program.Program;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.ToIntFunction;
 
 public interface Instruction {
+      int getDegree();
     String getName();
     Label execute(ExecutionContext context);
     int getCycles();
@@ -17,8 +19,14 @@ public interface Instruction {
     String commandDisplay();
      boolean hasOrigin();
      AbstractInstruction getOrigin();
-     int getDegree();
-     List<AbstractInstruction> expand(ExecutionContext context);
+
+    List<AbstractInstruction> expand(ExecutionContext context);
      int getUniqueId();
      void  setUniqueId (int id);
-    }
+     AbstractInstruction clone();
+
+    public void replaceVariables(Map<String, Variable> variableMap);
+    public boolean jumpsTo(Label label);
+    public void replaceJumpLabel(Label from, Label to);
+
+}

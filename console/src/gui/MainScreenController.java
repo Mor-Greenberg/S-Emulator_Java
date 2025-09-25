@@ -30,20 +30,25 @@ import javafx.util.Duration;
 
 import logic.Variable.Variable;
 import logic.execution.ExecutionContext;
+import logic.execution.ExecutionContextImpl;
 import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
 import logic.label.FixedLabel;
 import logic.program.Program;
 import logic.xml.XmlLoader;
+import logic.xml.XmlMapper;
 import printExpand.expansion.Expand;
 import programDisplay.ProgramDisplayImpl;
+import utils.Utils;
 
 import java.io.File;
 import java.io.IOException;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static gui.instructionTable.InstructionRow.*;
 import static gui.showStatus.Status.showVariablesPopup;
@@ -67,6 +72,8 @@ public class MainScreenController {
 
     @FXML private Button showStatusButton;
 
+
+    private ExecutionContext executionContext;
 
     @FXML private TableView<InstructionRow> instructionTable;
     @FXML private TableColumn<InstructionRow, Number> colNumber;
@@ -149,6 +156,80 @@ public class MainScreenController {
 
     }
 
+//    @FXML
+//    private void loadFilePressed(ActionEvent event) {
+//
+//        FileChooser fileChooser = new FileChooser();
+//        fileChooser.setTitle("Choose XML File");
+//        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
+//
+//        File selectedFile = fileChooser.showOpenDialog(null);
+//        if (selectedFile != null) {
+//            new Thread(() -> {
+//                try {
+//                    Platform.runLater(() -> {
+//                        statusLabel.setText("Loading...");
+//                        xmlPathLabel.setText(selectedFile.getAbsolutePath());
+//
+//                        if (enableAnimation) {
+//                            loadingProgressBar.setProgress(0);
+//                            animateProgressBar(2.0, enableAnimation, loadingProgressBar);
+//                        } else {
+//                            loadingProgressBar.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS); // אין אנימציה
+//                        }
+//                    });
+//
+//                    Thread.sleep(500);
+//
+//
+//                    XmlLoader xmlLoader = new XmlLoader();
+//                    loadedSProgram = XmlLoader.loadFromFile(selectedFile.getAbsolutePath());
+//
+//                    assert loadedSProgram != null;
+//
+//                    ExecutionContextImpl context = new ExecutionContextImpl(new HashMap<>(), new HashMap<>());
+//
+//                    Map<String, Program> functionMap = xmlLoader.loadFunctions(
+//                            loadedSProgram.getSFunctions().getSFunction(), context
+//                    );
+//
+//                    context.setFunctionMap(functionMap);
+//
+//                    loadedProgram = xmlLoader.SprogramToProgram(loadedSProgram, functionMap, context);
+//                    loadedProgram.setFunctionMap(functionMap);
+//
+//
+//
+//
+//
+//                    Platform.runLater(() -> {
+//                        if (!enableAnimation) {
+//                            loadingProgressBar.setProgress(1.0);
+//                            statusLabel.setText("Done!");
+//                        } else {
+//                            Timeline timeline = new Timeline(
+//                                    new KeyFrame(Duration.seconds(2.0),
+//                                            e -> statusLabel.setText("Done!"))
+//                            );
+//                            timeline.play();
+//                        }
+//
+//                    });
+//
+//                } catch (Exception e) {
+//                    Platform.runLater(() -> {
+//                        statusLabel.setText("Failed to load");
+//                        showError("Failed to load program: " + e.getMessage());
+//                        loadingProgressBar.setProgress(0);
+//                    });
+//                    e.printStackTrace();
+//                }
+//            }).start();
+//        } else {
+//            System.out.println("File selection was cancelled.");
+//        }
+//    }
+
     @FXML
     private void loadFilePressed(ActionEvent event) {
 
@@ -168,14 +249,27 @@ public class MainScreenController {
                             loadingProgressBar.setProgress(0);
                             animateProgressBar(2.0, enableAnimation, loadingProgressBar);
                         } else {
-                            loadingProgressBar.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS); // אין אנימציה
+                            loadingProgressBar.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
                         }
                     });
 
-                    Thread.sleep(500);
+                    Thread.sleep(500); // סימולציה קטנה של עיכוב
 
-                    loadedSProgram = XmlLoader.loadFromFile(selectedFile.getAbsolutePath());
-                    loadedProgram = new XmlLoader().SprogramToProgram(loadedSProgram);
+                    // --- שלב 1: JAXB → SProgram ---
+                    SProgram sProgram = XmlLoader.loadFromFile(selectedFile.getAbsolutePath());
+                    if (sProgram == null) {
+                        throw new IllegalStateException("Failed to parse XML file");
+                    }
+
+                    // --- שלב 2: Execution Context ---
+                    ExecutionContextImpl context = new ExecutionContextImpl(new HashMap<>(), new HashMap<>());
+
+                    // --- שלב 3: Mapping ל־Program ---
+                    XmlMapper mapper = new XmlMapper(context);
+                    loadedProgram = mapper.map(sProgram);
+
+                    // שמירה גם של ה־SProgram הגולמי (אם צריך)
+                    loadedSProgram = sProgram;
 
                     Platform.runLater(() -> {
                         if (!enableAnimation) {
@@ -184,11 +278,19 @@ public class MainScreenController {
                         } else {
                             Timeline timeline = new Timeline(
                                     new KeyFrame(Duration.seconds(2.0),
-                                            e -> statusLabel.setText("Done!")) // רק אחרי שהאנימציה הסתיימה
+                                            e2 -> statusLabel.setText("Done!"))
                             );
                             timeline.play();
                         }
 
+                        // ✅ Debug: הדפסה של הפקודות
+                        System.out.println("=== Program Loaded: " + loadedProgram.getName() + " ===");
+                        loadedProgram.getInstructions().forEach(instr ->
+                                System.out.println(instr.getUniqueId() + " | "
+                                        + instr.getType() + " | "
+                                        + instr.getName() + " | "
+                                        + instr.getVariable() + " | "
+                                        + (instr.getLabel() != null ? instr.getLabel() : "")));
                     });
 
                 } catch (Exception e) {
@@ -204,6 +306,7 @@ public class MainScreenController {
             System.out.println("File selection was cancelled.");
         }
     }
+
 
     @FXML
     private void startExecution(ActionEvent event) {
@@ -387,7 +490,11 @@ public class MainScreenController {
     @FXML
     private void onCurrMaxDegreeButton() {
         int current = ExecutionRunner.getCurrentDegree();
-        int max = loadedProgram.calculateMaxDegree();
+        Map<Variable, Long> variableState = loadedProgram.getVars().stream()
+                .collect(Collectors.toMap(v -> v, v -> 0L));
+        ExecutionContext context = new ExecutionContextImpl(variableState, loadedProgram.getFunctionMap());
+
+        int max = Utils.computeProgramDegree(loadedProgram, context);
 
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Expansion Degree Info");

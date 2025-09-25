@@ -7,10 +7,11 @@ import logic.label.Label;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class JumpEqualVariableInstruction extends AbstractInstruction{
-    private Label JEVariableLabel;
-    private Variable variableName; // second variable: V′
+    public Label JEVariableLabel;
+    public Variable variableName; // second variable: V′
 
     public JumpEqualVariableInstruction(Variable v, Variable vPrime, Label JEVariableLabel, Label label) {
         super(InstructionData.JUMP_EQUAL_VARIABLE, v, label,InstructionType.S);
@@ -97,6 +98,40 @@ public class JumpEqualVariableInstruction extends AbstractInstruction{
 
         return result;
     }
+    private Variable getPrimeVar(){
+        return variableName;
+    }
+
+    @Override
+    public AbstractInstruction clone() {
+        return new JumpEqualVariableInstruction(this.getVariable(),this.getPrimeVar(),this.JEVariableLabel,this.getLabel());
+    }
+
+    @Override
+    public void replaceVariables(Map<String, Variable> variableMap) {
+        String v1Name = getVariable().getRepresentation();
+        String v2Name = variableName.getRepresentation();
+
+        if (variableMap.containsKey(v1Name)) {
+            this.setVariable(variableMap.get(v1Name));
+        }
+
+        if (variableMap.containsKey(v2Name)) {
+            this.variableName = variableMap.get(v2Name);
+        }
+    }
+    @Override
+    public void replaceJumpLabel(Label from, Label to) {
+        if (this.JEVariableLabel.equals(from)) {
+            this.JEVariableLabel = to;
+        }
+    }
+
+    @Override
+    public boolean jumpsTo(Label label) {
+        return this.JEVariableLabel.equals(label);
+    }
+
 
 
 

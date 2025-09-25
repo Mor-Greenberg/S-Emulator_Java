@@ -7,6 +7,7 @@ import logic.instruction.Instruction;
 import logic.label.Label;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface Program {
@@ -19,12 +20,16 @@ public interface Program {
     void addVar(Variable variable);
     void addLabel(Label label) ;
 
-     int askForDegree() ;
+     int askForDegree(ExecutionContext executionContext) ;
      void expandToDegree(int maxDegree, ExecutionContext context) ;
      boolean hasSyntheticInstructions();
      List<Instruction> getActiveInstructions();
      boolean validate();
-     int calculateMaxDegree();
+     int calculateMaxDegree(ExecutionContext context);
      int calculateCycles();
-    public List <AbstractInstruction> getExpandedInstructions();
+     List <AbstractInstruction> getExpandedInstructions();
+
+    Map<String, Program> getFunctionMap();
+     void setFunctionMap(Map<String, Program> functionMap);
+
     }

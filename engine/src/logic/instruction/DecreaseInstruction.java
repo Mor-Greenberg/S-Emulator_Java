@@ -5,6 +5,8 @@ import logic.execution.ExecutionContext;
 import logic.label.FixedLabel;
 import logic.label.Label;
 
+import java.util.Map;
+
 public class DecreaseInstruction extends AbstractInstruction {
 
     public DecreaseInstruction(Variable variable) {
@@ -31,4 +33,16 @@ public class DecreaseInstruction extends AbstractInstruction {
         String output = variable.toString() +"<-" + variable.toString() + "-1";
         return output;
     }
+    @Override
+    public AbstractInstruction clone() {
+        return new DecreaseInstruction(this.getVariable(), this.getLabel());
+    }
+    @Override
+    public void replaceVariables(Map<String, Variable> variableMap) {
+        if (variableMap.containsKey(getVariable().toString())) {
+            this.variable = variableMap.get(getVariable().toString());
+        }
+    }
+
+
 }

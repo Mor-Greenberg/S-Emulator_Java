@@ -5,6 +5,8 @@ import logic.execution.ExecutionContext;
 import logic.label.FixedLabel;
 import logic.label.Label;
 
+import java.util.Map;
+
 public class JumpNotZeroInstruction extends AbstractInstruction{
     private Label jnzLabel;
 
@@ -38,5 +40,30 @@ public class JumpNotZeroInstruction extends AbstractInstruction{
     public Label getTargetLabel() {
         return jnzLabel;
     }
+    @Override
+    public AbstractInstruction clone() {
+        return new JumpNotZeroInstruction(getVariable(), getTargetLabel(), getLabel());
+    }
+    @Override
+    public void replaceVariables(Map<String, Variable> variableMap) {
+        String varName = getVariable().getRepresentation();
+        if (variableMap.containsKey(varName)) {
+            this.setVariable(variableMap.get(varName));
+        }
+    }
+
+    @Override
+    public void replaceJumpLabel(Label from, Label to) {
+        if (this.jnzLabel.equals(from)) {
+            this.jnzLabel = to;
+        }
+    }
+
+    @Override
+    public boolean jumpsTo(Label label) {
+        return this.jnzLabel.equals(label);
+    }
+
+
 
 }

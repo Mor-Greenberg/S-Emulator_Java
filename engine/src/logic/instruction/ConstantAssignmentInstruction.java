@@ -8,6 +8,7 @@ import logic.label.Label;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class ConstantAssignmentInstruction extends AbstractInstruction {
 
@@ -58,6 +59,18 @@ public class ConstantAssignmentInstruction extends AbstractInstruction {
         }
 
         return result;
+    }
+
+    @Override
+    public AbstractInstruction clone() {
+        return new ConstantAssignmentInstruction(this.getVariable(),this.getLabel(), constantValue);
+    }
+
+    @Override
+    public void replaceVariables(Map<String, Variable> variableMap) {
+        if (variableMap.containsKey(getVariable().toString())) {
+            this.variable = variableMap.get(getVariable().toString());
+        }
     }
 
 
