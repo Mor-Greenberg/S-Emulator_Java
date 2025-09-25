@@ -72,6 +72,9 @@ public class ConstantAssignmentInstruction extends AbstractInstruction {
             this.variable = variableMap.get(getVariable().toString());
         }
     }
+    public int getConstantValue() {
+        return constantValue;
+    }
 
 
 }

@@ -131,6 +131,10 @@ public class JumpEqualVariableInstruction extends AbstractInstruction{
     public boolean jumpsTo(Label label) {
         return this.JEVariableLabel.equals(label);
     }
+    public Variable getVariableName() {
+        return variableName;
+    }
+
 
 
 

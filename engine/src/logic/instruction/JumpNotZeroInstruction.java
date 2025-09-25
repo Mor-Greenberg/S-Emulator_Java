@@ -64,6 +64,9 @@ public class JumpNotZeroInstruction extends AbstractInstruction{
         return this.jnzLabel.equals(label);
     }
 
+    public Label getJnzLabel() {
+        return jnzLabel;
+    }
 
 
 }

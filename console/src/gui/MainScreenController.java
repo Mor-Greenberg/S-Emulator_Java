@@ -135,8 +135,6 @@ public class MainScreenController {
                 historyContainer.getChildren().clear();
                 return;
             }
-
-            // 🛡️ הגנה: אם אין לנו מקור, אין על מה למפות
             if (originalInstructions == null || originalInstructions.isEmpty()) {
                 historyContainer.getChildren().clear();
                 return;
@@ -156,81 +154,6 @@ public class MainScreenController {
         variableValueCol.setCellValueFactory(new PropertyValueFactory<>("value"));
 
     }
-
-//    @FXML
-//    private void loadFilePressed(ActionEvent event) {
-//
-//        FileChooser fileChooser = new FileChooser();
-//        fileChooser.setTitle("Choose XML File");
-//        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
-//
-//        File selectedFile = fileChooser.showOpenDialog(null);
-//        if (selectedFile != null) {
-//            new Thread(() -> {
-//                try {
-//                    Platform.runLater(() -> {
-//                        statusLabel.setText("Loading...");
-//                        xmlPathLabel.setText(selectedFile.getAbsolutePath());
-//
-//                        if (enableAnimation) {
-//                            loadingProgressBar.setProgress(0);
-//                            animateProgressBar(2.0, enableAnimation, loadingProgressBar);
-//                        } else {
-//                            loadingProgressBar.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS); // אין אנימציה
-//                        }
-//                    });
-//
-//                    Thread.sleep(500);
-//
-//
-//                    XmlLoader xmlLoader = new XmlLoader();
-//                    loadedSProgram = XmlLoader.loadFromFile(selectedFile.getAbsolutePath());
-//
-//                    assert loadedSProgram != null;
-//
-//                    ExecutionContextImpl context = new ExecutionContextImpl(new HashMap<>(), new HashMap<>());
-//
-//                    Map<String, Program> functionMap = xmlLoader.loadFunctions(
-//                            loadedSProgram.getSFunctions().getSFunction(), context
-//                    );
-//
-//                    context.setFunctionMap(functionMap);
-//
-//                    loadedProgram = xmlLoader.SprogramToProgram(loadedSProgram, functionMap, context);
-//                    loadedProgram.setFunctionMap(functionMap);
-//
-//
-//
-//
-//
-//                    Platform.runLater(() -> {
-//                        if (!enableAnimation) {
-//                            loadingProgressBar.setProgress(1.0);
-//                            statusLabel.setText("Done!");
-//                        } else {
-//                            Timeline timeline = new Timeline(
-//                                    new KeyFrame(Duration.seconds(2.0),
-//                                            e -> statusLabel.setText("Done!"))
-//                            );
-//                            timeline.play();
-//                        }
-//
-//                    });
-//
-//                } catch (Exception e) {
-//                    Platform.runLater(() -> {
-//                        statusLabel.setText("Failed to load");
-//                        showError("Failed to load program: " + e.getMessage());
-//                        loadingProgressBar.setProgress(0);
-//                    });
-//                    e.printStackTrace();
-//                }
-//            }).start();
-//        } else {
-//            System.out.println("File selection was cancelled.");
-//        }
-//    }
-
     @FXML
     private void loadFilePressed(ActionEvent event) {
 
@@ -254,22 +177,18 @@ public class MainScreenController {
                         }
                     });
 
-                    Thread.sleep(500); // סימולציה קטנה של עיכוב
+                    Thread.sleep(500);
 
-                    // --- שלב 1: JAXB → SProgram ---
                     SProgram sProgram = XmlLoader.loadFromFile(selectedFile.getAbsolutePath());
                     if (sProgram == null) {
                         throw new IllegalStateException("Failed to parse XML file");
                     }
 
-                    // --- שלב 2: Execution Context ---
                     ExecutionContextImpl context = new ExecutionContextImpl(new HashMap<>(), new HashMap<>());
 
-                    // --- שלב 3: Mapping ל־Program ---
                     XmlMapper mapper = new XmlMapper(context);
                     loadedProgram = mapper.map(sProgram);
 
-                    // שמירה גם של ה־SProgram הגולמי (אם צריך)
                     context.initializeVarsFromProgram(loadedProgram);
 
                     System.out.println("Input vars: " +
@@ -339,6 +258,7 @@ public class MainScreenController {
             return;
         }
         ExecutionRunner.stop();
+        showAlert("Program stopped.");
     }
 
 
@@ -463,10 +383,8 @@ public class MainScreenController {
         Map<Variable, Long> allVariables;
 
         if (ExecutionRunner.isDebugMode()) {
-            // בריצת דיבאג – ניקח ישירות את ה־state מתוך ה־debugContext
             allVariables = ExecutionRunner.getDebugContext().getVariableState();
         } else {
-            // בריצה רגילה – מה־map האחרון ששמרנו
             allVariables = ExecutionRunner.getExecutionContextMap();
         }
 
@@ -510,9 +428,14 @@ public class MainScreenController {
         alert.showAndWait();
     }
 
-
     void updateVariablesView() {
-        Map<Variable, Long> vars = ExecutionRunner.getDebugContext().getVariableState();
+        Map<Variable, Long> vars;
+
+        if (ExecutionRunner.isDebugMode()) {
+            vars = ExecutionRunner.getDebugContext().getVariableState();
+        } else {
+            vars = ExecutionRunner.getExecutionContextMap();
+        }
 
         ObservableList<VariableRow> rows = FXCollections.observableArrayList();
         vars.entrySet().stream()
@@ -523,6 +446,7 @@ public class MainScreenController {
 
         variablesTable.setItems(rows);
     }
+
 
 
     public void highlightCurrentInstruction(int index) {
@@ -544,10 +468,19 @@ public class MainScreenController {
     public void updateCyclesView(int cycles) {
         debugCycles.setText("Cycles: " + cycles);
 
-        List<Instruction> instructions = loadedProgram.getActiveInstructions(); // או source אחר
+        List<Instruction> instructions = loadedProgram.getActiveInstructions();
         summaryLabel.setText(generateSummary(instructions));
     }
+    public void updateSummaryView(int total, int basic, int synthetic, int cycles) {
+        Platform.runLater(() -> {
+            summaryLabel.setText(
+                    String.format("SUMMARY: Total instructions: %d | Basic: %d | Synthetic: %d | cycles: %d",
+                            total, basic, synthetic, cycles)
+            );
+        });
+    }
 
-
-
+    public TableView<InstructionRow> getInstructionTable() {
+        return instructionTable;
+    }
 }

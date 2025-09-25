@@ -224,7 +224,7 @@ public class QuoteInstruction extends AbstractInstruction {
     }
 
 
-
-
-
+    public String getQuotedFunctionName() {
+        return functionName;
+    }
 }

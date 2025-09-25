@@ -104,6 +104,12 @@ public class JumpEqualConstantInstruction extends AbstractInstruction {
         return this.JEConstantLabel.equals(label);
     }
 
+    public long getConstantValue() {
+        return constantValue;
+    }
+    public Label getJumpToLabel() {
+        return JEConstantLabel;
+    }
 
 
 

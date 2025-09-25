@@ -74,6 +74,7 @@
 package programDisplay;
 
 import gui.MainScreenController;
+import gui.instructionTable.InstructionRow;
 import javafx.application.Platform;
 import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
@@ -177,5 +178,15 @@ public class ProgramDisplayImpl {
             System.out.println(variable.getRepresentation());
         }
     }
+    public void addInstructionRow(Instruction instr, int index) {
+        InstructionRow instructionRow=new InstructionRow(index,instr.getType().toString(),instr.getLabel().getLabelRepresentation(),instr.commandDisplay(),instr.getCycles());
+        if (controller != null) {
+            Platform.runLater(() -> controller.addInstructionRow(instructionRow));
+        } else {
+            // ברירת מחדל: הדפסה לקונסול
+            System.out.println("#" + index + " " + instr.commandDisplay());
+        }
+    }
+
 }
 

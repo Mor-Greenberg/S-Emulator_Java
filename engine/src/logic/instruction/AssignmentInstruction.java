@@ -121,7 +121,11 @@ public class AssignmentInstruction extends AbstractInstruction {
         }
     }
 
+    public Variable getDestination() {
+        return destination;
+    }
 
-
-
+    public Variable getSource() {
+        return source;
+    }
 }

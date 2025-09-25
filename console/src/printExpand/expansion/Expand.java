@@ -1,7 +1,11 @@
 package printExpand.expansion;
 
+import gui.MainScreenController;
 import gui.instructionTable.InstructionRow;
+import gui.variablesTable.VariableRow;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -16,6 +20,7 @@ import logic.Variable.Variable;
 import logic.execution.ExecutionContext;
 import logic.execution.ExecutionContextImpl;
 import logic.instruction.AbstractInstruction;
+import logic.instruction.Instruction;
 import logic.program.Program;
 import programDisplay.ProgramDisplayImpl;
 import utils.Utils;
@@ -56,12 +61,12 @@ public class Expand {
 //        showExpandedProgramPopup(loadedProgram);
 //    }
 public static void expandAction(Program loadedProgram, ProgramDisplayImpl display) {
-    // קודם מכינים Context ריק עם פונקציות
+    // הכנת קונטקסט ריק
     Map<Variable, Long> variableState = loadedProgram.getVars().stream()
             .collect(Collectors.toMap(v -> v, v -> 0L));
     ExecutionContext context = new ExecutionContextImpl(variableState, loadedProgram.getFunctionMap());
 
-    // עכשיו מחשבים דרגה מקסימלית עם רקורסיה אמיתית
+    // חישוב דרגה מקסימלית
     int maxDegree = Utils.computeProgramDegree(loadedProgram, context);
 
     List<Integer> choices = IntStream.rangeClosed(0, maxDegree)
@@ -78,11 +83,39 @@ public static void expandAction(Program loadedProgram, ProgramDisplayImpl displa
 
     int chosenDegree = result.get();
 
+    if (chosenDegree == 0) {
+        long res = loadedProgram.executeBlackBox(context);
+        System.out.println("Black-box result for y = " + res);
+
+        // ✅ נבנה InstructionRow אחד או יותר מהפקודות המקוריות
+        ObservableList<InstructionRow> rows = FXCollections.observableArrayList();
+        int counter = 1;
+        for (Instruction instr : loadedProgram.getInstructions()) {
+            rows.add(new InstructionRow(
+                    counter++,
+                    instr.getType().toString(),
+                    instr.getLabel() != null ? instr.getLabel().toString() : "",
+                    instr.commandDisplay(),
+                    instr.getCycles()
+            ));
+        }
+
+        // נעדכן את הטבלה של הממשק הראשי (MainScreenController)
+        Platform.runLater(() -> {
+            MainScreenController ctrl = MainScreenController.getInstance();
+            ctrl.clearInstructionTable();
+            ctrl.getInstructionTable().setItems(rows);
+        });
+
+        return; // לא נכנסים ל-expand
+    }
+
+
     // הרחבה בפועל
     loadedProgram.expandToDegree(chosenDegree, context);
-
     showExpandedProgramPopup(loadedProgram);
 }
+
 
     private static void showExpandedProgramPopup(Program program) {
         Stage popup = new Stage();

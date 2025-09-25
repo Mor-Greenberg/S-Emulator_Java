@@ -108,6 +108,9 @@ public class GoToLabelInstruction extends AbstractInstruction {
             this.goToLabel = to;
         }
     }
+    public Label getGoToLabel() {
+        return goToLabel;
+    }
 
 
 

@@ -17,7 +17,6 @@ import static logic.xml.XmlParsingUtils.parseVariable;
 
 public class XmlMapper {
     private final ExecutionContext context;
-    private Program program;
 
     public XmlMapper(ExecutionContext context) {
         this.context = context;
@@ -39,52 +38,9 @@ public class XmlMapper {
         mainProgram.setFunctionMap(functionMap);
 
         recomputeQuoteDegrees(mainProgram, functionMap);
-        this.program = mainProgram;
 
         return mainProgram;
     }
-    private Variable parseFunctionArg(String token, Map<String, Program> functionMap, Variable target) {
-        token = token.trim();
-        if (token.startsWith("(") && token.endsWith(")")) {
-            token = token.substring(1, token.length() - 1).trim();
-        }
-
-
-        List<String> parts = new ArrayList<>();
-        int depth = 0;
-        StringBuilder current = new StringBuilder();
-        for (char c : token.toCharArray()) {
-            if (c == '(') depth++;
-            if (c == ')') depth--;
-            if (c == ',' && depth == 0) {
-                parts.add(current.toString().trim());
-                current.setLength(0);
-            } else {
-                current.append(c);
-            }
-        }
-        if (current.length() > 0) {
-            parts.add(current.toString().trim());
-        }
-
-        // אם זו קריאה לפונקציה (שם פונקציה + ארגומנטים)
-        if (functionMap.containsKey(parts.get(0))) {
-            String funcName = parts.get(0);
-            List<Variable> innerArgs = new ArrayList<>();
-
-            for (int i = 1; i < parts.size(); i++) {
-                innerArgs.add(parseFunctionArg(parts.get(i), functionMap, target));
-            }
-
-            QuoteInstruction innerQuote = new QuoteInstruction(funcName, innerArgs, target);
-            return new QuoteVariable(innerQuote);
-        }
-
-        return XmlParsingUtils.parseVariable(parts.get(0));
-    }
-
-
-
 
     private Program convertToProgram(String name, List<SInstruction> sInstructions, Map<String, Program> functionMap) {
         Program program = new ProgramImpl(name);

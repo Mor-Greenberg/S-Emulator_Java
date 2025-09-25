@@ -103,5 +103,8 @@ public class JumpZeroInstruction extends AbstractInstruction {
         return this.JZLabel.equals(label);
     }
 
+    public Label getJZLabel() {
+        return JZLabel;
+    }
 
 }
