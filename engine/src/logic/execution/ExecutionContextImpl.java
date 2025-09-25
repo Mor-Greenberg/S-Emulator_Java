@@ -69,5 +69,11 @@ public class ExecutionContextImpl implements ExecutionContext {
     public void setFunctionMap(Map<String, Program> functionMap) {
         this.programMap = functionMap;
     }
+    public void initializeVarsFromProgram(Program program) {
+        for (Variable v : program.getVars()) {
+            variableState.putIfAbsent(v, 0L);
+        }
+    }
+
 
 }

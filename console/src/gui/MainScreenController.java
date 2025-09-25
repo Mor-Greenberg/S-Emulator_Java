@@ -29,6 +29,7 @@ import javafx.stage.FileChooser;
 import javafx.util.Duration;
 
 import logic.Variable.Variable;
+import logic.Variable.VariableType;
 import logic.execution.ExecutionContext;
 import logic.execution.ExecutionContextImpl;
 import logic.instruction.AbstractInstruction;
@@ -269,7 +270,13 @@ public class MainScreenController {
                     loadedProgram = mapper.map(sProgram);
 
                     // שמירה גם של ה־SProgram הגולמי (אם צריך)
-                    loadedSProgram = sProgram;
+                    context.initializeVarsFromProgram(loadedProgram);
+
+                    System.out.println("Input vars: " +
+                            loadedProgram.getVars().stream()
+                                    .filter(v -> v.getType() == VariableType.INPUT)
+                                    .toList()
+                    );
 
                     Platform.runLater(() -> {
                         if (!enableAnimation) {

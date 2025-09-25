@@ -3,6 +3,7 @@ package logic.xml;
 import jaxbV2.jaxb.v2.*;
 import logic.Variable.QuoteVariable;
 import logic.Variable.Variable;
+import logic.Variable.VariableType;
 import logic.execution.ExecutionContext;
 import logic.instruction.*;
 import logic.label.FixedLabel;
@@ -16,22 +17,20 @@ import static logic.xml.XmlParsingUtils.parseVariable;
 
 public class XmlMapper {
     private final ExecutionContext context;
+    private Program program;
 
     public XmlMapper(ExecutionContext context) {
         this.context = context;
     }
 
     public Program map(SProgram sProgram) {
-        // שלב 1 – טען פונקציות אם קיימות
         Map<String, Program> functionMap = new HashMap<>();
         if (sProgram.getSFunctions() != null && sProgram.getSFunctions().getSFunction() != null) {
             functionMap = loadFunctions(sProgram.getSFunctions().getSFunction());
         }
 
-        // עדכון context עם ה־functionMap
         this.context.setFunctionMap(functionMap);
 
-        // שלב 2 – טען את התוכנית הראשית
         Program mainProgram = convertToProgram(
                 sProgram.getName(),
                 sProgram.getSInstructions().getSInstruction(),
@@ -39,10 +38,49 @@ public class XmlMapper {
         );
         mainProgram.setFunctionMap(functionMap);
 
-        // שלב 3 – לחשב דרגות QUOTE
         recomputeQuoteDegrees(mainProgram, functionMap);
+        this.program = mainProgram;
 
         return mainProgram;
+    }
+    private Variable parseFunctionArg(String token, Map<String, Program> functionMap, Variable target) {
+        token = token.trim();
+        if (token.startsWith("(") && token.endsWith(")")) {
+            token = token.substring(1, token.length() - 1).trim();
+        }
+
+
+        List<String> parts = new ArrayList<>();
+        int depth = 0;
+        StringBuilder current = new StringBuilder();
+        for (char c : token.toCharArray()) {
+            if (c == '(') depth++;
+            if (c == ')') depth--;
+            if (c == ',' && depth == 0) {
+                parts.add(current.toString().trim());
+                current.setLength(0);
+            } else {
+                current.append(c);
+            }
+        }
+        if (current.length() > 0) {
+            parts.add(current.toString().trim());
+        }
+
+        // אם זו קריאה לפונקציה (שם פונקציה + ארגומנטים)
+        if (functionMap.containsKey(parts.get(0))) {
+            String funcName = parts.get(0);
+            List<Variable> innerArgs = new ArrayList<>();
+
+            for (int i = 1; i < parts.size(); i++) {
+                innerArgs.add(parseFunctionArg(parts.get(i), functionMap, target));
+            }
+
+            QuoteInstruction innerQuote = new QuoteInstruction(funcName, innerArgs, target);
+            return new QuoteVariable(innerQuote);
+        }
+
+        return XmlParsingUtils.parseVariable(parts.get(0));
     }
 
 
@@ -60,6 +98,7 @@ public class XmlMapper {
             Label jumpLabel = extractJumpLabel(sInstr);
 
             Instruction instr = buildInstruction(
+                    program,
                     sInstr.getName(),
                     variable,
                     regularLabel,
@@ -67,6 +106,7 @@ public class XmlMapper {
                     sInstr.getSInstructionArguments(),
                     functionMap
             );
+
 
             program.addVar(variable);
             program.addLabel(regularLabel);
@@ -97,13 +137,15 @@ public class XmlMapper {
     }
 
     private Instruction buildInstruction(
+            Program program,
             String name,
             Variable variable,
             Label regularLabel,
             Label jumpLabel,
             SInstructionArguments sArgs,
             Map<String, Program> functionMap
-    ) {
+    )
+    {
         switch (name) {
             case "INCREASE":
                 return new IncreaseInstruction(variable, regularLabel);
@@ -144,11 +186,11 @@ public class XmlMapper {
 
             case "ASSIGNMENT": {
                 String assignedVarStr = getArgValueByName(sArgs, "assignedVariable");
-                if (assignedVarStr == null)
-                    throw new IllegalArgumentException("Missing 'assignedVariable' argument for ASSIGNMENT");
                 Variable source = parseVariable(assignedVarStr);
+                program.addVar(source); // עכשיו יש לך גישה ל־program
                 return new AssignmentInstruction(regularLabel, variable, source);
             }
+
 
             case "CONSTANT_ASSIGNMENT": {
                 String constantStr = getArgValueByName(sArgs, "constantValue");
@@ -157,55 +199,11 @@ public class XmlMapper {
                 int constant = Integer.parseInt(constantStr);
                 return new ConstantAssignmentInstruction(variable, regularLabel, constant);
             }
-
             case "QUOTE": {
                 String quotedFunctionName = getArgValueByName(sArgs, "functionName");
                 String rawArgs = getArgValueByName(sArgs, "functionArguments");
 
-                if (quotedFunctionName == null || rawArgs == null) {
-                    throw new IllegalArgumentException("Missing 'functionName' or 'functionArguments' for QUOTE");
-                }
-
-                List<Variable> argumentList = new ArrayList<>();
-
-                // פיצול לפי "),("
-                String[] argTokens = rawArgs.split("\\),\\(");
-                for (String token : argTokens) {
-                    token = token.replace("(", "").replace(")", "").trim();
-                    if (token.isEmpty()) continue;
-
-                    // דוגמה: "Const7" או "Successor,x1"
-                    String[] parts = token.split(",");
-                    if (parts.length == 1) {
-                        String funcOrVarName = parts[0].trim();
-
-                        if (functionMap.containsKey(funcOrVarName)) {
-                            // פונקציה בלי פרמטרים → QUOTE פנימי
-                            QuoteInstruction innerQuote = new QuoteInstruction(funcOrVarName, new ArrayList<>(), variable);
-                            argumentList.add(new QuoteVariable(innerQuote));
-                        } else {
-                            // משתנה רגיל
-                            argumentList.add(parseVariable(funcOrVarName));
-                        }
-                    }
-                    else if (parts.length == 2) {
-                        String funcName = parts[0].trim();
-                        String varName = parts[1].trim();
-
-                        if (functionMap.containsKey(funcName)) {
-                            // פונקציה עם פרמטר אחד → QUOTE פנימי
-                            List<Variable> innerArgs = new ArrayList<>();
-                            innerArgs.add(parseVariable(varName));
-                            QuoteInstruction innerQuote = new QuoteInstruction(funcName, innerArgs, variable);
-                            argumentList.add(new QuoteVariable(innerQuote));
-                        } else {
-                            throw new IllegalArgumentException("Unknown function in arguments: " + funcName);
-                        }
-                    } else {
-                        throw new IllegalArgumentException("Invalid functionArguments format: " + token);
-                    }
-                }
-
+                List<Variable> argumentList = parseQuoteArgs(rawArgs, functionMap, program, variable);
                 QuoteInstruction q = new QuoteInstruction(quotedFunctionName, argumentList, variable);
                 q.computeDegree(context);
                 return q;
@@ -225,15 +223,48 @@ public class XmlMapper {
         }
         return null;
     }
+    private List<Variable> parseQuoteArgs(String rawArgs, Map<String, Program> functionMap, Program program, Variable destination) {
+        List<Variable> argumentList = new ArrayList<>();
+        if (rawArgs == null || rawArgs.isEmpty()) return argumentList;
+
+        String[] argTokens = rawArgs.split("\\),\\(");
+        for (String token : argTokens) {
+            token = token.replace("(", "").replace(")", "").trim();
+            if (token.isEmpty()) continue;
+
+            String[] parts = token.split(",");
+            if (parts.length == 1) {
+                String funcOrVarName = parts[0].trim();
+                if (functionMap.containsKey(funcOrVarName)) {
+                    QuoteInstruction innerQuote = new QuoteInstruction(funcOrVarName, new ArrayList<>(), destination);
+                    argumentList.add(new QuoteVariable(innerQuote));
+                } else {
+                    Variable var = parseVariable(funcOrVarName);
+                    program.addVar(var); // ← לוודא שנוסף
+                    argumentList.add(var);
+                }
+            } else {
+                // פונקציה עם ארגומנטים → נבנה רקורסיבית
+                String funcName = parts[0].trim();
+                List<Variable> innerArgs = new ArrayList<>();
+                for (int i = 1; i < parts.length; i++) {
+                    Variable innerVar = parseVariable(parts[i].trim());
+                    program.addVar(innerVar);
+                    innerArgs.add(innerVar);
+                }
+                QuoteInstruction innerQuote = new QuoteInstruction(funcName, innerArgs, destination);
+                argumentList.add(new QuoteVariable(innerQuote));
+            }
+        }
+        return argumentList;
+    }
     private void recomputeQuoteDegrees(Program program, Map<String, Program> functionMap) {
-        // תוכנית ראשית
         for (Instruction instr : program.getInstructions()) {
             if (instr instanceof QuoteInstruction q) {
                 q.computeDegree(this.context);
             }
         }
 
-        // פונקציות
         for (Program func : functionMap.values()) {
             for (Instruction instr : func.getInstructions()) {
                 if (instr instanceof QuoteInstruction q) {
@@ -242,8 +273,4 @@ public class XmlMapper {
             }
         }
     }
-
-
-
-
 }
