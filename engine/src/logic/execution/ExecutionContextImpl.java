@@ -74,6 +74,15 @@ public class ExecutionContextImpl implements ExecutionContext {
             variableState.putIfAbsent(v, 0L);
         }
     }
+    public void reset() {
+        variableState.clear();          // איפוס כל המשתנים
+        labels.clear();                 // איפוס התוויות
+        activetedInstructions.clear();  // איפוס היסטוריית פקודות
+        if (programMap != null) {
+            programMap.clear();         // איפוס הפונקציות
+        }
+    }
+
 
 
 }

@@ -1,11 +1,7 @@
 package printExpand.expansion;
 
-import gui.MainScreenController;
 import gui.instructionTable.InstructionRow;
-import gui.variablesTable.VariableRow;
-import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -14,6 +10,7 @@ import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import logic.Variable.Variable;
 
@@ -26,47 +23,16 @@ import programDisplay.ProgramDisplayImpl;
 import utils.Utils;
 
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Expand {
-//    public static void expandAction (Program loadedProgram, ProgramDisplayImpl display) {
-//        int maxDegree = loadedProgram.calculateMaxDegree();
-//        List<Integer> choices = IntStream.rangeClosed(0, maxDegree)
-//                .boxed()
-//                .collect(Collectors.toList());
-//
-//        ChoiceDialog<Integer> dialog = new ChoiceDialog<>(0, choices);
-//        dialog.setTitle("Choose Expansion Degree");
-//        dialog.setHeaderText("Select the expansion degree (0–"+maxDegree +")");
-//        dialog.setContentText("Degree:");
-//
-//        Optional<Integer> result = dialog.showAndWait();
-//        if(result.isEmpty())return;
-//
-//        int chosenDegree = result.get();
-//
-//
-//
-//        Map<Variable, Long> variableState = loadedProgram.getVars().stream()
-//                .collect(Collectors.toMap(v -> v, v -> 0L));
-//
-//        ExecutionContext context = new ExecutionContextImpl(variableState, loadedProgram.getFunctionMap());
-//
-//        loadedProgram.expandToDegree(chosenDegree,context);
-//
-//        showExpandedProgramPopup(loadedProgram);
-//    }
 public static void expandAction(Program loadedProgram, ProgramDisplayImpl display) {
-    // הכנת קונטקסט ריק
     Map<Variable, Long> variableState = loadedProgram.getVars().stream()
             .collect(Collectors.toMap(v -> v, v -> 0L));
     ExecutionContext context = new ExecutionContextImpl(variableState, loadedProgram.getFunctionMap());
 
-    // חישוב דרגה מקסימלית
     int maxDegree = Utils.computeProgramDegree(loadedProgram, context);
 
     List<Integer> choices = IntStream.rangeClosed(0, maxDegree)
@@ -87,35 +53,52 @@ public static void expandAction(Program loadedProgram, ProgramDisplayImpl displa
         long res = loadedProgram.executeBlackBox(context);
         System.out.println("Black-box result for y = " + res);
 
-        // ✅ נבנה InstructionRow אחד או יותר מהפקודות המקוריות
         ObservableList<InstructionRow> rows = FXCollections.observableArrayList();
         int counter = 1;
         for (Instruction instr : loadedProgram.getInstructions()) {
             rows.add(new InstructionRow(
                     counter++,
                     instr.getType().toString(),
-                    instr.getLabel() != null ? instr.getLabel().toString() : "",
+                    instr.getLabel() != null ? instr.getLabel().getLabelRepresentation() : "",
                     instr.commandDisplay(),
                     instr.getCycles()
             ));
         }
 
-        // נעדכן את הטבלה של הממשק הראשי (MainScreenController)
-        Platform.runLater(() -> {
-            MainScreenController ctrl = MainScreenController.getInstance();
-            ctrl.clearInstructionTable();
-            ctrl.getInstructionTable().setItems(rows);
-        });
-
-        return; // לא נכנסים ל-expand
+        showExpandedProgramPopup(rows);
+        return;
     }
-
-
-    // הרחבה בפועל
     loadedProgram.expandToDegree(chosenDegree, context);
     showExpandedProgramPopup(loadedProgram);
 }
 
+
+
+    private static void showExpandedProgramPopup(ObservableList<InstructionRow> rows) {
+        TableView<InstructionRow> table = new TableView<>(rows);
+
+        TableColumn<InstructionRow, Number> colNum = new TableColumn<>("#");
+        colNum.setCellValueFactory(c -> new SimpleIntegerProperty(c.getValue().getNumber()));
+
+        TableColumn<InstructionRow, String> colType = new TableColumn<>("Type");
+        colType.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getType()));
+
+        TableColumn<InstructionRow, String> colLabel = new TableColumn<>("Label");
+        colLabel.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getLabel()));
+
+        TableColumn<InstructionRow, String> colCmd = new TableColumn<>("Command");
+        colCmd.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getCommand()));
+
+        TableColumn<InstructionRow, Number> colCycles = new TableColumn<>("Cycles");
+        colCycles.setCellValueFactory(c -> new SimpleIntegerProperty(c.getValue().getCycles()));
+
+        table.getColumns().addAll(colNum, colType, colLabel, colCmd, colCycles);
+
+        Stage popup = new Stage();
+        popup.setTitle("Expanded Program");
+        popup.setScene(new Scene(new VBox(table), 600, 400));
+        popup.show();
+    }
 
     private static void showExpandedProgramPopup(Program program) {
         Stage popup = new Stage();
@@ -159,6 +142,21 @@ public static void expandAction(Program loadedProgram, ProgramDisplayImpl displa
         Scene scene = new Scene(new BorderPane(table), 600, 400);
         popup.setScene(scene);
         popup.show();
+    }
+    public static List<AbstractInstruction> getExpandedInstructions(Program program) {
+        ExecutionContext context = new ExecutionContextImpl(
+                program.getVarsAsMapWithZeroes(),
+                program.getFunctionMap()
+        );
+
+        int degree = program.askForDegree(context);
+        if (degree < 0) {
+            return Collections.emptyList();
+        }
+
+        program.expandToDegree(degree, context);
+
+        return program.getExpandedInstructions();
     }
 
 

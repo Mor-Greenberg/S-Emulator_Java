@@ -5,10 +5,12 @@ import handleExecution.HandleExecution;
 import javafx.application.Platform;
 import javafx.scene.control.TableView;
 import logic.Variable.Variable;
+import logic.Variable.VariableType;
 import logic.execution.ExecutionContext;
 import logic.execution.ExecutionContextImpl;
 import logic.execution.ProgramExecutorImpl;
 import logic.history.RunHistoryEntry;
+import logic.instruction.JumpEqualFunctionInstruction;
 import logic.program.Program;
 import printExpand.expansion.PrintExpansion;
 import programDisplay.ProgramDisplayImpl;
@@ -16,6 +18,9 @@ import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
 
 import java.util.*;
+
+import static utils.Utils.generateSummary;
+import static utils.Utils.showError;
 
 public class ExecutionRunner {
 
@@ -235,8 +240,11 @@ public class ExecutionRunner {
     }
 
     public static void stepOver() {
-        if (!debugMode) return;
 
+        if (!debugMode){
+            showError("Not on debug mode");
+            return;
+        }
         // -------- Degree 0: black-box single step --------
         if (currentDegree == 0) {
             if (bbPc < 0 || bbPc >= debugInstructions.size()) return;
@@ -370,6 +378,7 @@ public class ExecutionRunner {
 
             if (currentIndex >= debugInstructions.size()) {
                 saveDebugHistory();
+                generateSummary(debugInstructions);
             }
         }).start();
     }
@@ -385,9 +394,13 @@ public class ExecutionRunner {
     }
 
     public static void stop() {
-        if (!debugMode) return;
+        if (!debugMode){
+            showError("Not on debug mode");
+            return;
+        }
         debugMode = false;
         saveDebugHistory();
+        generateSummary(debugInstructions);
     }
 
     // ---------------- Getters ----------------
@@ -412,7 +425,6 @@ public class ExecutionRunner {
         String name = instr.getName();
 
         switch (name) {
-            // שמות “מקוצרים” ו”מפורשים” – תומך בשניהם
             case "ASSIGNMENT" -> {
                 logic.instruction.AssignmentInstruction a = (logic.instruction.AssignmentInstruction) instr;
                 long val = context.getVariableValue(a.getSource());
@@ -439,7 +451,7 @@ public class ExecutionRunner {
                 return pc + 1;
             }
 
-            case "JNZ", "JUMP_NOT_ZERO" -> {
+            case "JUMP_NOT_ZERO" -> {
                 logic.instruction.JumpNotZeroInstruction j = (logic.instruction.JumpNotZeroInstruction) instr;
                 long v = context.getVariableValue(j.getVariable());
                 if (v != 0 && j.getJnzLabel() != logic.label.FixedLabel.EMPTY) {
@@ -448,52 +460,80 @@ public class ExecutionRunner {
                 return pc + 1;
             }
 
-            case "JZ","JUMP_ZERO" -> {
-                    logic.instruction.JumpZeroInstruction j = (logic.instruction.JumpZeroInstruction) instr;
-                    long v = context.getVariableValue(j.getVariable());
-                    if (v == 0 && j.getJZLabel() != logic.label.FixedLabel.EMPTY) {
-                        return labelToIndex.getOrDefault(j.getJZLabel().getLabelRepresentation(), pc + 1);
-                    }
-                    return pc + 1;
+            case "JUMP_ZERO" -> {
+                logic.instruction.JumpZeroInstruction j = (logic.instruction.JumpZeroInstruction) instr;
+                long v = context.getVariableValue(j.getVariable());
+                if (v == 0 && j.getJZLabel() != logic.label.FixedLabel.EMPTY) {
+                    return labelToIndex.getOrDefault(j.getJZLabel().getLabelRepresentation(), pc + 1);
                 }
-                case "JUMP_EQUAL_CONSTANT" -> {
-                    logic.instruction.JumpEqualConstantInstruction j = (logic.instruction.JumpEqualConstantInstruction) instr;
-                    long v = context.getVariableValue(j.getVariable());
-                    if (v == j.getConstantValue() && j.getJumpToLabel() != logic.label.FixedLabel.EMPTY) {
-                        return labelToIndex.getOrDefault(j.getJumpToLabel().getLabelRepresentation(), pc + 1);
-                    }
-                    return pc + 1;
+                return pc + 1;
+            }
+            case "JUMP_EQUAL_CONSTANT" -> {
+                logic.instruction.JumpEqualConstantInstruction j = (logic.instruction.JumpEqualConstantInstruction) instr;
+                long v = context.getVariableValue(j.getVariable());
+                if (v == j.getConstantValue() && j.getJumpToLabel() != logic.label.FixedLabel.EMPTY) {
+                    return labelToIndex.getOrDefault(j.getJumpToLabel().getLabelRepresentation(), pc + 1);
                 }
-                case "JUMP_EQUAL_VARIABLE" -> {
-                    logic.instruction.JumpEqualVariableInstruction j = (logic.instruction.JumpEqualVariableInstruction) instr;
-                    long v1 = context.getVariableValue(j.getVariable());
-                    long v2 = context.getVariableValue(j.getVariableName());
-                    if (v1 == v2 && j.getTargetLabel() != logic.label.FixedLabel.EMPTY) {
-                        return labelToIndex.getOrDefault(j.getTargetLabel().getLabelRepresentation(), pc + 1);
-                    }
-                    return pc + 1;
+                return pc + 1;
+            }
+            case "JUMP_EQUAL_VARIABLE" -> {
+                logic.instruction.JumpEqualVariableInstruction j = (logic.instruction.JumpEqualVariableInstruction) instr;
+                long v1 = context.getVariableValue(j.getVariable());
+                long v2 = context.getVariableValue(j.getVariableName());
+                if (v1 == v2 && j.getTargetLabel() != logic.label.FixedLabel.EMPTY) {
+                    return labelToIndex.getOrDefault(j.getTargetLabel().getLabelRepresentation(), pc + 1);
                 }
-                case "GOTO_LABEL" -> {
-                    logic.instruction.GoToLabelInstruction g = (logic.instruction.GoToLabelInstruction) instr;
-                    if (g.getGoToLabel() == logic.label.FixedLabel.EXIT) {
-                        return instrs.size();  // יציאה
-                    }
-                    return labelToIndex.getOrDefault(g.getGoToLabel().toString(), pc + 1);
+                return pc + 1;
+            }
+            case "GOTO_LABEL" -> {
+                logic.instruction.GoToLabelInstruction g = (logic.instruction.GoToLabelInstruction) instr;
+                if (g.getGoToLabel() == logic.label.FixedLabel.EXIT) {
+                    return instrs.size();  // יציאה
                 }
-
-                case "QUOTE" -> {
-                    logic.program.ProgramImpl tmp = new logic.program.ProgramImpl("step-quote");
-                    tmp.setFunctionMap(program.getFunctionMap());
-                    tmp.setVariables(program.getVars());
-                    tmp.addInstruction(instr);
-                    tmp.executeBlackBox(context);
+                return labelToIndex.getOrDefault(g.getGoToLabel().toString(), pc + 1);
+            }
+            case "JUMP_EQUAL_FUNCTION" -> {
+                JumpEqualFunctionInstruction jef = (JumpEqualFunctionInstruction) instr;
+                Program func = program.getFunctionMap().get(jef.getFunctionName());
+                if (func == null) {
+                    System.out.println("⚠ Unknown function in JUMP_EQUAL_FUNCTION: " + jef.getFunctionName());
                     return pc + 1;
                 }
 
-                default -> {
-                    System.out.println(" Unsupported black-box step for: " + name + " (skipping)");
-                    return pc + 1;
+                ExecutionContext subContext = new ExecutionContextImpl(new HashMap<>(), program.getFunctionMap());
+                List<Variable> args = jef.getArguments();
+                List<Variable> funcInputs = func.getVars().stream()
+                        .filter(v -> v.getType() == VariableType.INPUT)
+                        .toList();
+                for (int i = 0; i < Math.min(args.size(), funcInputs.size()); i++) {
+                    long argVal = context.getVariableValue(args.get(i));
+                    subContext.updateVariable(funcInputs.get(i), argVal);
                 }
+
+                long qVal = func.executeBlackBox(subContext);
+                long vVal = context.getVariableValue(jef.getVariable());
+
+                if (vVal == qVal && jef.getTargetLabel() != logic.label.FixedLabel.EMPTY) {
+                    return labelToIndex.getOrDefault(jef.getTargetLabel().getLabelRepresentation(), pc + 1);
+                }
+                return pc + 1;
+            }
+
+
+            case "QUOTE" -> {
+                logic.program.ProgramImpl tmp = new logic.program.ProgramImpl("step-quote");
+                tmp.setFunctionMap(program.getFunctionMap());
+                tmp.setVariables(program.getVars());
+                tmp.addInstruction(instr);
+                tmp.executeBlackBox(context);
+                return pc + 1;
+            }
+
+            default -> {
+                System.out.println(" Unsupported black-box0 step for: " + name + " (skipping)");
+                return pc + 1;
+            }
+
         }
     }
 

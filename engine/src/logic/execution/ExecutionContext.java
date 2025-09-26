@@ -20,4 +20,6 @@ public interface ExecutionContext {
     Program getProgramMap(String functionName);
 
     void setFunctionMap(Map<String, Program> functionMap);
+
+    void reset();
 }

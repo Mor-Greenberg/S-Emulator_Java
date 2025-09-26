@@ -252,7 +252,7 @@ public class ProgramImpl implements Program {
                     context.updateVariable(instr.getVariable(), 0);
                     pc++;
                 }
-                case "JUMP_NOT_ZERO", "JNZ" -> {
+                case "JUMP_NOT_ZERO" -> {
                     JumpNotZeroInstruction jnz = (JumpNotZeroInstruction) instr;
                     long val = context.getVariableValue(jnz.getVariable());
                     if (val != 0 && jnz.getJnzLabel() != FixedLabel.EMPTY) {
@@ -263,14 +263,15 @@ public class ProgramImpl implements Program {
                 }
 
                 case "JUMP_ZERO" -> {
-                    long val = context.getVariableValue(instr.getVariable());
                     JumpZeroInstruction jz = (JumpZeroInstruction) instr;
+                    long val = context.getVariableValue(jz.getVariable());
                     if (val == 0 && jz.getJZLabel() != FixedLabel.EMPTY) {
                         pc = labelToIndex.getOrDefault(jz.getJZLabel().getLabelRepresentation(), pc + 1);
                     } else {
                         pc++;
                     }
                 }
+
                 case "JUMP_EQUAL_CONSTANT" -> {
                     JumpEqualConstantInstruction jec = (JumpEqualConstantInstruction) instr;
                     long val = context.getVariableValue(jec.getVariable());
@@ -293,26 +294,53 @@ public class ProgramImpl implements Program {
                 case "GOTO_LABEL" -> {
                     GoToLabelInstruction g = (GoToLabelInstruction) instr;
                     if (g.getGoToLabel() == FixedLabel.EXIT) {
-                        pc = instrs.size(); // יציאה
+                        pc = instrs.size();
                     } else {
                         pc = labelToIndex.getOrDefault(g.getGoToLabel().toString(), pc + 1);
                     }
                 }
+                case "JUMP_EQUAL_FUNCTION" -> {
+                    JumpEqualFunctionInstruction jef = (JumpEqualFunctionInstruction) instr;
+
+                    Program func = this.functionMap.get(jef.getFunctionName());
+                    if (func == null) {
+                        pc++;
+                        break;
+                    }
+
+                    ExecutionContext subCtx = new ExecutionContextImpl(new HashMap<>(), this.functionMap);
+
+                    List<Variable> args = jef.getArguments();
+                    List<Variable> funcInputs = func.getVars().stream()
+                            .filter(v -> v.getType() == VariableType.INPUT)
+                            .toList();
+
+                    for (int i = 0; i < Math.min(args.size(), funcInputs.size()); i++) {
+                        long argVal = context.getVariableValue(args.get(i));
+                        subCtx.updateVariable(funcInputs.get(i), argVal);
+                    }
+
+                    long result = func.executeBlackBox(subCtx);
+
+                    long vVal = context.getVariableValue(jef.getVariable());
+                    if (vVal == result && jef.getTargetLabel() != FixedLabel.EMPTY) {
+                        pc = labelToIndex.getOrDefault(jef.getTargetLabel().getLabelRepresentation(), pc + 1);
+                    } else {
+                        pc++;
+                    }
+                }
+
                 case "QUOTE" -> {
                     QuoteInstruction q = (QuoteInstruction) instr;
 
-                    // הפעלת הפונקציה שמצוטטת
                     Program func = this.functionMap.get(q.getQuotedFunctionName());
                     if (func == null) {
-                        System.out.println("⚠ Unknown function in QUOTE: " + q.getQuotedFunctionName());
                         pc++;
                         continue;
                     }
 
-                    // קונטקסט חדש עבור הפונקציה המצוטטת
                     ExecutionContext subContext = new ExecutionContextImpl(new HashMap<>(), this.functionMap);
 
-                    // העברת ערכים של הארגומנטים
                     List<Variable> args = q.getArguments();
                     List<Variable> funcInputs = func.getVars().stream()
                             .filter(v -> v.getType() == VariableType.INPUT)
@@ -323,17 +351,14 @@ public class ProgramImpl implements Program {
                         subContext.updateVariable(funcInputs.get(i), argVal);
                     }
 
-                    // הרצת הפונקציה כ־black box
                     long subResult = func.executeBlackBox(subContext);
 
-                    // שמירת התוצאה במשתנה היעד של ה־QUOTE
                     context.updateVariable(q.getVariable(), subResult);
 
                     pc++;
                 }
 
                 default -> {
-                    System.out.println("⚠ Unsupported instruction in black-box mode: " + instr.getName());
                     pc++;
                 }
             }
@@ -345,5 +370,14 @@ public class ProgramImpl implements Program {
                 .orElseThrow(() -> new IllegalStateException("No result variable found"));
         return context.getVariableValue(resultVar);
     }
+    public Map<Variable, Long> getVarsAsMapWithZeroes() {
+        Map<Variable, Long> map = new HashMap<>();
+        for (Variable var : getVars()) {
+            map.put(var, 0L);
+        }
+        return map;
+    }
+
+
 
 }

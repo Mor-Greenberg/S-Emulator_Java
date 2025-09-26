@@ -34,6 +34,7 @@ import logic.execution.ExecutionContext;
 import logic.execution.ExecutionContextImpl;
 import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
+import logic.instruction.QuoteInstruction;
 import logic.label.FixedLabel;
 import logic.program.Program;
 import logic.xml.XmlLoader;
@@ -45,10 +46,8 @@ import utils.Utils;
 import java.io.File;
 import java.io.IOException;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static gui.instructionTable.InstructionRow.*;
@@ -60,7 +59,6 @@ import static utils.Utils.*;
 public class MainScreenController {
 
     @FXML private Button loadFileButton;
-    private SProgram loadedSProgram;
     private Program loadedProgram;
     private ProgramDisplayImpl programDisplay;
     public void setProgramDisplay(ProgramDisplayImpl programDisplay) {
@@ -72,9 +70,6 @@ public class MainScreenController {
     @FXML private Label statusLabel;
 
     @FXML private Button showStatusButton;
-
-
-    private ExecutionContext executionContext;
 
     @FXML private TableView<InstructionRow> instructionTable;
     @FXML private TableColumn<InstructionRow, Number> colNumber;
@@ -153,7 +148,9 @@ public class MainScreenController {
         variableNameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
         variableValueCol.setCellValueFactory(new PropertyValueFactory<>("value"));
 
+
     }
+
     @FXML
     private void loadFilePressed(ActionEvent event) {
 
@@ -179,7 +176,9 @@ public class MainScreenController {
 
                     Thread.sleep(500);
 
+
                     SProgram sProgram = XmlLoader.loadFromFile(selectedFile.getAbsolutePath());
+
                     if (sProgram == null) {
                         throw new IllegalStateException("Failed to parse XML file");
                     }
@@ -189,13 +188,10 @@ public class MainScreenController {
                     XmlMapper mapper = new XmlMapper(context);
                     loadedProgram = mapper.map(sProgram);
 
+
                     context.initializeVarsFromProgram(loadedProgram);
 
-                    System.out.println("Input vars: " +
-                            loadedProgram.getVars().stream()
-                                    .filter(v -> v.getType() == VariableType.INPUT)
-                                    .toList()
-                    );
+                    this.mainProgram = loadedProgram;
 
                     Platform.runLater(() -> {
                         if (!enableAnimation) {
@@ -208,6 +204,8 @@ public class MainScreenController {
                             );
                             timeline.play();
                         }
+
+                        loadProgramSelector(loadedProgram);
 
                         // ✅ Debug: הדפסה של הפקודות
                         System.out.println("=== Program Loaded: " + loadedProgram.getName() + " ===");
@@ -244,13 +242,14 @@ public class MainScreenController {
     }
     @FXML
     private void stepOverExecution(ActionEvent e) {
+        if (loadedProgram == null) {
+            showError("No program loaded.");
+            return;
+        }
         ExecutionRunner.stepOver();
         updateVariablesView();
         ExecutionRunner.highlightCurrentInstruction(ExecutionRunner.getCurrentIndex(),instructionTable);
     }
-
-
-
     @FXML
     private void stopExecution(ActionEvent e) {
         if (loadedProgram == null) {
@@ -260,8 +259,6 @@ public class MainScreenController {
         ExecutionRunner.stop();
         showAlert("Program stopped.");
     }
-
-
     @FXML
     private void startDebug(ActionEvent e) {
         if (loadedProgram == null) {
@@ -280,10 +277,8 @@ public class MainScreenController {
         }
         ExecutionRunner.resume();
         updateVariablesView();
+
     }
-
-
-
     @FXML
     private void toggleAnimations(ActionEvent event) {
         enableAnimation = animationToggleButton.isSelected();
@@ -414,6 +409,10 @@ public class MainScreenController {
     }
     @FXML
     private void onCurrMaxDegreeButton() {
+        if (loadedProgram == null) {
+            showError("No program loaded.");
+            return;
+        }
         int current = ExecutionRunner.getCurrentDegree();
         Map<Variable, Long> variableState = loadedProgram.getVars().stream()
                 .collect(Collectors.toMap(v -> v, v -> 0L));
@@ -483,4 +482,74 @@ public class MainScreenController {
     public TableView<InstructionRow> getInstructionTable() {
         return instructionTable;
     }
+
+    private Program mainProgram;
+
+    private Map<String, Program> nameToProgramMap = new HashMap<>();
+
+    public void loadProgramSelector(Program mainProgram) {
+        this.mainProgram = mainProgram;
+        nameToProgramMap.clear();
+
+        nameToProgramMap.put(mainProgram.getName(), mainProgram);
+
+        if (mainProgram.getFunctionMap() != null) {
+            nameToProgramMap.putAll(mainProgram.getFunctionMap());
+        }
+    }
+
+    @FXML
+    private void onProgramFunctionButtonClicked() {
+        if (nameToProgramMap.isEmpty()) {
+            showError("No program loaded or no functions available.");
+            return;
+        }
+
+        List<String> options = new ArrayList<>(nameToProgramMap.keySet());
+
+        ChoiceDialog<String> dialog = new ChoiceDialog<>(options.get(0), options);
+        dialog.setTitle("Select Program/Function");
+        dialog.setHeaderText("Choose which program or function to view:");
+        dialog.setContentText("Available options:");
+
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(this::handleProgramFunctionSelection);
+    }
+
+    @FXML
+    private Program selectedContextProgram;
+
+
+    @FXML
+    private void handleProgramFunctionSelection(String selectedName) {
+        Program selected = nameToProgramMap.get(selectedName);
+        if (selected == null) {
+            showError("Selected program/function not found.");
+            return;
+        }
+
+        this.selectedContextProgram = selected;
+
+        Map<String, Program> fullFunctionMap = new HashMap<>(mainProgram.getFunctionMap());
+        fullFunctionMap.put(mainProgram.getName(), mainProgram);
+
+        ExecutionContext context = new ExecutionContextImpl(new HashMap<>(), fullFunctionMap);
+
+        selected.setFunctionMap(fullFunctionMap);
+
+        selected.getInstructions().forEach(instr -> {
+            if (instr instanceof QuoteInstruction qi) {
+                qi.computeDegree(context);
+            }
+        });
+
+        List<AbstractInstruction> expanded = Expand.getExpandedInstructions(selected);
+        if (expanded == null || expanded.isEmpty()) {
+            showError("No instructions to display after expansion.");
+            return;
+        }
+
+        printInstructions(new ArrayList<>(expanded));
+    }
+
 }

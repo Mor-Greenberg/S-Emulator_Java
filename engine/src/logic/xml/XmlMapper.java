@@ -3,7 +3,6 @@ package logic.xml;
 import jaxbV2.jaxb.v2.*;
 import logic.Variable.QuoteVariable;
 import logic.Variable.Variable;
-import logic.Variable.VariableType;
 import logic.execution.ExecutionContext;
 import logic.instruction.*;
 import logic.label.FixedLabel;
@@ -23,6 +22,8 @@ public class XmlMapper {
     }
 
     public Program map(SProgram sProgram) {
+        this.context.reset();
+
         Map<String, Program> functionMap = new HashMap<>();
         if (sProgram.getSFunctions() != null && sProgram.getSFunctions().getSFunction() != null) {
             functionMap = loadFunctions(sProgram.getSFunctions().getSFunction());
@@ -38,6 +39,9 @@ public class XmlMapper {
         mainProgram.setFunctionMap(functionMap);
 
         recomputeQuoteDegrees(mainProgram, functionMap);
+        for (Program func : functionMap.values()) {
+            recomputeQuoteDegrees(func, functionMap);
+        }
 
         return mainProgram;
     }
@@ -63,7 +67,6 @@ public class XmlMapper {
                     functionMap
             );
 
-
             program.addVar(variable);
             program.addLabel(regularLabel);
             program.addInstruction(instr);
@@ -74,10 +77,16 @@ public class XmlMapper {
 
     private Map<String, Program> loadFunctions(List<SFunction> functionList) {
         Map<String, Program> functionMap = new HashMap<>();
+
+        for (SFunction func : functionList) {
+            functionMap.put(func.getName(), new ProgramImpl(func.getName()));
+        }
+
         for (SFunction func : functionList) {
             Program prog = convertToProgram(func.getName(), func.getSInstructions().getSInstruction(), functionMap);
             functionMap.put(prog.getName(), prog);
         }
+
         return functionMap;
     }
 
@@ -100,8 +109,7 @@ public class XmlMapper {
             Label jumpLabel,
             SInstructionArguments sArgs,
             Map<String, Program> functionMap
-    )
-    {
+    ) {
         switch (name) {
             case "INCREASE":
                 return new IncreaseInstruction(variable, regularLabel);
@@ -143,10 +151,9 @@ public class XmlMapper {
             case "ASSIGNMENT": {
                 String assignedVarStr = getArgValueByName(sArgs, "assignedVariable");
                 Variable source = parseVariable(assignedVarStr);
-                program.addVar(source); // עכשיו יש לך גישה ל־program
+                program.addVar(source);
                 return new AssignmentInstruction(regularLabel, variable, source);
             }
-
 
             case "CONSTANT_ASSIGNMENT": {
                 String constantStr = getArgValueByName(sArgs, "constantValue");
@@ -155,20 +162,41 @@ public class XmlMapper {
                 int constant = Integer.parseInt(constantStr);
                 return new ConstantAssignmentInstruction(variable, regularLabel, constant);
             }
+            case "JUMP_EQUAL_FUNCTION": {
+                String targetLabelStr = getArgValueByName(sArgs, "JEFunctionLabel");
+                if (targetLabelStr == null) {
+                    throw new IllegalArgumentException("Missing 'JEFunctionLabel' for JUMP_EQUAL_FUNCTION");
+                }
+                Label targetLabel = XmlParsingUtils.parseLabel(targetLabelStr).orElse(FixedLabel.EMPTY);
+
+                String functionName = getArgValueByName(sArgs, "functionName");
+                if (functionName == null) {
+                    throw new IllegalArgumentException("Missing 'functionName' for JUMP_EQUAL_FUNCTION");
+                }
+
+                String rawArgs = getArgValueByName(sArgs, "functionArguments");
+                List<Variable> argList = new ArrayList<>();
+                if (rawArgs != null && !rawArgs.isEmpty()) {
+                    argList = parseQuoteArgs(rawArgs, functionMap, program, variable);
+                }
+
+                return new JumpEqualFunctionInstruction(variable, targetLabel, functionName, argList, regularLabel);
+            }
+
+
             case "QUOTE": {
                 String quotedFunctionName = getArgValueByName(sArgs, "functionName");
                 String rawArgs = getArgValueByName(sArgs, "functionArguments");
 
                 List<Variable> argumentList = parseQuoteArgs(rawArgs, functionMap, program, variable);
-                QuoteInstruction q = new QuoteInstruction(quotedFunctionName, argumentList, variable);
-                q.computeDegree(context);
-                return q;
+                return new QuoteInstruction(quotedFunctionName, argumentList, variable);
             }
 
             default:
                 throw new IllegalArgumentException("Unknown instruction: " + name);
         }
     }
+
     private String getArgValueByName(SInstructionArguments args, String name) {
         if (args == null || args.getSInstructionArgument() == null) return null;
 
@@ -179,53 +207,77 @@ public class XmlMapper {
         }
         return null;
     }
-    private List<Variable> parseQuoteArgs(String rawArgs, Map<String, Program> functionMap, Program program, Variable destination) {
+
+    private List<Variable> parseQuoteArgs(String rawArgs,
+                                          Map<String, Program> functionMap,
+                                          Program program,
+                                          Variable destination) {
         List<Variable> argumentList = new ArrayList<>();
         if (rawArgs == null || rawArgs.isEmpty()) return argumentList;
 
-        String[] argTokens = rawArgs.split("\\),\\(");
-        for (String token : argTokens) {
-            token = token.replace("(", "").replace(")", "").trim();
+        List<String> tokens = splitTopLevel(rawArgs);
+
+        for (String token : tokens) {
+            token = token.trim();
             if (token.isEmpty()) continue;
 
-            String[] parts = token.split(",");
-            if (parts.length == 1) {
-                String funcOrVarName = parts[0].trim();
-                if (functionMap.containsKey(funcOrVarName)) {
-                    QuoteInstruction innerQuote = new QuoteInstruction(funcOrVarName, new ArrayList<>(), destination);
-                    argumentList.add(new QuoteVariable(innerQuote));
-                } else {
-                    Variable var = parseVariable(funcOrVarName);
-                    program.addVar(var); // ← לוודא שנוסף
-                    argumentList.add(var);
-                }
-            } else {
-                // פונקציה עם ארגומנטים → נבנה רקורסיבית
-                String funcName = parts[0].trim();
+            if (token.startsWith("(") && token.endsWith(")")) {
+                token = token.substring(1, token.length() - 1).trim();
+            }
+
+            List<String> parts = splitTopLevel(token);
+            if (parts.isEmpty()) continue;
+
+            String head = parts.get(0).trim();
+
+            if (functionMap.containsKey(head)) {
                 List<Variable> innerArgs = new ArrayList<>();
-                for (int i = 1; i < parts.length; i++) {
-                    Variable innerVar = parseVariable(parts[i].trim());
-                    program.addVar(innerVar);
-                    innerArgs.add(innerVar);
+                for (int i = 1; i < parts.size(); i++) {
+                    String inner = parts.get(i).trim();
+                    innerArgs.addAll(parseQuoteArgs(inner, functionMap, program, destination));
                 }
-                QuoteInstruction innerQuote = new QuoteInstruction(funcName, innerArgs, destination);
+                QuoteInstruction innerQuote = new QuoteInstruction(head, innerArgs, destination);
                 argumentList.add(new QuoteVariable(innerQuote));
+            } else {
+                Variable var = parseVariable(head);
+                program.addVar(var);
+                argumentList.add(var);
             }
         }
+
         return argumentList;
     }
+
+    private List<String> splitTopLevel(String expr) {
+        List<String> result = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        int depth = 0;
+
+        for (int i = 0; i < expr.length(); i++) {
+            char c = expr.charAt(i);
+            if (c == '(') {
+                depth++;
+                current.append(c);
+            } else if (c == ')') {
+                depth--;
+                current.append(c);
+            } else if (c == ',' && depth == 0) {
+                result.add(current.toString().trim());
+                current.setLength(0);
+            } else {
+                current.append(c);
+            }
+        }
+        if (current.length() > 0) {
+            result.add(current.toString().trim());
+        }
+        return result;
+    }
+
     private void recomputeQuoteDegrees(Program program, Map<String, Program> functionMap) {
         for (Instruction instr : program.getInstructions()) {
             if (instr instanceof QuoteInstruction q) {
                 q.computeDegree(this.context);
-            }
-        }
-
-        for (Program func : functionMap.values()) {
-            for (Instruction instr : func.getInstructions()) {
-                if (instr instanceof QuoteInstruction q) {
-                    q.computeDegree(this.context);
-                }
             }
         }
     }

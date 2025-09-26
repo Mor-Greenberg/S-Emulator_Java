@@ -34,7 +34,7 @@
             </HBox>
             <HBox fillHeight="false" prefHeight="38.0" prefWidth="600.0" spacing="10.0">
                <children>
-                  <Button mnemonicParsing="false" text="Program\function selector" />
+                  <Button fx:id="programFunctionSelector" mnemonicParsing="false" onAction="#onProgramFunctionButtonClicked" text="Program\function selector" />
                   <Button mnemonicParsing="false" text="Collapse" />
                   <Button fx:id="currMaxDegreeButton" mnemonicParsing="false" onAction="#onCurrMaxDegreeButton" text="Current / Maximum degree" />
                   <Button fx:id="expandButton" mnemonicParsing="false" onAction="#onExpandButton" text="Expand" />

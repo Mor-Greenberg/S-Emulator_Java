@@ -22,7 +22,7 @@ public class QuoteInstruction extends AbstractInstruction {
         this.functionName = functionName;
         this.arguments = arguments;
         this.destination = destination;
-        this.degree = -1; // נקבע בפועל בקונסטרקטור השני
+        this.degree = -1;
     }
     public QuoteInstruction(Label label, String functionName, List<Variable> arguments, Variable destination, ExecutionContext context) {
         super(InstructionData.QUOTE, destination, label, InstructionType.S);
@@ -30,7 +30,6 @@ public class QuoteInstruction extends AbstractInstruction {
         this.arguments = arguments;
         this.destination = destination;
 
-        // חישוב דרגת ההרחבה מתוך הפונקציה המצוטטת
         this.quotedProgram = context.getProgramMap(functionName);
         if (this.quotedProgram == null) {
             throw new RuntimeException("Function not found: " + functionName);
@@ -65,9 +64,7 @@ public class QuoteInstruction extends AbstractInstruction {
         for (Variable v : arguments) {
             sb.append(",");
             if (v instanceof QuoteVariable qv) {
-                // נשתמש בשם הפונקציה המצוטטת שבתוך ה-QuoteInstruction
                 sb.append(qv.getQuote().getQuotedProgramName());
-                // ואם יש ארגומנטים פנימיים – גם אותם
                 if (!qv.getQuote().getArguments().isEmpty()) {
                     sb.append("(");
                     sb.append(
@@ -88,6 +85,11 @@ public class QuoteInstruction extends AbstractInstruction {
 
     @Override
     public List<AbstractInstruction> expand(ExecutionContext context) {
+        if (this.getDegree() <= 0) {
+            System.out.println("Skipping expansion of quote: " + functionName + " (degree 0)");
+            return Collections.singletonList(this);
+        }
+
         List<AbstractInstruction> result = new ArrayList<>();
 
         Program quoted = context.getProgramMap(functionName);
@@ -97,7 +99,6 @@ public class QuoteInstruction extends AbstractInstruction {
 
         Map<String, Variable> varMap = new HashMap<>();
 
-        // יצירת משתני עבודה zi ← vi
         for (int i = 0; i < arguments.size(); i++) {
             String formal = "x" + (i + 1);
             Variable zi = context.findAvailableVariable();
@@ -106,29 +107,22 @@ public class QuoteInstruction extends AbstractInstruction {
             Variable actual = arguments.get(i);
 
             if (actual instanceof QuoteVariable qv) {
-                // ארגומנט שהוא בעצמו QUOTE → מרחיבים אותו
                 List<AbstractInstruction> innerExpansion = qv.getQuoteInstruction().expand(context);
                 result.addAll(innerExpansion);
-                // התוצאה של ההרחבה נשמרת ב־zi
                 result.add(new AssignmentInstruction(zi, qv.getQuoteInstruction().getDestination()));
             } else {
-                // ארגומנט רגיל (x1, y, z2)
                 result.add(new AssignmentInstruction(zi, actual));
             }
         }
 
-        // משתנה zy ← y
         Variable zy = context.findAvailableVariable();
         varMap.put("y", zy);
 
-        // תווית סיום במקום EXIT
         Label lend = context.findAvailableLabel();
 
-        // קוד Q אחרי החלפות
         List<AbstractInstruction> expandedQ =
                 QuoteProcessor.rewriteInstructions(quoted, varMap, lend, context);
 
-        // טיפול בתווית המקורית (אם יש)
         if (getLabel() != FixedLabel.EMPTY) {
             if (!expandedQ.isEmpty() && !expandedQ.get(0).getLabel().equals(FixedLabel.EMPTY)) {
                 AbstractInstruction neutral = new NoOpInstruction(destination);
@@ -141,17 +135,12 @@ public class QuoteInstruction extends AbstractInstruction {
 
         result.addAll(expandedQ);
 
-        // תווית Lend: V ← zy
         AssignmentInstruction assignBack = new AssignmentInstruction(lend, destination, zy);
         result.add(assignBack);
 
-        // סימון קוד ההרחבה כנגזר מ־this
         for (AbstractInstruction instr : result) {
             markAsDerivedFrom(instr, this);
         }
-
-        System.out.println("Expanding quote: " + functionName);
-
         return result;
     }
 
@@ -191,7 +180,6 @@ public class QuoteInstruction extends AbstractInstruction {
             throw new RuntimeException("Function not found: " + functionName);
         }
 
-        // 1) עומק מתוך התוכנית המצוטטת (כולל QUOTE-ים פנימיים שבתוכה)
         int programDepth = 0;
         for (Instruction instr : quoted.getInstructions()) {
             if (instr instanceof QuoteInstruction qi) {
@@ -202,7 +190,6 @@ public class QuoteInstruction extends AbstractInstruction {
             }
         }
 
-        // 2) עומק מתוך QUOTE-ים שמועברים כארגומנטים (Const7, Successor(x1), ...)
         int argsDepth = 0;
         for (Variable arg : arguments) {
             if (arg instanceof logic.Variable.QuoteVariable qv) {
@@ -212,15 +199,8 @@ public class QuoteInstruction extends AbstractInstruction {
             }
         }
 
-        // 3) הדרגה של ה-QUOTE הנוכחי
         this.degree = 1 + Math.max(programDepth, argsDepth);
 
-        System.out.println(
-                "QUOTE Degree for " + functionName +
-                        " => programDepth=" + programDepth +
-                        ", argsDepth=" + argsDepth +
-                        ", degree=" + this.degree
-        );
     }
 
 

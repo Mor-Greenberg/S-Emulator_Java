@@ -88,12 +88,10 @@ public class ProgramDisplayImpl {
     private MainScreenController controller;
 
     public ProgramDisplayImpl(Program program) {
-        System.out.println("📦 Constructor called with PROGRAM only!");
         this.program = program;
     }
 
     public ProgramDisplayImpl(MainScreenController controller) {
-        System.out.println("📦 Constructor called with CONTROLLER!");
         this.controller = controller;
     }
 
@@ -102,16 +100,7 @@ public class ProgramDisplayImpl {
         this.program = program;
     }
 
-    /**
-     * הדפסת פקודות לתוך טבלת JavaFX
-     */
-    public void printInstructions(List<Instruction> instructions) {
-        if (controller != null) {
-            Platform.runLater(() -> controller.printInstructions(instructions));
-        } else {
-            printInstructionsToConsole(instructions);
-        }
-    }
+
 
 
     private void printInstructionsToConsole(List<Instruction> instructions) {
@@ -166,27 +155,7 @@ public class ProgramDisplayImpl {
         }
     }
 
-    public void printProgram(boolean xmlLoaded) {
-        if (!xmlLoaded) {
-            System.out.println("XML is not loaded, returning");
-            return;
-        }
 
-        System.out.println("Program Name: " + program.getName());
-        System.out.println("*Variables*");
-        for (var variable : program.getVars()) {
-            System.out.println(variable.getRepresentation());
-        }
-    }
-    public void addInstructionRow(Instruction instr, int index) {
-        InstructionRow instructionRow=new InstructionRow(index,instr.getType().toString(),instr.getLabel().getLabelRepresentation(),instr.commandDisplay(),instr.getCycles());
-        if (controller != null) {
-            Platform.runLater(() -> controller.addInstructionRow(instructionRow));
-        } else {
-            // ברירת מחדל: הדפסה לקונסול
-            System.out.println("#" + index + " " + instr.commandDisplay());
-        }
-    }
 
 }
 
