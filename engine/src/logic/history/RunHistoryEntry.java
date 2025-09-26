@@ -46,4 +46,11 @@ public class RunHistoryEntry {
     public boolean isDebug() {
         return isDebug;
     }
+    public int getLastDegree(){
+        return this.expansionDegree;
+    }
+
+    public Map<Variable, Long> getInputsMap() {
+        return inputs;
+    }
 }

@@ -44,16 +44,30 @@ public class ExecutionRunner {
         return currentDegree;
     }
 
-    // ---------------- Normal Run ----------------
+    public static void setPrefilledDegree(int degree) {
+        usePrefilledDegree = true;
+        prefilledDegree = degree;
+    }
+
+    public static void setPrefilledInputs(Map<Variable, Long> inputs) {
+        prefilledInputs = (inputs == null) ? null : new HashMap<>(inputs);
+    }
+
+    private static int resolveDegree(Program program, ExecutionContext context) {
+        if (usePrefilledDegree) {
+            usePrefilledDegree = false;  // נשתמש פעם אחת
+            return prefilledDegree;
+        }
+        return program.askForDegree(context);
+    }
+
     public static void runProgram(Program program, ProgramDisplayImpl programDisplay) {
         Map<Variable, Long> variableState = new HashMap<>();
         ExecutionContext context = new ExecutionContextImpl(variableState, program.getFunctionMap());
 
-        currentDegree = program.askForDegree(context);
-
-        HandleExecution handleExecution = new HandleExecution(program);
-        handleExecution.collectInputFromUserFX(program, context);
-        lastInputsMap = new HashMap<>(handleExecution.getInputsMap());
+        // דרגה + קלטים (או מהמשתמש או מה-prefill)
+        currentDegree = resolveDegree(program, context);
+        applyInputsToContext(program, context);
 
         // ---------------- Degree 0 (black-box) ----------------
         if (currentDegree == 0) {
@@ -97,7 +111,7 @@ public class ExecutionRunner {
 
             RunHistoryEntry entry = new RunHistoryEntry(
                     runCounter++, 0,
-                    handleExecution.getInputsMap(),
+                    lastInputsMap,
                     result,
                     debugInstructions.stream().mapToInt(Instruction::getCycles).sum(),
                     false
@@ -135,12 +149,8 @@ public class ExecutionRunner {
 
             ctrl.updateVariablesView();
 
-            int basicCount = (int) activeInstr.stream()
-                    .filter(i -> i.getType().toString().equals("B"))
-                    .count();
-            int syntheticCount = (int) activeInstr.stream()
-                    .filter(i -> i.getType().toString().equals("S"))
-                    .count();
+            int basicCount = (int) activeInstr.stream().filter(i -> i.getType().toString().equals("B")).count();
+            int syntheticCount = (int) activeInstr.stream().filter(i -> i.getType().toString().equals("S")).count();
             int totalCycles = activeInstr.stream().mapToInt(Instruction::getCycles).sum();
 
             ctrl.updateSummaryView(activeInstr.size(), basicCount, syntheticCount, totalCycles);
@@ -155,7 +165,7 @@ public class ExecutionRunner {
 
         RunHistoryEntry entry = new RunHistoryEntry(
                 runCounter++, currentDegree,
-                handleExecution.getInputsMap(), result, sumCycles, false);
+                lastInputsMap, result, sumCycles, false);
         history.add(entry);
         lastVariableState = new HashMap<>(variableState);
     }
@@ -173,9 +183,9 @@ public class ExecutionRunner {
 
         debugContext = new ExecutionContextImpl(new HashMap<>(), program.getFunctionMap());
 
-        currentDegree = program.askForDegree(debugContext);
-        debugHandleExecution = new HandleExecution(program);
-        debugHandleExecution.collectInputFromUserFX(program, debugContext);
+        // דרגה + קלטים (או מהמשתמש או מה-prefill)
+        currentDegree = resolveDegree(program, debugContext);
+        applyInputsToContext(program, debugContext);
 
         if (currentDegree == 0) {
             long result = program.executeBlackBox(debugContext);
@@ -192,11 +202,10 @@ public class ExecutionRunner {
             }
             bbPc = 0;
 
-
             Platform.runLater(() -> {
                 MainScreenController ctrl = MainScreenController.getInstance();
                 ctrl.setOriginalInstructions(debugInstructions);
-                ctrl.clearInstructionTable();     // ← להתחיל מטבלה ריקה
+                ctrl.clearInstructionTable();
                 ctrl.updateVariablesView();
                 ctrl.updateCyclesView(0);
                 ctrl.updateSummaryView(
@@ -213,10 +222,9 @@ public class ExecutionRunner {
 
             RunHistoryEntry entry = new RunHistoryEntry(
                     runCounter++, 0,
-                    debugHandleExecution.getInputsMap(), result, 0, true);
+                    lastInputsMap, result, 0, true);
             history.add(entry);
             lastVariableState = new HashMap<>(debugContext.getVariableState());
-
             return;
         }
 
@@ -238,7 +246,6 @@ public class ExecutionRunner {
             ctrl.updateCyclesView(0);
         });
     }
-
     public static void stepOver() {
 
         if (!debugMode){
@@ -337,8 +344,6 @@ public class ExecutionRunner {
 
         currentIndex++;
     }
-
-
     public static void resume() {
         if (!debugMode || currentIndex >= debugInstructions.size()) return;
 
@@ -377,7 +382,7 @@ public class ExecutionRunner {
             }
 
             if (currentIndex >= debugInstructions.size()) {
-                saveDebugHistory();
+                saveDebugHistory();   // ← עכשיו בטוח לא יקרוס
                 generateSummary(debugInstructions);
             }
         }).start();
@@ -385,9 +390,22 @@ public class ExecutionRunner {
 
     private static void saveDebugHistory() {
         long result = debugContext.getVariableState().getOrDefault(Variable.RESULT, -1L);
+
+        // אם debugHandleExecution לא קיים (כמו ב-Re-Run) נ fallback ל-lastInputsMap
+        Map<Variable, Long> inputs;
+        if (debugHandleExecution != null) {
+            inputs = debugHandleExecution.getInputsMap();
+        } else {
+            inputs = lastInputsMap;
+        }
+
         RunHistoryEntry entry = new RunHistoryEntry(
-                runCounter++, currentDegree,
-                debugHandleExecution.getInputsMap(), result, executedCycles, true
+                runCounter++,
+                currentDegree,
+                inputs != null ? new HashMap<>(inputs) : Collections.emptyMap(),
+                result,
+                executedCycles,
+                true
         );
         history.add(entry);
         lastVariableState = new HashMap<>(debugContext.getVariableState());
@@ -534,6 +552,35 @@ public class ExecutionRunner {
                 return pc + 1;
             }
 
+        }
+    }
+
+    // --- Prefill support ---
+    private static Map<Variable, Long> prefilledInputs = null;
+
+
+
+
+    // ExecutionRunner.java
+
+    private static boolean usePrefilledDegree = false;
+    private static int prefilledDegree = 0;
+
+
+    private static void applyInputsToContext(Program program, ExecutionContext context) {
+        if (prefilledInputs != null) {
+            program.getVars().stream()
+                    .filter(v -> v.getType() == logic.Variable.VariableType.INPUT)
+                    .forEach(v -> {
+                        Long val = prefilledInputs.get(v);
+                        if (val != null) context.updateVariable(v, val);
+                    });
+            lastInputsMap = new HashMap<>(prefilledInputs);
+            prefilledInputs = null;  // נצרוך פעם אחת
+        } else {
+            HandleExecution handleExecution = new HandleExecution(program);
+            handleExecution.collectInputFromUserFX(program, context);
+            lastInputsMap = new HashMap<>(handleExecution.getInputsMap());
         }
     }
 

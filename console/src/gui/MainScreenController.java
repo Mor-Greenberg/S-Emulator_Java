@@ -4,6 +4,7 @@ import gui.highlightSelectionPopup.HighlightAction;
 import gui.highlightSelectionPopup.HighlightChoiceListener;
 import gui.highlightSelectionPopup.HighlightSelectionController;
 import gui.instructionTable.ExpandedTable;
+import gui.reRun.ReRunService;
 import gui.showStatus.Status;
 import gui.variablesTable.VariableRow;
 import javafx.fxml.FXMLLoader;
@@ -550,6 +551,35 @@ public class MainScreenController {
         }
 
         printInstructions(new ArrayList<>(expanded));
+    }
+
+    @FXML
+    void onReRunClicked() {
+        if (loadedProgram == null) {
+            showError("No program loaded.");
+            return;
+        }
+
+        // שלב 1: מכינים את הדרגה והקלטים מההרצה האחרונה
+        ReRunService.prepareReRun(loadedProgram);
+
+        // שלב 2: שואלים את המשתמש איך להמשיך
+        List<String> options = Arrays.asList("Run", "Debug");
+        ChoiceDialog<String> dialog = new ChoiceDialog<>("Run", options);
+        dialog.setTitle("Re-Run Options");
+        dialog.setHeaderText("Select how you want to re-run the program");
+        dialog.setContentText("Mode:");
+
+        Optional<String> result = dialog.showAndWait();
+
+        if (result.isEmpty()) return;
+
+        String choice = result.get();
+        if (choice.equals("Run")) {
+            ExecutionRunner.runProgram(loadedProgram, programDisplay);
+        } else if (choice.equals("Debug")) {
+            ExecutionRunner.startDebug(loadedProgram);
+        }
     }
 
 }
