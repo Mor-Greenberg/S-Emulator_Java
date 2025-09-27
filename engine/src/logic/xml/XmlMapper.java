@@ -21,7 +21,7 @@ public class XmlMapper {
         this.context = context;
     }
 
-    public Program map(SProgram sProgram) {
+    public Program map(SProgram sProgram, String path) {
         this.context.reset();
 
         Map<String, Program> functionMap = new HashMap<>();
@@ -36,7 +36,10 @@ public class XmlMapper {
                 sProgram.getSInstructions().getSInstruction(),
                 functionMap
         );
+
         mainProgram.setFunctionMap(functionMap);
+
+        XmlValidation.validateAll(path, mainProgram, new ArrayList<>(functionMap.values()));
 
         recomputeQuoteDegrees(mainProgram, functionMap);
         for (Program func : functionMap.values()) {
@@ -45,6 +48,7 @@ public class XmlMapper {
 
         return mainProgram;
     }
+
 
     private Program convertToProgram(String name, List<SInstruction> sInstructions, Map<String, Program> functionMap) {
         Program program = new ProgramImpl(name);
@@ -183,13 +187,12 @@ public class XmlMapper {
                 return new JumpEqualFunctionInstruction(variable, targetLabel, functionName, argList, regularLabel);
             }
 
-
             case "QUOTE": {
                 String quotedFunctionName = getArgValueByName(sArgs, "functionName");
                 String rawArgs = getArgValueByName(sArgs, "functionArguments");
 
                 List<Variable> argumentList = parseQuoteArgs(rawArgs, functionMap, program, variable);
-                return new QuoteInstruction(quotedFunctionName, argumentList, variable);
+                return new QuoteInstruction(regularLabel, quotedFunctionName, argumentList, variable);
             }
 
             default:

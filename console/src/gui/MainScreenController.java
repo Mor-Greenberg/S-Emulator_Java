@@ -113,13 +113,13 @@ public class MainScreenController {
 
     @FXML private ToggleButton animationToggleButton;
 
-    private boolean enableAnimation = true; // set to false to skip animation
+    private boolean enableAnimation = false;
 
 
     @FXML
     public void initialize() {
-        animationToggleButton.setSelected(true);
-        animationToggleButton.setText("Animations On");
+        animationToggleButton.setSelected(false);
+        animationToggleButton.setText("Animations Off");
         colNumber.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getNumber()));
         colType.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getType()));
         colLabel.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getLabel()));
@@ -178,7 +178,8 @@ public class MainScreenController {
                     Thread.sleep(500);
 
 
-                    SProgram sProgram = XmlLoader.loadFromFile(selectedFile.getAbsolutePath());
+                   String path= selectedFile.getAbsolutePath();
+                    SProgram sProgram = XmlLoader.loadFromFile(path);
 
                     if (sProgram == null) {
                         throw new IllegalStateException("Failed to parse XML file");
@@ -187,7 +188,7 @@ public class MainScreenController {
                     ExecutionContextImpl context = new ExecutionContextImpl(new HashMap<>(), new HashMap<>());
 
                     XmlMapper mapper = new XmlMapper(context);
-                    loadedProgram = mapper.map(sProgram);
+                    loadedProgram = mapper.map(sProgram,path);
 
 
                     context.initializeVarsFromProgram(loadedProgram);

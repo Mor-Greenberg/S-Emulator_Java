@@ -15,11 +15,16 @@ public class MainFX extends Application {
         MainScreenController controller = fxmlLoader.getController();
 
         ProgramDisplayImpl display = new ProgramDisplayImpl(controller);
-
         controller.setProgramDisplay(display);
 
         primaryStage.setTitle("S-Emulator");
-        primaryStage.setScene(new Scene(root));
+
+        Scene scene = new Scene(root, 600, 400); // גודל התחלתי נוח
+        primaryStage.setScene(scene);
+
+
+
+        primaryStage.setResizable(true); // לא חובה (ברירת מחדל true), אבל טוב לכתוב מפורשות
         primaryStage.show();
     }
 

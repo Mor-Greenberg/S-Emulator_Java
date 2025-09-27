@@ -14,12 +14,10 @@ public class ReRunService {
             return;
         }
 
-        // לוקחים את ההרצה האחרונה מהיסטוריה
         RunHistoryEntry last = ExecutionRunner.getHistory().isEmpty() ? null :
                 ExecutionRunner.getHistory().get(ExecutionRunner.getHistory().size() - 1);
 
         if (last != null) {
-            // מזריקים דרגה וקלטים להרצה הבאה
             ExecutionRunner.setPrefilledDegree(last.getLastDegree());
             ExecutionRunner.setPrefilledInputs(last.getInputsMap());
         } else {

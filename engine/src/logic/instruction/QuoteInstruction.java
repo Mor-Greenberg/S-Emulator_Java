@@ -24,6 +24,13 @@ public class QuoteInstruction extends AbstractInstruction {
         this.destination = destination;
         this.degree = -1;
     }
+    public QuoteInstruction(Label label, String functionName, List<Variable> arguments, Variable destination) {
+        super(InstructionData.QUOTE, destination, label, InstructionType.S);
+        this.functionName = functionName;
+        this.arguments = arguments;
+        this.destination = destination;
+        this.degree = -1;
+    }
     public QuoteInstruction(Label label, String functionName, List<Variable> arguments, Variable destination, ExecutionContext context) {
         super(InstructionData.QUOTE, destination, label, InstructionType.S);
         this.functionName = functionName;
@@ -31,9 +38,7 @@ public class QuoteInstruction extends AbstractInstruction {
         this.destination = destination;
 
         this.quotedProgram = context.getProgramMap(functionName);
-        if (this.quotedProgram == null) {
-            throw new RuntimeException("Function not found: " + functionName);
-        }
+
 
         int maxDegreeInQ = this.quotedProgram.getInstructions().stream()
                 .mapToInt(instr -> ((AbstractInstruction) instr).getDegree())
@@ -41,9 +46,6 @@ public class QuoteInstruction extends AbstractInstruction {
                 .orElse(0);
 
         this.degree = maxDegreeInQ + 1;
-
-
-        System.out.println("QUOTE Degree for " + functionName + " = " + this.degree);
     }
 
 
@@ -86,7 +88,6 @@ public class QuoteInstruction extends AbstractInstruction {
     @Override
     public List<AbstractInstruction> expand(ExecutionContext context) {
         if (this.getDegree() <= 0) {
-            System.out.println("Skipping expansion of quote: " + functionName + " (degree 0)");
             return Collections.singletonList(this);
         }
 
@@ -193,8 +194,8 @@ public class QuoteInstruction extends AbstractInstruction {
         int argsDepth = 0;
         for (Variable arg : arguments) {
             if (arg instanceof logic.Variable.QuoteVariable qv) {
-                QuoteInstruction inner = qv.getQuote();    // יש לך getQuote()
-                inner.computeDegree(context);              // לחשב לו דרגה
+                QuoteInstruction inner = qv.getQuote();
+                inner.computeDegree(context);
                 argsDepth = Math.max(argsDepth, inner.getDegree());
             }
         }
