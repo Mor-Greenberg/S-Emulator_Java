@@ -75,11 +75,11 @@ public class ExecutionContextImpl implements ExecutionContext {
         }
     }
     public void reset() {
-        variableState.clear();          // איפוס כל המשתנים
-        labels.clear();                 // איפוס התוויות
-        activetedInstructions.clear();  // איפוס היסטוריית פקודות
+        variableState.clear();
+        labels.clear();
+        activetedInstructions.clear();
         if (programMap != null) {
-            programMap.clear();         // איפוס הפונקציות
+            programMap.clear();
         }
     }
 

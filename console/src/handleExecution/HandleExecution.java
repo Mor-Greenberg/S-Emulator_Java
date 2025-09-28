@@ -1,11 +1,9 @@
 package handleExecution;
 
 import javafx.animation.PauseTransition;
-import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
@@ -13,13 +11,9 @@ import javafx.util.Duration;
 import logic.Variable.Variable;
 import logic.Variable.VariableType;
 import logic.execution.ExecutionContext;
-import logic.execution.ExecutionContextImpl;
 import logic.program.Program;
 
 import java.util.*;
-
-import static utils.Utils.showError;
-import static utils.Utils.showInfo;
 
 public class HandleExecution {
     Program program;

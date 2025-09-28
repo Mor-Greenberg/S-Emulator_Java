@@ -5,7 +5,6 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.scene.Parent;
-import programDisplay.ProgramDisplayImpl;
 
 public class MainFX extends Application {
     @Override
@@ -14,17 +13,12 @@ public class MainFX extends Application {
         Parent root = fxmlLoader.load();
         MainScreenController controller = fxmlLoader.getController();
 
-        ProgramDisplayImpl display = new ProgramDisplayImpl(controller);
-        controller.setProgramDisplay(display);
-
         primaryStage.setTitle("S-Emulator");
 
-        Scene scene = new Scene(root, 600, 400); // גודל התחלתי נוח
+        Scene scene = new Scene(root);
         primaryStage.setScene(scene);
 
-
-
-        primaryStage.setResizable(true); // לא חובה (ברירת מחדל true), אבל טוב לכתוב מפורשות
+        primaryStage.setResizable(true);
         primaryStage.show();
     }
 

@@ -32,7 +32,6 @@ public interface Program {
     Map<String, Program> getFunctionMap();
      void setFunctionMap(Map<String, Program> functionMap);
 
-    long executeBlackBox(ExecutionContext context);
 
     Map<Variable, Long> getVarsAsMapWithZeroes();
 }

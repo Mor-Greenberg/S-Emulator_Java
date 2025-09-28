@@ -1,11 +1,7 @@
 package gui.instructionTable;
 
-import javafx.animation.FadeTransition;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.scene.Node;
-import javafx.scene.control.TableRow;
-import javafx.util.Duration;
 import logic.instruction.Instruction;
 import logic.label.FixedLabel;
 
@@ -77,20 +73,6 @@ public class InstructionRow {
                 })
                 .findFirst()
                 .orElse(null);
-    }
-
-    private static List<Instruction> originalInstructions;
-
-    public static void setOriginalInstructions(List<Instruction> instructions) {
-        originalInstructions = instructions;
-    }
-
-    public static List<Instruction> getOriginalInstructions() {
-        return originalInstructions;
-    }
-
-    public SimpleIntegerProperty numberProperty() {
-        return number;
     }
 
 }

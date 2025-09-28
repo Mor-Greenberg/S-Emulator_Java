@@ -19,7 +19,6 @@ import logic.execution.ExecutionContextImpl;
 import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
 import logic.program.Program;
-import programDisplay.ProgramDisplayImpl;
 import utils.Utils;
 
 
@@ -27,8 +26,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static logic.blaxBox.BlackBox.executeBlackBox;
+
 public class Expand {
-public static void expandAction(Program loadedProgram, ProgramDisplayImpl display) {
+public static void expandAction(Program loadedProgram) {
     Map<Variable, Long> variableState = loadedProgram.getVars().stream()
             .collect(Collectors.toMap(v -> v, v -> 0L));
     ExecutionContext context = new ExecutionContextImpl(variableState, loadedProgram.getFunctionMap());
@@ -50,7 +51,7 @@ public static void expandAction(Program loadedProgram, ProgramDisplayImpl displa
     int chosenDegree = result.get();
 
     if (chosenDegree == 0) {
-        long res = loadedProgram.executeBlackBox(context);
+        long res = executeBlackBox(context,loadedProgram);
         System.out.println("Black-box result for y = " + res);
 
         ObservableList<InstructionRow> rows = FXCollections.observableArrayList();

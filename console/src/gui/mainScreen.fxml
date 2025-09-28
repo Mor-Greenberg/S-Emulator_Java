@@ -17,11 +17,11 @@
 <?import javafx.scene.text.Font?>
 
 
-<ScrollPane fitToWidth="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gui.MainScreenController">
+<ScrollPane fitToWidth="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gui.MainScreenController">
    <content>
-      <BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="580.0">
+      <BorderPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="580.0">
          <top>
-            <VBox spacing="5.0" BorderPane.alignment="CENTER">
+            <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" spacing="5.0" BorderPane.alignment="CENTER">
                <children>
                   <Label alignment="CENTER" contentDisplay="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="27.0" prefWidth="601.0" style="-fx-background-color: Crimson;" text="S-Emulator" textFill="#f2f0f0" underline="true" VBox.vgrow="ALWAYS">
                      <font>
@@ -52,10 +52,10 @@
             </VBox>
          </top>
          <bottom>
-            <HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" BorderPane.alignment="CENTER">
+            <HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" BorderPane.alignment="CENTER">
                <children>
-                  <VBox fx:id="historyContainer" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="101.0" prefWidth="378.0" style="-fx-background-color: MediumAquaMarine;" HBox.hgrow="ALWAYS" />
-                  <VBox prefHeight="96.0" prefWidth="0.0" spacing="10.0" style="-fx-background-color: PaleVioletRed;" HBox.hgrow="ALWAYS">
+                  <VBox fx:id="historyContainer" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="101.0" prefWidth="378.0" style="-fx-background-color: MediumAquaMarine;" HBox.hgrow="ALWAYS" />
+                  <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="96.0" prefWidth="0.0" spacing="10.0" style="-fx-background-color: PaleVioletRed;" HBox.hgrow="ALWAYS">
                      <children>
                         <Button fx:id="showStatusButton" mnemonicParsing="false" onAction="#onShowStatusClicked" text="Show status" />
                         <ToggleButton fx:id="animationToggleButton" mnemonicParsing="false" onAction="#toggleAnimations" text="Animations On" />
@@ -69,7 +69,7 @@
             </HBox>
          </bottom>
          <center>
-            <ScrollPane fitToWidth="true" pannable="true" BorderPane.alignment="CENTER">
+            <ScrollPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" pannable="true" BorderPane.alignment="CENTER">
                <content>
                   <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="150.0" prefWidth="570.0" spacing="5.0">
                      <children>
@@ -127,7 +127,7 @@
                               </VBox>
                            </children>
                         </HBox>
-                        <HBox VBox.vgrow="ALWAYS">
+                        <HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" VBox.vgrow="ALWAYS">
                            <children>
                               <Label fx:id="summaryLabel" prefHeight="17.0" prefWidth="381.0" text="Summary will appear here" textFill="#fb09f6" HBox.hgrow="ALWAYS" />
                               <VBox style="-fx-border-color: grey;" HBox.hgrow="ALWAYS">

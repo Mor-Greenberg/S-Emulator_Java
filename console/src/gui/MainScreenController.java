@@ -30,9 +30,9 @@ import javafx.stage.FileChooser;
 import javafx.util.Duration;
 
 import logic.Variable.Variable;
-import logic.Variable.VariableType;
 import logic.execution.ExecutionContext;
 import logic.execution.ExecutionContextImpl;
+import handleExecution.ExecutionRunner;
 import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
 import logic.instruction.QuoteInstruction;
@@ -41,14 +41,12 @@ import logic.program.Program;
 import logic.xml.XmlLoader;
 import logic.xml.XmlMapper;
 import printExpand.expansion.Expand;
-import programDisplay.ProgramDisplayImpl;
 import utils.Utils;
 
 import java.io.File;
 import java.io.IOException;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static gui.instructionTable.InstructionRow.*;
@@ -61,10 +59,6 @@ public class MainScreenController {
 
     @FXML private Button loadFileButton;
     private Program loadedProgram;
-    private ProgramDisplayImpl programDisplay;
-    public void setProgramDisplay(ProgramDisplayImpl programDisplay) {
-        this.programDisplay = programDisplay;
-    }
 
     @FXML private Label xmlPathLabel;
     @FXML private ProgressBar loadingProgressBar;
@@ -240,7 +234,7 @@ public class MainScreenController {
             showError("No program loaded.");
             return;
         }
-        ExecutionRunner.runProgram(loadedProgram, programDisplay);
+        ExecutionRunner.runProgram(loadedProgram);
     }
     @FXML
     private void stepOverExecution(ActionEvent e) {
@@ -407,7 +401,7 @@ public class MainScreenController {
             showError("No program loaded.");
             return;
         }
-        Expand.expandAction(loadedProgram, programDisplay);
+        Expand.expandAction(loadedProgram);
     }
     @FXML
     private void onCurrMaxDegreeButton() {
@@ -429,7 +423,7 @@ public class MainScreenController {
         alert.showAndWait();
     }
 
-    void updateVariablesView() {
+    public void updateVariablesView() {
         Map<Variable, Long> vars;
 
         if (ExecutionRunner.isDebugMode()) {
@@ -577,7 +571,7 @@ public class MainScreenController {
 
         String choice = result.get();
         if (choice.equals("Run")) {
-            ExecutionRunner.runProgram(loadedProgram, programDisplay);
+            ExecutionRunner.runProgram(loadedProgram);
         } else if (choice.equals("Debug")) {
             ExecutionRunner.startDebug(loadedProgram);
         }

@@ -12,6 +12,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static logic.blaxBox.BlackBox.executeBlackBox;
+
 public class JumpEqualFunctionInstruction extends AbstractInstruction {
     private Label targetLabel;         // JEFunctionLabel
     private final String functionName; // Q
@@ -66,7 +68,7 @@ public class JumpEqualFunctionInstruction extends AbstractInstruction {
             subContext.updateVariable(funcInputs.get(i), argVal);
         }
 
-        long qValue = func.executeBlackBox(subContext);
+        long qValue = executeBlackBox(subContext, context.getProgramMap(functionName));
         long vValue = context.getVariableValue(getVariable());
 
         return (vValue == qValue) ? targetLabel : FixedLabel.EMPTY;

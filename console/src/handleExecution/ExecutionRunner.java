@@ -1,24 +1,23 @@
-package gui;
+package handleExecution;
 
+import gui.MainScreenController;
 import gui.instructionTable.InstructionRow;
-import handleExecution.HandleExecution;
 import javafx.application.Platform;
 import javafx.scene.control.TableView;
 import logic.Variable.Variable;
-import logic.Variable.VariableType;
 import logic.execution.ExecutionContext;
 import logic.execution.ExecutionContextImpl;
 import logic.execution.ProgramExecutorImpl;
 import logic.history.RunHistoryEntry;
-import logic.instruction.JumpEqualFunctionInstruction;
 import logic.program.Program;
 import printExpand.expansion.PrintExpansion;
-import programDisplay.ProgramDisplayImpl;
 import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
 
 import java.util.*;
 
+import static logic.blaxBox.BlackBox.blackBoxStepDegree0;
+import static logic.blaxBox.BlackBox.executeBlackBox;
 import static utils.Utils.generateSummary;
 import static utils.Utils.showError;
 
@@ -55,23 +54,22 @@ public class ExecutionRunner {
 
     private static int resolveDegree(Program program, ExecutionContext context) {
         if (usePrefilledDegree) {
-            usePrefilledDegree = false;  // נשתמש פעם אחת
+            usePrefilledDegree = false;
             return prefilledDegree;
         }
         return program.askForDegree(context);
     }
 
-    public static void runProgram(Program program, ProgramDisplayImpl programDisplay) {
+    public static void runProgram(Program program) {
         Map<Variable, Long> variableState = new HashMap<>();
         ExecutionContext context = new ExecutionContextImpl(variableState, program.getFunctionMap());
 
-        // דרגה + קלטים (או מהמשתמש או מה-prefill)
         currentDegree = resolveDegree(program, context);
         applyInputsToContext(program, context);
 
         // ---------------- Degree 0 (black-box) ----------------
         if (currentDegree == 0) {
-            long result = program.executeBlackBox(context);
+            long result = executeBlackBox(context,program);
             System.out.println("Black-box result for y = " + result);
 
             debugContext = context;
@@ -183,12 +181,11 @@ public class ExecutionRunner {
 
         debugContext = new ExecutionContextImpl(new HashMap<>(), program.getFunctionMap());
 
-        // דרגה + קלטים (או מהמשתמש או מה-prefill)
         currentDegree = resolveDegree(program, debugContext);
         applyInputsToContext(program, debugContext);
 
         if (currentDegree == 0) {
-            long result = program.executeBlackBox(debugContext);
+            long result = executeBlackBox(debugContext,program);
             System.out.println("Black-box result for y = " + result);
 
             expandedProgram = program;
@@ -256,21 +253,18 @@ public class ExecutionRunner {
         if (currentDegree == 0) {
             if (bbPc < 0 || bbPc >= debugInstructions.size()) return;
 
-            int executedIndex = bbPc;                 // אינדקס הפקודה שמריצים עכשיו
+            int executedIndex = bbPc;
             Instruction instr = debugInstructions.get(bbPc);
 
-            // מריצים צעד אחד ומקבלים PC הבא
             bbPc = blackBoxStepDegree0(instr, bbPc, bbLabelToIndex, debugInstructions, debugContext, expandedProgram);
             executedCycles += instr.getCycles();
-            currentIndex   = bbPc;                    // לשמירת סנכרון כללי
+            currentIndex   = bbPc;
 
             Platform.runLater(() -> {
                 MainScreenController ctrl = MainScreenController.getInstance();
 
-                // מספר שורה חדש בטבלת הביצוע (log) – שורה אחרונה + 1
                 int rowNumber = ctrl.getInstructionTable().getItems().size() + 1;
 
-                // מוסיפים שורה לטבלה
                 InstructionRow row = new InstructionRow(
                         rowNumber,
                         instr.getType().toString(),
@@ -280,10 +274,8 @@ public class ExecutionRunner {
                 );
                 ctrl.addInstructionRow(row);
 
-                // מסמנים ומגלגלים לשורה שנוספה עכשיו
                 ctrl.highlightCurrentInstruction(rowNumber - 1);
 
-                // עדכוני UI
                 ctrl.updateVariablesView();
                 ctrl.updateCyclesView(executedCycles);
                 ctrl.updateSummaryView(
@@ -294,7 +286,6 @@ public class ExecutionRunner {
                 );
             });
 
-            // אם הגענו לסוף – שומרים להיסטוריה
             if (bbPc >= debugInstructions.size()) {
                 long result = debugContext.getVariableState().getOrDefault(Variable.RESULT, -1L);
                 RunHistoryEntry entry = new RunHistoryEntry(
@@ -391,7 +382,6 @@ public class ExecutionRunner {
     private static void saveDebugHistory() {
         long result = debugContext.getVariableState().getOrDefault(Variable.RESULT, -1L);
 
-        // אם debugHandleExecution לא קיים (כמו ב-Re-Run) נ fallback ל-lastInputsMap
         Map<Variable, Long> inputs;
         if (debugHandleExecution != null) {
             inputs = debugHandleExecution.getInputsMap();
@@ -432,136 +422,11 @@ public class ExecutionRunner {
         instructionTable.getSelectionModel().clearAndSelect(index);
         instructionTable.scrollTo(index);
     }
-    private static int blackBoxStepDegree0(
-            Instruction instr,
-            int pc,
-            Map<String, Integer> labelToIndex,
-            List<Instruction> instrs,
-            ExecutionContext context,
-            Program program
-    ) {
-        String name = instr.getName();
 
-        switch (name) {
-            case "ASSIGNMENT" -> {
-                logic.instruction.AssignmentInstruction a = (logic.instruction.AssignmentInstruction) instr;
-                long val = context.getVariableValue(a.getSource());
-                context.updateVariable(a.getDestination(), val);
-                return pc + 1;
-            }
-            case "CONSTANT_ASSIGNMENT" -> {
-                logic.instruction.ConstantAssignmentInstruction c = (logic.instruction.ConstantAssignmentInstruction) instr;
-                context.updateVariable(c.getVariable(), c.getConstantValue());
-                return pc + 1;
-            }
-            case "INCREASE" -> {
-                long v = context.getVariableValue(instr.getVariable());
-                context.updateVariable(instr.getVariable(), v + 1);
-                return pc + 1;
-            }
-            case "DECREASE" -> {
-                long v = context.getVariableValue(instr.getVariable());
-                context.updateVariable(instr.getVariable(), v - 1);
-                return pc + 1;
-            }
-            case "ZERO_VARIABLE" -> {
-                context.updateVariable(instr.getVariable(), 0);
-                return pc + 1;
-            }
-
-            case "JUMP_NOT_ZERO" -> {
-                logic.instruction.JumpNotZeroInstruction j = (logic.instruction.JumpNotZeroInstruction) instr;
-                long v = context.getVariableValue(j.getVariable());
-                if (v != 0 && j.getJnzLabel() != logic.label.FixedLabel.EMPTY) {
-                    return labelToIndex.getOrDefault(j.getJnzLabel().getLabelRepresentation(), pc + 1);
-                }
-                return pc + 1;
-            }
-
-            case "JUMP_ZERO" -> {
-                logic.instruction.JumpZeroInstruction j = (logic.instruction.JumpZeroInstruction) instr;
-                long v = context.getVariableValue(j.getVariable());
-                if (v == 0 && j.getJZLabel() != logic.label.FixedLabel.EMPTY) {
-                    return labelToIndex.getOrDefault(j.getJZLabel().getLabelRepresentation(), pc + 1);
-                }
-                return pc + 1;
-            }
-            case "JUMP_EQUAL_CONSTANT" -> {
-                logic.instruction.JumpEqualConstantInstruction j = (logic.instruction.JumpEqualConstantInstruction) instr;
-                long v = context.getVariableValue(j.getVariable());
-                if (v == j.getConstantValue() && j.getJumpToLabel() != logic.label.FixedLabel.EMPTY) {
-                    return labelToIndex.getOrDefault(j.getJumpToLabel().getLabelRepresentation(), pc + 1);
-                }
-                return pc + 1;
-            }
-            case "JUMP_EQUAL_VARIABLE" -> {
-                logic.instruction.JumpEqualVariableInstruction j = (logic.instruction.JumpEqualVariableInstruction) instr;
-                long v1 = context.getVariableValue(j.getVariable());
-                long v2 = context.getVariableValue(j.getVariableName());
-                if (v1 == v2 && j.getTargetLabel() != logic.label.FixedLabel.EMPTY) {
-                    return labelToIndex.getOrDefault(j.getTargetLabel().getLabelRepresentation(), pc + 1);
-                }
-                return pc + 1;
-            }
-            case "GOTO_LABEL" -> {
-                logic.instruction.GoToLabelInstruction g = (logic.instruction.GoToLabelInstruction) instr;
-                if (g.getGoToLabel() == logic.label.FixedLabel.EXIT) {
-                    return instrs.size();  // יציאה
-                }
-                return labelToIndex.getOrDefault(g.getGoToLabel().toString(), pc + 1);
-            }
-            case "JUMP_EQUAL_FUNCTION" -> {
-                JumpEqualFunctionInstruction jef = (JumpEqualFunctionInstruction) instr;
-                Program func = program.getFunctionMap().get(jef.getFunctionName());
-                if (func == null) {
-                    System.out.println("⚠ Unknown function in JUMP_EQUAL_FUNCTION: " + jef.getFunctionName());
-                    return pc + 1;
-                }
-
-                ExecutionContext subContext = new ExecutionContextImpl(new HashMap<>(), program.getFunctionMap());
-                List<Variable> args = jef.getArguments();
-                List<Variable> funcInputs = func.getVars().stream()
-                        .filter(v -> v.getType() == VariableType.INPUT)
-                        .toList();
-                for (int i = 0; i < Math.min(args.size(), funcInputs.size()); i++) {
-                    long argVal = context.getVariableValue(args.get(i));
-                    subContext.updateVariable(funcInputs.get(i), argVal);
-                }
-
-                long qVal = func.executeBlackBox(subContext);
-                long vVal = context.getVariableValue(jef.getVariable());
-
-                if (vVal == qVal && jef.getTargetLabel() != logic.label.FixedLabel.EMPTY) {
-                    return labelToIndex.getOrDefault(jef.getTargetLabel().getLabelRepresentation(), pc + 1);
-                }
-                return pc + 1;
-            }
-
-
-            case "QUOTE" -> {
-                logic.program.ProgramImpl tmp = new logic.program.ProgramImpl("step-quote");
-                tmp.setFunctionMap(program.getFunctionMap());
-                tmp.setVariables(program.getVars());
-                tmp.addInstruction(instr);
-                tmp.executeBlackBox(context);
-                return pc + 1;
-            }
-
-            default -> {
-                System.out.println(" Unsupported black-box0 step for: " + name + " (skipping)");
-                return pc + 1;
-            }
-
-        }
-    }
 
     // --- Prefill support ---
     private static Map<Variable, Long> prefilledInputs = null;
 
-
-
-
-    // ExecutionRunner.java
 
     private static boolean usePrefilledDegree = false;
     private static int prefilledDegree = 0;
@@ -576,7 +441,7 @@ public class ExecutionRunner {
                         if (val != null) context.updateVariable(v, val);
                     });
             lastInputsMap = new HashMap<>(prefilledInputs);
-            prefilledInputs = null;  // נצרוך פעם אחת
+            prefilledInputs = null;
         } else {
             HandleExecution handleExecution = new HandleExecution(program);
             handleExecution.collectInputFromUserFX(program, context);

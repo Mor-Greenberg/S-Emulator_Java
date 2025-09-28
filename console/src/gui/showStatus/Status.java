@@ -31,7 +31,6 @@ public class Status {
 
         ParallelTransition pt = new ParallelTransition(fade, scale);
 
-        // ✅ דחיית פתיחת ה־Alert לסיום שלב העדכון של JavaFX
         pt.setOnFinished(e -> {
             Platform.runLater(() -> showVariablesPopup(allVariables));
         });
