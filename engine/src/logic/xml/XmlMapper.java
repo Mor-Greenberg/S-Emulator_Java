@@ -4,6 +4,7 @@ import jaxbV2.jaxb.v2.*;
 import logic.Variable.QuoteVariable;
 import logic.Variable.Variable;
 import logic.execution.ExecutionContext;
+import logic.execution.ExecutionContextImpl;
 import logic.instruction.*;
 import logic.label.FixedLabel;
 import logic.label.Label;
@@ -24,27 +25,41 @@ public class XmlMapper {
     public Program map(SProgram sProgram, String path) {
         this.context.reset();
 
-        Map<String, Program> functionMap = new HashMap<>();
+        Map<String, Program> localFunctionMap = new HashMap<>();
         if (sProgram.getSFunctions() != null && sProgram.getSFunctions().getSFunction() != null) {
-            functionMap = loadFunctions(sProgram.getSFunctions().getSFunction());
+            localFunctionMap = loadFunctions(sProgram.getSFunctions().getSFunction());
         }
-
-        this.context.setFunctionMap(functionMap);
 
         Program mainProgram = convertToProgram(
                 sProgram.getName(),
                 sProgram.getSInstructions().getSInstruction(),
-                functionMap
+                localFunctionMap
+        );
+        mainProgram.setFunctionMap(localFunctionMap);
+
+        Map<String, Program> globalProgramsSnapshot = new HashMap<>(ExecutionContextImpl.getGlobalProgramMap());
+        System.out.println("Before validation (snapshot): " + globalProgramsSnapshot.keySet());
+
+        XmlValidation.validateAll(
+                path,
+                mainProgram,
+                new ArrayList<>(localFunctionMap.values()),
+                globalProgramsSnapshot
         );
 
-        mainProgram.setFunctionMap(functionMap);
+        this.context.setFunctionMap(localFunctionMap);
 
-        XmlValidation.validateAll(path, mainProgram, new ArrayList<>(functionMap.values()));
-
-        recomputeQuoteDegrees(mainProgram, functionMap);
-        for (Program func : functionMap.values()) {
-            recomputeQuoteDegrees(func, functionMap);
+        recomputeQuoteDegrees(mainProgram, localFunctionMap);
+        for (Program func : localFunctionMap.values()) {
+            recomputeQuoteDegrees(func, localFunctionMap);
         }
+
+        ExecutionContextImpl.addGlobalProgram(mainProgram);
+        for (Map.Entry<String, Program> entry : localFunctionMap.entrySet()) {
+            ExecutionContextImpl.addGlobalProgram(entry.getValue());
+        }
+
+        System.out.println("After upload: " + ExecutionContextImpl.getGlobalProgramMap().keySet());
 
         return mainProgram;
     }
@@ -276,6 +291,7 @@ public class XmlMapper {
         }
         return result;
     }
+
 
     private void recomputeQuoteDegrees(Program program, Map<String, Program> functionMap) {
         for (Instruction instr : program.getInstructions()) {

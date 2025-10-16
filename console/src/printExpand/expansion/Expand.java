@@ -27,12 +27,14 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static logic.blaxBox.BlackBox.executeBlackBox;
+import static ui.GuiUtils.DegreeDialog.askForDegree;
 
 public class Expand {
 public static void expandAction(Program loadedProgram) {
     Map<Variable, Long> variableState = loadedProgram.getVars().stream()
             .collect(Collectors.toMap(v -> v, v -> 0L));
-    ExecutionContext context = new ExecutionContextImpl(variableState, loadedProgram.getFunctionMap());
+    ExecutionContextImpl context = new ExecutionContextImpl(variableState);
+    context.setFunctionMap(loadedProgram.getFunctionMap());
 
     int maxDegree = Utils.computeProgramDegree(loadedProgram, context);
 
@@ -145,12 +147,12 @@ public static void expandAction(Program loadedProgram) {
         popup.show();
     }
     public static List<AbstractInstruction> getExpandedInstructions(Program program) {
-        ExecutionContext context = new ExecutionContextImpl(
-                program.getVarsAsMapWithZeroes(),
-                program.getFunctionMap()
-        );
 
-        int degree = program.askForDegree(context);
+        ExecutionContextImpl context = new ExecutionContextImpl(program.getVarsAsMapWithZeroes());
+        context.setFunctionMap(program.getFunctionMap());
+
+
+        int degree = askForDegree(context,program);
         if (degree < 0) {
             return Collections.emptyList();
         }

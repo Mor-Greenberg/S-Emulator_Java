@@ -208,4 +208,8 @@ public class QuoteInstruction extends AbstractInstruction {
     public String getQuotedFunctionName() {
         return functionName;
     }
+
+    public String getFunctionName() {
+        return functionName;
+    }
 }

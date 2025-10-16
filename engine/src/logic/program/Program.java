@@ -20,7 +20,7 @@ public interface Program {
     void addVar(Variable variable);
     void addLabel(Label label) ;
 
-     int askForDegree(ExecutionContext executionContext) ;
+
      void expandToDegree(int maxDegree, ExecutionContext context) ;
      boolean hasSyntheticInstructions();
      List<Instruction> getActiveInstructions();
@@ -32,6 +32,7 @@ public interface Program {
     Map<String, Program> getFunctionMap();
      void setFunctionMap(Map<String, Program> functionMap);
 
+    Set<String> getFunctionRefs();
 
     Map<Variable, Long> getVarsAsMapWithZeroes();
 }

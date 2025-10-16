@@ -55,9 +55,21 @@ public class JumpEqualFunctionInstruction extends AbstractInstruction {
             return FixedLabel.EMPTY;
         }
 
-        ExecutionContext subContext =
-                new ExecutionContextImpl(new HashMap<>(),
-                        context instanceof ExecutionContextImpl ec ? ec.programMap : new HashMap<>());
+        Map<String, Program> parentProgramMap;
+        Map<String, Program> parentLoadedPrograms;
+        if (context instanceof ExecutionContextImpl ec) {
+            parentProgramMap = ExecutionContextImpl.getGlobalProgramMap();
+            parentLoadedPrograms = ec.getLoadedPrograms();
+        } else {
+            parentProgramMap = new HashMap<>();
+            parentLoadedPrograms = new HashMap<>();
+        }
+
+        ExecutionContext subContext = new ExecutionContextImpl(
+                new HashMap<>(),            // new empty variable state for the sub-context
+                parentProgramMap,          // programMap (functions visible to the sub-context)
+                parentLoadedPrograms       // loadedPrograms (if you keep such map)
+        );
 
         List<Variable> funcInputs = func.getVars().stream()
                 .filter(v -> v.getType() == logic.Variable.VariableType.INPUT)

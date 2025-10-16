@@ -6,108 +6,94 @@ import logic.program.Program;
 
 import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static logic.execution.ExecutionContextImpl.getGlobalProgramMap;
 
 public class XmlValidation {
+
+    public static void validateAll(String path,
+                                   Program mainProgram,
+                                   List<Program> newFunctions,
+                                   Map<String, Program> globalProgramsMap) {
+
+        List<String> errors = new ArrayList<>();
+
+        // 1. בדיקת תקינות קובץ
+        if (path != null && !path.equalsIgnoreCase("FromString")) {
+            int fileCheck = validateXmlFilePath(path);
+            if (fileCheck == 1) errors.add("XML file does not exist: " + path);
+            else if (fileCheck == 2) errors.add("Invalid file type (must be .xml): " + path);
+        }
+
+        // 2. לכל תוכנית (ראשית) יש שם ייחודי משלה
+        if (globalProgramsMap.containsKey(mainProgram.getName())) {
+            errors.add("Main program name '" + mainProgram.getName() + "' already exists in the system.");
+        }
+
+        // 3. כל הפונקציות שהתוכנית הראשית משתמשת בהן קיימות
+        Set<String> calledFunctions = mainProgram.getFunctionRefs();
+        Set<String> definedFunctionNames = newFunctions.stream()
+                .map(Program::getName)
+                .collect(Collectors.toSet());
+
+        for (String func : calledFunctions) {
+            if (!globalProgramsMap.containsKey(func) && !definedFunctionNames.contains(func)) {
+                errors.add("Main program calls undefined function: " + func);
+            }
+        }
+
+        // 4. אם אחת מהפונקציות בקובץ כבר קיימת במערכת
+        for (Program func : newFunctions) {
+            if (globalProgramsMap.containsKey(func.getName())) {
+                errors.add("Function '" + func.getName() + "' already exists in the system.");
+            }
+        }
+
+        // 5. בדיקת תוויות
+        validateLabels(mainProgram.getInstructions(), errors, "Main Program");
+        for (Program func : newFunctions) {
+            validateLabels(func.getInstructions(), errors, "Function '" + func.getName() + "'");
+        }
+
+        // אם יש בעיות אמיתיות — נכשלים
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException("File validation failed:\n" + String.join("\n", errors));
+        }
+    }
 
 
     public static int validateXmlFilePath(String path) {
         File file = new File(path);
-
-        if (!path.toLowerCase().endsWith(".xml")) {
-            return 2;
-        }
-        if (!file.exists()) {
-            return 1;
-        }
+        if (!path.toLowerCase().endsWith(".xml")) return 2;
+        if (!file.exists()) return 1;
         return 3;
     }
 
     public static boolean validateLabels(List<Instruction> instructions,
                                          List<String> errors,
                                          String scope) {
-        Set<String> definedLabels = new HashSet<>();
-        Set<String> referencedLabels = new HashSet<>();
+        Set<String> defined = new HashSet<>();
+        Set<String> referenced = new HashSet<>();
 
         for (Instruction instr : instructions) {
             if (instr.getLabel() != null && !instr.getLabel().equals(FixedLabel.EMPTY)) {
-                String labelName = instr.getLabel().getLabelRepresentation();
-                definedLabels.add(labelName);
+                defined.add(instr.getLabel().getLabelRepresentation());
             }
 
-            if (instr instanceof GoToLabelInstruction gotoInstr) {
-                String labelName = gotoInstr.getTargetLabel().getLabelRepresentation();
-                referencedLabels.add(labelName);
-            } else if (instr instanceof JumpNotZeroInstruction jnzInstr) {
-                String labelName = jnzInstr.getTargetLabel().getLabelRepresentation();
-                referencedLabels.add(labelName);
-            } else if (instr instanceof JumpZeroInstruction jzInstr) {
-                String labelName = jzInstr.getTargetLabel().getLabelRepresentation();
-                referencedLabels.add(labelName);
-            }
+            if (instr instanceof GoToLabelInstruction g)
+                referenced.add(g.getTargetLabel().getLabelRepresentation());
+            else if (instr instanceof JumpZeroInstruction jz)
+                referenced.add(jz.getTargetLabel().getLabelRepresentation());
+            else if (instr instanceof JumpNotZeroInstruction jnz)
+                referenced.add(jnz.getTargetLabel().getLabelRepresentation());
         }
 
-        Set<String> specialLabels = Set.of("EXIT");
-
-        for (String label : referencedLabels) {
-            if (!definedLabels.contains(label) && !specialLabels.contains(label)) {
-                String msg = scope + " uses undefined label: " + label;
-                errors.add(msg);
+        for (String label : referenced) {
+            if (!defined.contains(label) && !label.equals("EXIT")) {
+                errors.add(scope + " uses undefined label: " + label);
             }
         }
-
         return errors.isEmpty();
-    }
-
-
-    public static boolean validateFunctions(Program mainProgram,
-                                            List<Program> functions,
-                                            List<String> errors) {
-        Set<String> definedFunctions = new HashSet<>();
-        for (Program func : functions) {
-            definedFunctions.add(func.getName());
-        }
-
-        checkFunctionCalls(mainProgram, definedFunctions, "Main Program", errors);
-
-        for (Program func : functions) {
-            checkFunctionCalls(func, definedFunctions, "Function: " + func.getName(), errors);
-        }
-
-        return errors.isEmpty();
-    }
-
-    private static void checkFunctionCalls(Program program,
-                                           Set<String> definedFunctions,
-                                           String scope,
-                                           List<String> errors) {
-        for (Instruction instr : program.getInstructions()) {
-            if (instr instanceof QuoteInstruction qi) {
-                String functionName = qi.getQuotedFunctionName();
-                if (!definedFunctions.contains(functionName)) {
-                    errors.add(scope + " calls undefined function: " + functionName);
-                }
-            }
-        }
-    }
-
-    public static void validateAll(String path,
-                                   Program mainProgram,
-                                   List<Program> functions) {
-        List<String> errors = new ArrayList<>();
-
-        int fileCheck = validateXmlFilePath(path);
-        if (fileCheck == 1) {
-            errors.add("XML file does not exist: " + path);
-        } else if (fileCheck == 2) {
-            errors.add("Invalid file type (must be .xml): " + path);
-        }
-
-        validateFunctions(mainProgram, functions, errors);
-
-        validateLabels(mainProgram.getInstructions(), errors, "Main Program");
-
-        if (!errors.isEmpty()) {
-            throw new IllegalArgumentException("File validation failed:\n" + String.join("\n", errors));
-        }
     }
 }

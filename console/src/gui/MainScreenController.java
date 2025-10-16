@@ -53,6 +53,8 @@ import static gui.instructionTable.InstructionRow.*;
 import static gui.showStatus.Status.showVariablesPopup;
 import static gui.stats.ShowStats.presentStatistics;
 import static printExpand.expansion.PrintExpansion.getInstructionHistoryChain;
+import static utils.UiUtils.showAlert;
+import static utils.UiUtils.showError;
 import static utils.Utils.*;
 
 public class MainScreenController {
@@ -163,7 +165,6 @@ public class MainScreenController {
 
                         if (enableAnimation) {
                             loadingProgressBar.setProgress(0);
-                            animateProgressBar(2.0, enableAnimation, loadingProgressBar);
                         } else {
                             loadingProgressBar.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
                         }
@@ -179,7 +180,7 @@ public class MainScreenController {
                         throw new IllegalStateException("Failed to parse XML file");
                     }
 
-                    ExecutionContextImpl context = new ExecutionContextImpl(new HashMap<>(), new HashMap<>());
+                    ExecutionContextImpl context = new ExecutionContextImpl(new HashMap<>(), new HashMap<>(),new HashMap<>());
 
                     XmlMapper mapper = new XmlMapper(context);
                     loadedProgram = mapper.map(sProgram,path);
@@ -203,14 +204,7 @@ public class MainScreenController {
 
                         loadProgramSelector(loadedProgram);
 
-                        // ✅ Debug: הדפסה של הפקודות
-                        System.out.println("=== Program Loaded: " + loadedProgram.getName() + " ===");
-                        loadedProgram.getInstructions().forEach(instr ->
-                                System.out.println(instr.getUniqueId() + " | "
-                                        + instr.getType() + " | "
-                                        + instr.getName() + " | "
-                                        + instr.getVariable() + " | "
-                                        + (instr.getLabel() != null ? instr.getLabel() : "")));
+
                     });
 
                 } catch (Exception e) {
@@ -412,14 +406,14 @@ public class MainScreenController {
         int current = ExecutionRunner.getCurrentDegree();
         Map<Variable, Long> variableState = loadedProgram.getVars().stream()
                 .collect(Collectors.toMap(v -> v, v -> 0L));
-        ExecutionContext context = new ExecutionContextImpl(variableState, loadedProgram.getFunctionMap());
+        //ExecutionContext context = new ExecutionContextImpl(variableState, loadedProgram.getFunctionMap());
 
-        int max = Utils.computeProgramDegree(loadedProgram, context);
+      //  int max = Utils.computeProgramDegree(loadedProgram, context);
 
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Expansion Degree Info");
         alert.setHeaderText("Current and Max Expansion Degree");
-        alert.setContentText("Current Degree: " + current + "\nMax Degree: " + max);
+       // alert.setContentText("Current Degree: " + current + "\nMax Degree: " + max);
         alert.showAndWait();
     }
 
@@ -529,7 +523,7 @@ public class MainScreenController {
         Map<String, Program> fullFunctionMap = new HashMap<>(mainProgram.getFunctionMap());
         fullFunctionMap.put(mainProgram.getName(), mainProgram);
 
-        ExecutionContext context = new ExecutionContextImpl(new HashMap<>(), fullFunctionMap);
+        ExecutionContext context = new ExecutionContextImpl(new HashMap<>(), fullFunctionMap,ExecutionContextImpl.getGlobalProgramMap() );
 
         selected.setFunctionMap(fullFunctionMap);
 

@@ -98,7 +98,7 @@ public class BlackBox {
                     return pc + 1;
                 }
 
-                ExecutionContext subContext = new ExecutionContextImpl(new HashMap<>(), program.getFunctionMap());
+                ExecutionContext subContext = new ExecutionContextImpl(new HashMap<>(), program.getFunctionMap(),context.getLoadedPrograms());
                 List<Variable> args = jef.getArguments();
                 List<Variable> funcInputs = func.getVars().stream()
                         .filter(v -> v.getType() == VariableType.INPUT)
@@ -233,7 +233,7 @@ public class BlackBox {
                     }
 
                     visitedFunctions.add(jef.getFunctionName());
-                    ExecutionContext subCtx = new ExecutionContextImpl(new HashMap<>(), program.getFunctionMap());
+                    ExecutionContext subCtx = new ExecutionContextImpl(new HashMap<>(), program.getFunctionMap(),context.getLoadedPrograms());
                     List<Variable> args = jef.getArguments();
                     List<Variable> funcInputs = func.getVars().stream()
                             .filter(v -> v.getType() == VariableType.INPUT)
@@ -256,7 +256,7 @@ public class BlackBox {
                     }
 
                     visitedFunctions.add(q.getQuotedFunctionName());
-                    ExecutionContext subContext = new ExecutionContextImpl(new HashMap<>(), program.getFunctionMap());
+                    ExecutionContext subContext = new ExecutionContextImpl(new HashMap<>(), program.getFunctionMap(),context.getLoadedPrograms());
                     List<Variable> args = q.getArguments();
                     List<Variable> funcInputs = func.getVars().stream()
                             .filter(v -> v.getType() == VariableType.INPUT)

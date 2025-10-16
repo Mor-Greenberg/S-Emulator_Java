@@ -1,3 +1,4 @@
+
 package logic.execution;
 
 import logic.Variable.Variable;
@@ -11,21 +12,49 @@ import logic.program.Program;
 import java.util.*;
 
 public class ExecutionContextImpl implements ExecutionContext {
-    public Map<Variable, Long> variableState;
-    public Set<Label> labels;
-    public List<Instruction> activetedInstructions;
-    public Map<String, Program> programMap;
-    public ExecutionContextImpl(Map<Variable, Long> variableState,Map<String,Program> programMap) {
+    private Map<Variable, Long> variableState;
+    private Set<Label> labels;
+    private List<Instruction> activetedInstructions;
+    private Map<String, Program> loadedPrograms;
+
+    private static final Map<String, Program> globalProgramMap = new HashMap<>();
+
+    public ExecutionContextImpl() {
+        this.variableState = new HashMap<>();
+        this.labels = new HashSet<>();
+        this.activetedInstructions = new ArrayList<>();
+        this.loadedPrograms = new HashMap<>();
+    }
+
+
+    public ExecutionContextImpl(Map<Variable, Long> variableState, Map<String,Program> programMap, Map<String, Program> loadedPrograms) {
         this.variableState = variableState;
         this.labels =  new HashSet<>();
         this.activetedInstructions = new ArrayList<>();
-        this.programMap = programMap;
 
     }
-
-    public Program getProgramMap(String name) {
-        return programMap.get(name);
+    public ExecutionContextImpl(Map<Variable, Long> variableState) {
+        this.variableState = variableState;
+        this.labels = new HashSet<>();
+        this.activetedInstructions = new ArrayList<>();
     }
+
+    public static boolean hasProgram(String name) {
+        return globalProgramMap.containsKey(name);
+    }
+
+
+
+    @Override
+    public void setFunctionMap(Map<String, Program> functionMap) {
+        for (Map.Entry<String, Program> entry : functionMap.entrySet()) {
+            if (globalProgramMap.containsKey(entry.getKey())) {
+                throw new IllegalArgumentException("Function '" + entry.getKey() + "' already exists in the system.");
+            }
+            globalProgramMap.put(entry.getKey(), entry.getValue());
+        }
+    }
+
 
 
     @Override
@@ -37,52 +66,120 @@ public class ExecutionContextImpl implements ExecutionContext {
     public void updateVariable(Variable v, long value) {
         variableState.put(v, value);
     }
+
     @Override
-    public Label findAvailableLabel(){
+    public Label findAvailableLabel() {
         int index = 1;
         Label newLabel;
         do {
-            newLabel = new LabelImpl(index);
-            index++;
+            newLabel = new LabelImpl(index++);
         } while (labels.contains(newLabel));
+        labels.add(newLabel);
         return newLabel;
     }
+
     @Override
     public Variable findAvailableVariable() {
         int index = 1;
         Variable candidate;
-
         do {
-            candidate = new VariableImpl(VariableType.WORK,index);
-            index++;
+            candidate = new VariableImpl(VariableType.WORK, index++);
         } while (variableState.containsKey(candidate));
-
-        variableState.put(candidate,0L);
+        variableState.put(candidate, 0L);
         return candidate;
     }
+
     @Override
     public Map<Variable, Long> getVariableState() {
         return variableState;
     }
 
-
-    public void setFunctionMap(Map<String, Program> functionMap) {
-        this.programMap = functionMap;
-    }
     public void initializeVarsFromProgram(Program program) {
         for (Variable v : program.getVars()) {
             variableState.putIfAbsent(v, 0L);
         }
     }
+
     public void reset() {
         variableState.clear();
         labels.clear();
         activetedInstructions.clear();
-        if (programMap != null) {
-            programMap.clear();
+        loadedPrograms.clear();
+
+    }
+
+    @Override
+    public Program getProgramMap(String name) {
+        return globalProgramMap.get(name);
+    }
+
+
+    @Override
+    public boolean addProgram(Program newProgram) {
+        String programName = newProgram.getName();
+
+        if (loadedPrograms.containsKey(programName)) {
+            throw new IllegalArgumentException("Program name already exists: " + programName);
         }
+
+        for (String functionName : newProgram.getFunctionRefs()) {
+            if (!globalProgramMap.containsKey(functionName)) {
+                throw new IllegalArgumentException("Missing required function: " + functionName);
+            }
+        }
+
+        for (String definedFunction : newProgram.getFunctionMap().keySet()) {
+            if (globalProgramMap.containsKey(definedFunction)) {
+                throw new IllegalArgumentException("Function '" + definedFunction + "' already exists in the system.");
+            }
+        }
+
+        loadedPrograms.put(programName, newProgram);
+
+        for (Map.Entry<String, Program> entry : newProgram.getFunctionMap().entrySet()) {
+            globalProgramMap.put(entry.getKey(), entry.getValue());
+        }
+
+        return true;
+    }
+
+    public static boolean addGlobalProgram(Program program) {
+        String name = program.getName();
+        if (globalProgramMap.containsKey(name)) {
+            return false;
+        }
+        globalProgramMap.put(name, program);
+        return true;
     }
 
 
 
+    @Override
+    public Map<String, Program> getLoadedPrograms() {
+        return loadedPrograms;
+    }
+
+    // ====== Static management of global function map ======
+
+    public static void loadProgram(Program program) {
+        globalProgramMap.put(program.getName(), program);
+        if (program.getFunctionMap() != null) {
+            globalProgramMap.putAll(program.getFunctionMap());
+        }
+    }
+
+    public static void loadPrograms(Map<String, Program> programs) {
+        globalProgramMap.putAll(programs);
+    }
+
+    public static void clearPrograms() {
+        globalProgramMap.clear();
+    }
+
+        public static Map<String, Program> getGlobalProgramMap() {
+            return globalProgramMap;
+        }
+
+
 }
+

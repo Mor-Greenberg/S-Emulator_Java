@@ -74,5 +74,10 @@
       </library>
     </orderEntry>
     <orderEntry type="library" name="lib" level="project" />
+    <orderEntry type="library" name="javafx-sdk-22.0" level="project" />
+    <orderEntry type="library" name="lib1" level="project" />
+    <orderEntry type="library" name="jaxb" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Tomcat 10.1.26" level="application_server_libraries" />
+    <orderEntry type="module" module-name="client" />
   </component>
 </module>
