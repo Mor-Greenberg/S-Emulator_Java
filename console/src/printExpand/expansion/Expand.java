@@ -14,7 +14,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import logic.Variable.Variable;
 
-import logic.execution.ExecutionContext;
 import logic.execution.ExecutionContextImpl;
 import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
@@ -27,7 +26,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static logic.blaxBox.BlackBox.executeBlackBox;
-import static ui.GuiUtils.DegreeDialog.askForDegree;
+import static ui.guiUtils.DegreeDialog.askForDegree;
 
 public class Expand {
 public static void expandAction(Program loadedProgram) {

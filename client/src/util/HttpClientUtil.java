@@ -22,12 +22,12 @@ public class HttpClientUtil {
 
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8080/load-program"))
+                .uri(URI.create("http://localhost:8080/S-Emulator/load-program"))
                 .header("Content-Type", "application/xml")
                 .POST(body)
                 .build();
 
-        System.out.println("Sending POST to http://localhost:8080/load-program");
+        System.out.println("Sending POST to http://localhost:8080/S-Emulator//load-program");
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -35,7 +35,7 @@ public class HttpClientUtil {
             throw new IOException("Server returned status: " + response.statusCode() + "\n" + response.body());
         }
 
-        return response.body(); // e.g., "Program uploaded successfully"
+        return response.body();
     }
 
 }

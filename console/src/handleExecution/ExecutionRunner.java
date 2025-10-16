@@ -13,13 +13,12 @@ import logic.program.Program;
 import printExpand.expansion.PrintExpansion;
 import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
-import ui.GuiUtils.DegreeDialog;
 
 import java.util.*;
 
 import static logic.blaxBox.BlackBox.blackBoxStepDegree0;
 import static logic.blaxBox.BlackBox.executeBlackBox;
-import static ui.GuiUtils.DegreeDialog.askForDegree;
+import static ui.guiUtils.DegreeDialog.askForDegree;
 import static utils.UiUtils.showError;
 import static utils.Utils.generateSummary;
 

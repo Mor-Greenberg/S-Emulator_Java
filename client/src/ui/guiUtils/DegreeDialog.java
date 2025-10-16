@@ -1,4 +1,4 @@
-package ui.GuiUtils;
+package ui.guiUtils;
 
 import javafx.geometry.Insets;
 import javafx.scene.control.ButtonBar;

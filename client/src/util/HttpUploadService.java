@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 
 public class HttpUploadService {
-    private static final String SERVER_URL = "http://localhost:8080/load-program";
+    private static final String SERVER_URL = "http://localhost:8080/S-Emulator/load-program";
     private final OkHttpClient client = new OkHttpClient();
 
     public String uploadXmlFile(File xmlFile) throws IOException {

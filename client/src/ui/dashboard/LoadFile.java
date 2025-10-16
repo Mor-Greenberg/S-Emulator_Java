@@ -1,4 +1,4 @@
-package ui.Dashboard;
+package ui.dashboard;
 
 import javafx.application.Platform;
 import javafx.stage.FileChooser;
@@ -39,7 +39,7 @@ public class LoadFile {
                 );
 
                 Request request = new Request.Builder()
-                        .url("http://localhost:8080/server/load-program")
+                        .url("http://localhost:8080/S-Emulator/load-program")
                         .post(requestBody)
                         .build();
 
