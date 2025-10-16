@@ -4,12 +4,14 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import okhttp3.*;
 import session.UserSession;
 import ui.dashboard.DashboardController;
+import util.HttpClientUtil;
 
 import java.io.IOException;
 
@@ -21,7 +23,7 @@ public class LoginController {
     @FXML
     private Label errorLabel;
 
-    private static final OkHttpClient client = new OkHttpClient();
+    private final OkHttpClient client = HttpClientUtil.getClient();
 
     @FXML
     private void handleLogin() {
@@ -60,6 +62,7 @@ public class LoginController {
                         UserSession.setUsername(username);
                         goToDashboard(username);
                     });
+
                 } else {
                     Platform.runLater(() ->
                             errorLabel.setText("Username already exists. Try another.")
@@ -86,4 +89,12 @@ public class LoginController {
             errorLabel.setText("Failed to load dashboard.");
         }
     }
+    @FXML
+    private Button loginButton;
+
+    @FXML
+    public void initialize() {
+        loginButton.setDefaultButton(true);
+    }
+
 }

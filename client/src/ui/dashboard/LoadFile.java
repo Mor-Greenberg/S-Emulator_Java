@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 
 import static utils.UiUtils.*;
+import util.HttpClientUtil;
 
 public class LoadFile {
 
@@ -35,7 +36,7 @@ public class LoadFile {
 
                 RequestBody requestBody = RequestBody.create(
                         fileContent,
-                        MediaType.parse("application/xml")
+                        MediaType.parse("application/xml; charset=utf-8")
                 );
 
                 Request request = new Request.Builder()
@@ -43,7 +44,8 @@ public class LoadFile {
                         .post(requestBody)
                         .build();
 
-                OkHttpClient client = new OkHttpClient();
+                OkHttpClient client = HttpClientUtil.getClient();
+
                 client.newCall(request).enqueue(new Callback() {
                     @Override
                     public void onFailure(Call call, IOException e) {
