@@ -45,7 +45,6 @@ public class XmlLoader {
         Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
 
         Object unmarshalled = unmarshaller.unmarshal(new StringReader(xml));
-        System.out.println("🔍 JAXB output type: " + unmarshalled.getClass().getName());
 
         SProgram sProgram;
 

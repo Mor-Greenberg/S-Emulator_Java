@@ -296,7 +296,7 @@ public class XmlMapper {
     private void recomputeQuoteDegrees(Program program, Map<String, Program> functionMap) {
         for (Instruction instr : program.getInstructions()) {
             if (instr instanceof QuoteInstruction q) {
-                q.computeDegree(this.context);
+                q.computeDegree();
             }
         }
     }

@@ -1,4 +1,4 @@
-package gui.instructionTable;
+package ui.executionBoard.instructionTable;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;

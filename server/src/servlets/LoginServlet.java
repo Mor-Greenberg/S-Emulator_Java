@@ -32,7 +32,7 @@ public class LoginServlet extends HttpServlet {
 
                 UserManager userManager = (UserManager) getServletContext().getAttribute("userManager");
                 if (userManager == null) {
-                    userManager = new UserManager();
+                    userManager = UserManager.getInstance();
                     getServletContext().setAttribute("userManager", userManager);
                 }
 

@@ -28,7 +28,7 @@ public class CreditsServlet extends HttpServlet {
 
         UserManager userManager = (UserManager) getServletContext().getAttribute("userManager");
         if (userManager == null) {
-            userManager = new UserManager();
+            userManager = UserManager.getInstance();
             getServletContext().setAttribute("userManager", userManager);
         }
 
@@ -64,7 +64,7 @@ public class CreditsServlet extends HttpServlet {
         // נוודא שיש UserManager ב-context
         UserManager userManager = (UserManager) getServletContext().getAttribute("userManager");
         if (userManager == null) {
-            userManager = new UserManager();
+            userManager = UserManager.getInstance();
             getServletContext().setAttribute("userManager", userManager);
         }
 

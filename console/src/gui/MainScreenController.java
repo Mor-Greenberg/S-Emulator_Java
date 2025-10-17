@@ -3,10 +3,10 @@ package gui;
 import gui.highlightSelectionPopup.HighlightAction;
 import gui.highlightSelectionPopup.HighlightChoiceListener;
 import gui.highlightSelectionPopup.HighlightSelectionController;
-import gui.instructionTable.ExpandedTable;
+import ui.executionBoard.instructionTable.ExpandedTable;
 import gui.reRun.ReRunService;
 import gui.showStatus.Status;
-import gui.variablesTable.VariableRow;
+import ui.executionBoard.variablesTable.VariableRow;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -15,7 +15,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import jaxbV2.jaxb.v2.SProgram;
-import gui.instructionTable.InstructionRow;
+import ui.executionBoard.instructionTable.InstructionRow;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -41,7 +41,6 @@ import logic.program.Program;
 import logic.xml.XmlLoader;
 import logic.xml.XmlMapper;
 import printExpand.expansion.Expand;
-import utils.Utils;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,10 +48,10 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static gui.instructionTable.InstructionRow.*;
 import static gui.showStatus.Status.showVariablesPopup;
 import static gui.stats.ShowStats.presentStatistics;
 import static printExpand.expansion.PrintExpansion.getInstructionHistoryChain;
+import static ui.executionBoard.instructionTable.InstructionRow.*;
 import static utils.UiUtils.showAlert;
 import static utils.UiUtils.showError;
 import static utils.Utils.*;
@@ -105,7 +104,7 @@ public class MainScreenController {
     public void setOriginalInstructions(List<Instruction> list) {
         this.originalInstructions = (list != null) ? list : java.util.Collections.emptyList();
     }
-    private ObservableList<InstructionRow> instructionData = FXCollections.observableArrayList();
+    private final ObservableList<InstructionRow> instructionData = FXCollections.observableArrayList();
 
     @FXML private ToggleButton animationToggleButton;
 
@@ -300,7 +299,7 @@ public class MainScreenController {
             String command = instr.commandDisplay();
             int cycles = instr.getCycles();
 
-            rows.add(new InstructionRow(counter++, type, label, command, cycles));
+           // rows.add(new InstructionRow(counter++, type, label, command, cycles,ari));
 
         }
         this.originalInstructions = instructions;
@@ -393,9 +392,8 @@ public class MainScreenController {
     private void onExpandButton() {
         if (loadedProgram == null) {
             showError("No program loaded.");
-            return;
         }
-        Expand.expandAction(loadedProgram);
+       // Expand.expandAction(loadedProgram);
     }
     @FXML
     private void onCurrMaxDegreeButton() {
@@ -475,7 +473,7 @@ public class MainScreenController {
 
     private Program mainProgram;
 
-    private Map<String, Program> nameToProgramMap = new HashMap<>();
+    private final Map<String, Program> nameToProgramMap = new HashMap<>();
 
     public void loadProgramSelector(Program mainProgram) {
         this.mainProgram = mainProgram;
@@ -529,7 +527,7 @@ public class MainScreenController {
 
         selected.getInstructions().forEach(instr -> {
             if (instr instanceof QuoteInstruction qi) {
-                qi.computeDegree(context);
+                qi.computeDegree();
             }
         });
 

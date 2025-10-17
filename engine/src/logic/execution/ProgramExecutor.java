@@ -10,7 +10,7 @@ import java.util.Set;
 public interface ProgramExecutor {
     long run(ExecutionContext context);
     Map<Variable, Long> getVariableState();
-    public Program getProgram();
+    Program getProgram();
 
 
     }

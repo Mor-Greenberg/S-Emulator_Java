@@ -1,6 +1,6 @@
 package gui.highlightSelectionPopup;
 
-import gui.instructionTable.InstructionRow;
+import ui.executionBoard.instructionTable.InstructionRow;
 import javafx.animation.FadeTransition;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;

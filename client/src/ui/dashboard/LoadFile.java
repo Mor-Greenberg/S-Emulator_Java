@@ -16,6 +16,8 @@ import util.HttpClientUtil;
 public class LoadFile {
 
     public void loadProgram(ActionEvent event, Object controller) {
+        String username = (controller instanceof DashboardController dc) ? dc.getCurrentUserName() : "unknown";
+
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Select XML File");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML files", "*.xml"));
@@ -40,7 +42,7 @@ public class LoadFile {
                 );
 
                 Request request = new Request.Builder()
-                        .url("http://localhost:8080/S-Emulator/load-program")
+                        .url("http://localhost:8080/S-Emulator/load-program?username=" + username)
                         .post(requestBody)
                         .build();
 
@@ -62,8 +64,11 @@ public class LoadFile {
                         Platform.runLater(() -> {
                             if (response.isSuccessful()) {
                                 showInfo("Server response:\n" + responseText);
-                                if (controller instanceof DashboardController dc)
+                                if (controller instanceof DashboardController dc) {
                                     dc.statusLabel.setText("File uploaded successfully");
+                                    dc.fetchProgramsFromServer();
+                                }
+
                             } else {
                                 showError("Server returned error " + response.code() + ":\n" + responseText);
                                 if (controller instanceof DashboardController dc)

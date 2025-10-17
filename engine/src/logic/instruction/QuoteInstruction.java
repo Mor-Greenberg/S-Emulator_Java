@@ -11,6 +11,8 @@ import utils.QuoteProcessor;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static logic.execution.ExecutionContextImpl.getGlobalProgramMap;
+
 public class QuoteInstruction extends AbstractInstruction {
     private final String functionName;       // Q
     private final List<Variable> arguments;  // V1, V2, ...
@@ -41,7 +43,7 @@ public class QuoteInstruction extends AbstractInstruction {
 
 
         int maxDegreeInQ = this.quotedProgram.getInstructions().stream()
-                .mapToInt(instr -> ((AbstractInstruction) instr).getDegree())
+                .mapToInt(instr -> instr.getDegree())
                 .max()
                 .orElse(0);
 
@@ -175,8 +177,8 @@ public class QuoteInstruction extends AbstractInstruction {
         return arguments;
     }
 
-    public void computeDegree(ExecutionContext context) {
-        Program quoted = context.getProgramMap(functionName);
+    public void computeDegree() {
+        Program quoted =getGlobalProgramMap().get(functionName);
         if (quoted == null) {
             throw new RuntimeException("Function not found: " + functionName);
         }
@@ -184,7 +186,7 @@ public class QuoteInstruction extends AbstractInstruction {
         int programDepth = 0;
         for (Instruction instr : quoted.getInstructions()) {
             if (instr instanceof QuoteInstruction qi) {
-                qi.computeDegree(context);                 // רקורסיבי פנימה
+                qi.computeDegree();
                 programDepth = Math.max(programDepth, qi.getDegree());
             } else if (instr instanceof AbstractInstruction ai) {
                 programDepth = Math.max(programDepth, ai.getDegree());
@@ -195,7 +197,7 @@ public class QuoteInstruction extends AbstractInstruction {
         for (Variable arg : arguments) {
             if (arg instanceof logic.Variable.QuoteVariable qv) {
                 QuoteInstruction inner = qv.getQuote();
-                inner.computeDegree(context);
+                inner.computeDegree();
                 argsDepth = Math.max(argsDepth, inner.getDegree());
             }
         }

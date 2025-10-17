@@ -1,6 +1,6 @@
 package printExpand.expansion;
 
-import gui.instructionTable.InstructionRow;
+import ui.executionBoard.instructionTable.InstructionRow;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -29,7 +29,7 @@ import static logic.blaxBox.BlackBox.executeBlackBox;
 import static ui.guiUtils.DegreeDialog.askForDegree;
 
 public class Expand {
-public static void expandAction(Program loadedProgram) {
+public static void expandAction(Program loadedProgram, String architecture) {
     Map<Variable, Long> variableState = loadedProgram.getVars().stream()
             .collect(Collectors.toMap(v -> v, v -> 0L));
     ExecutionContextImpl context = new ExecutionContextImpl(variableState);
@@ -63,7 +63,7 @@ public static void expandAction(Program loadedProgram) {
                     instr.getType().toString(),
                     instr.getLabel() != null ? instr.getLabel().getLabelRepresentation() : "",
                     instr.commandDisplay(),
-                    instr.getCycles()
+                    instr.getCycles(),architecture
             ));
         }
 
@@ -130,16 +130,16 @@ public static void expandAction(Program loadedProgram) {
 
         ObservableList<InstructionRow> rows = FXCollections.observableArrayList();
         int counter = 1;
-        for (AbstractInstruction instr : expanded) {
-            rows.add(new InstructionRow(
-                    counter++,
-                    instr.getType().toString(),
-                    instr.getLabel() != null ? instr.getLabel().toString() : "",
-                    instr.commandDisplay(),
-                    instr.getCycles()
-            ));
-        }
-        table.setItems(rows);
+//        for (AbstractInstruction instr : expanded) {
+//            rows.add(new InstructionRow(
+//                    counter++,
+//                    instr.getType().toString(),
+//                    instr.getLabel() != null ? instr.getLabel().toString() : "",
+//                    instr.commandDisplay(),
+//                    instr.getCycles(),
+//            ));
+//        }
+//        table.setItems(rows);
 
         Scene scene = new Scene(new BorderPane(table), 600, 400);
         popup.setScene(scene);

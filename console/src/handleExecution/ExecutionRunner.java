@@ -1,7 +1,7 @@
 package handleExecution;
 
 import gui.MainScreenController;
-import gui.instructionTable.InstructionRow;
+import ui.executionBoard.instructionTable.InstructionRow;
 import javafx.application.Platform;
 import javafx.scene.control.TableView;
 import logic.Variable.Variable;
@@ -32,6 +32,7 @@ public class ExecutionRunner {
     private static int runCounter = 1;
     private static final List<RunHistoryEntry> history = new ArrayList<>();
 
+    public static String architecture;
     // Debug fields
     private static List<Instruction> debugInstructions;
     private static int currentIndex;
@@ -90,7 +91,7 @@ public class ExecutionRunner {
                             instr.getType().toString(),
                             instr.getLabel() != null ? instr.getLabel().getLabelRepresentation() : "",
                             instr.commandDisplay(),
-                            instr.getCycles()
+                            instr.getCycles(),architecture
                     );
                     ctrl.addInstructionRow(row);
                 }
@@ -142,7 +143,7 @@ public class ExecutionRunner {
                         instr.getType().toString(),
                         instr.getLabel() != null ? instr.getLabel().getLabelRepresentation() : "",
                         instr.commandDisplay(),
-                        instr.getCycles()
+                        instr.getCycles(),architecture
                 );
                 ctrl.addInstructionRow(row);
             }
@@ -172,7 +173,7 @@ public class ExecutionRunner {
 
     // ---------------- Debug ----------------
     private static int bbPc = -1;
-    private static Map<String, Integer> bbLabelToIndex = new HashMap<>();
+    private static final Map<String, Integer> bbLabelToIndex = new HashMap<>();
 
     public static void startDebug(Program program) {
         debugMode = true;
@@ -274,7 +275,7 @@ public class ExecutionRunner {
                         instr.getType().toString(),
                         instr.getLabel() != null ? instr.getLabel().getLabelRepresentation() : "",
                         instr.commandDisplay(),
-                        instr.getCycles()
+                        instr.getCycles(),architecture
                 );
                 ctrl.addInstructionRow(row);
 
@@ -322,7 +323,7 @@ public class ExecutionRunner {
                     currentInstr.getType().toString(),
                     currentInstr.getLabel() != null ? currentInstr.getLabel().getLabelRepresentation() : "",
                     currentInstr.commandDisplay(),
-                    currentInstr.getCycles()
+                    currentInstr.getCycles(),architecture
             );
             ctrl.addInstructionRow(row);
             ctrl.highlightCurrentInstruction(rowNumber - 1);
@@ -357,7 +358,7 @@ public class ExecutionRunner {
                             currentInstr.getType().toString(),
                             currentInstr.getLabel() != null ? currentInstr.getLabel().getLabelRepresentation() : "",
                             currentInstr.commandDisplay(),
-                            currentInstr.getCycles()
+                            currentInstr.getCycles(),architecture
                     );
                     MainScreenController ctrl = MainScreenController.getInstance();
                     ctrl.addInstructionRow(row);

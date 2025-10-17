@@ -7,6 +7,8 @@ import logic.Variable.Variable;
 import logic.execution.ExecutionContext;
 import logic.instruction.*;
 import logic.label.Label;
+import serverProgram.ProgramStats;
+import user.User;
 import utils.Utils;
 
 import java.util.*;
@@ -43,6 +45,28 @@ public class ProgramImpl implements Program {
     }
 
 
+    private boolean isFunction = false;
+
+    @Override
+    public boolean isFunction() {
+        return isFunction;
+    }
+
+    @Override
+    public void setFunction(boolean isFunction) {
+        this.isFunction = isFunction;
+    }
+    private String uploaderName;
+
+    public String getUploaderName() {
+        return uploaderName;
+    }
+
+    public void setUploaderName(String uploaderName) {
+        this.uploaderName = uploaderName;
+    }
+
+
     @Override
     public String getName() {
         return name;
@@ -63,12 +87,12 @@ public class ProgramImpl implements Program {
         return false;
     }
 
-    public int calculateMaxDegree(ExecutionContext context) {
+    public int calculateMaxDegree() {
         int maxDegree = 0;
 
         for (Instruction instr : instructions) {
             if (instr instanceof QuoteInstruction q) {
-                q.computeDegree(context);
+                q.computeDegree();
                 maxDegree = Math.max(maxDegree, q.getDegree());
             } else if (instr instanceof AbstractInstruction ai) {
                 maxDegree = Math.max(maxDegree, ai.getDegree());
@@ -78,7 +102,29 @@ public class ProgramImpl implements Program {
         return maxDegree;
     }
 
+    public List<Instruction> getInstructionsLevel0() {
+        return instructions.stream()
+                .filter(instr -> instr instanceof AbstractInstruction ai && ai.getDegree() == 0)
+                .toList();
+    }
 
+
+    public boolean isMainProgram() {
+        return !isFunction;
+    }
+
+
+    @Override
+    public ProgramStats toStats(User uploader) {
+        ProgramStats stats = new ProgramStats();
+        stats.setProgramName(this.name);
+        stats.setUploaderName(uploader.getUsername());
+        stats.setInstructionCount(this.instructions.size());
+        stats.setMaxExpansionLevel(this.calculateMaxDegree());
+        stats.setRunCount(uploader.getRunCountForProgram(this.name));
+        stats.setAverageCredits(uploader.getAverageCreditsForProgram(this.name));
+        return stats;
+    }
 
     @Override
     public int calculateCycles() {

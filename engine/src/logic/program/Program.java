@@ -5,6 +5,8 @@ import logic.execution.ExecutionContext;
 import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
 import logic.label.Label;
+import serverProgram.ProgramStats;
+import user.User;
 
 import java.util.List;
 import java.util.Map;
@@ -19,19 +21,26 @@ public interface Program {
     int getNextIndexByLabel(Label nextLabel);
     void addVar(Variable variable);
     void addLabel(Label label) ;
+     void setFunction(boolean isFunction) ;
+
+     String getUploaderName() ;
+
+     void setUploaderName(String uploaderName) ;
 
 
-     void expandToDegree(int maxDegree, ExecutionContext context) ;
+    boolean isFunction() ;
+        void expandToDegree(int maxDegree, ExecutionContext context) ;
      boolean hasSyntheticInstructions();
      List<Instruction> getActiveInstructions();
      boolean validate();
-     int calculateMaxDegree(ExecutionContext context);
-     int calculateCycles();
+     int calculateMaxDegree();
+    public ProgramStats toStats(User uploader) ;
+        int calculateCycles();
      List <AbstractInstruction> getExpandedInstructions();
-
+    public boolean isMainProgram();
     Map<String, Program> getFunctionMap();
      void setFunctionMap(Map<String, Program> functionMap);
-
+    public List<Instruction> getInstructionsLevel0();
     Set<String> getFunctionRefs();
 
     Map<Variable, Long> getVarsAsMapWithZeroes();

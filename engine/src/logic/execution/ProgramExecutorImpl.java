@@ -13,7 +13,7 @@ public class ProgramExecutorImpl implements ProgramExecutor {
     public List <Instruction> instructionsActivated;
 
 
-    private Map<Variable, Long> variableState;
+    private final Map<Variable, Long> variableState;
     public ProgramExecutorImpl(Program program) {
         this.program = program;
         this.variableState = new HashMap<Variable, Long>();

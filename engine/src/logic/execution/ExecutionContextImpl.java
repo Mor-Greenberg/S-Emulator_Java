@@ -12,9 +12,9 @@ import logic.program.Program;
 import java.util.*;
 
 public class ExecutionContextImpl implements ExecutionContext {
-    private Map<Variable, Long> variableState;
-    private Set<Label> labels;
-    private List<Instruction> activetedInstructions;
+    private final Map<Variable, Long> variableState;
+    private final Set<Label> labels;
+    private final List<Instruction> activetedInstructions;
     private Map<String, Program> loadedPrograms;
 
     private static final Map<String, Program> globalProgramMap = new HashMap<>();
@@ -176,7 +176,7 @@ public class ExecutionContextImpl implements ExecutionContext {
         globalProgramMap.clear();
     }
 
-        public static Map<String, Program> getGlobalProgramMap() {
+    public static Map<String, Program> getGlobalProgramMap() {
             return globalProgramMap;
         }
 

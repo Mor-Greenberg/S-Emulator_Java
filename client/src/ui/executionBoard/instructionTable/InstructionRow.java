@@ -1,4 +1,4 @@
-package gui.instructionTable;
+package ui.executionBoard.instructionTable;
 
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -17,14 +17,17 @@ public class InstructionRow {
     private final SimpleStringProperty label;
     private final SimpleStringProperty command;
     private final SimpleIntegerProperty cycles;
+    private final SimpleStringProperty architecture;
 
 
-    public InstructionRow(int number, String type, String label, String command, int cycles) {
+
+    public InstructionRow(int number, String type, String label, String command, int cycles, String architecture) {
         this.number = new SimpleIntegerProperty(number);
         this.type = new SimpleStringProperty(type);
         this.label = new SimpleStringProperty(label);
         this.command = new SimpleStringProperty(command);
         this.cycles = new SimpleIntegerProperty(cycles);
+        this.architecture = new SimpleStringProperty(architecture);
     }
 
     public int getNumber() { return number.get(); }
@@ -32,6 +35,7 @@ public class InstructionRow {
     public String getLabel() { return label.get(); }
     public String getCommand() { return command.get(); }
     public int getCycles() { return cycles.get(); }
+    public String getArchitecture(){ return architecture.get(); }
 
 
 
@@ -74,6 +78,8 @@ public class InstructionRow {
                 .findFirst()
                 .orElse(null);
     }
+
+
 
 }
 

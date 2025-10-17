@@ -4,8 +4,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class UserManager {
+    private static final UserManager instance = new UserManager();
+
+    public static UserManager getInstance() {
+        return instance;
+    }
 
     private final Map<String, User> users = new HashMap<>();
+
+    private UserManager() {} // private constructor
+
 
     public void addUser(String username) {
         users.putIfAbsent(username, new User(username));
@@ -17,7 +25,7 @@ public class UserManager {
 
     public int getCredits(String username) {
         User user = users.get(username);
-        return (user != null) ? (int) user.getCredits() : 0;
+        return (user != null) ? user.getCredits() : 0;
     }
 
     public void addCredits(String username, int amount) {

@@ -4,7 +4,7 @@ package logic.label;
 public class LabelImpl implements Label {
 
     private final String label;
-    private int number;
+    private final int number;
 
     public LabelImpl(int number) {
         this.number = number;
@@ -22,8 +22,7 @@ public class LabelImpl implements Label {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof LabelImpl)) return false;
-        LabelImpl that = (LabelImpl) o;
+        if (!(o instanceof LabelImpl that)) return false;
         return this.number == that.number;
     }
 

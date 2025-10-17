@@ -29,7 +29,7 @@ public class NoOpInstruction extends AbstractInstruction {
     @Override
     public String commandDisplay(){
         Variable variable = getVariable();
-        String output = variable.toString() +"<-" + variable.toString();
+        String output = variable.toString() +"<-" + variable;
         return output;
     }
     @Override

@@ -25,8 +25,8 @@ public interface Instruction {
      void  setUniqueId (int id);
      AbstractInstruction clone();
 
-    public void replaceVariables(Map<String, Variable> variableMap);
-    public boolean jumpsTo(Label label);
-    public void replaceJumpLabel(Label from, Label to);
+    void replaceVariables(Map<String, Variable> variableMap);
+    boolean jumpsTo(Label label);
+    void replaceJumpLabel(Label from, Label to);
 
 }

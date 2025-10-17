@@ -5,7 +5,12 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
+import dto.ProgramStatsDTO;
+import dto.UserStats;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -39,9 +44,27 @@ public class DashboardController {
 
     @FXML
     public Label userNameField;
+    @FXML private TableView<ProgramStatsDTO> programsTable;
+    @FXML private TableColumn<ProgramStatsDTO, String> programNameColumn;
+    @FXML private TableColumn<ProgramStatsDTO, String> uploaderColumn;
+    @FXML private TableColumn<ProgramStatsDTO, Integer> instructionCountColumn;
+    @FXML private TableColumn<ProgramStatsDTO, Integer> maxDegreeColumn;
+    @FXML private TableColumn<ProgramStatsDTO, Integer> runCountColumn;
+    @FXML private TableColumn<ProgramStatsDTO, Double> avgCreditsColumn;
+
 
     @FXML
     private Label creditsLabel;
+    @FXML private TableView<UserStats> usersTable;
+    @FXML private TableColumn<UserStats, String> nameColumn;
+    @FXML private TableColumn<UserStats, Integer> mainProgramsColumn;
+    @FXML private TableColumn<UserStats, Integer> contributedFunctionsColumn;
+    @FXML private TableColumn<UserStats, Integer> currentCreditsColumn;
+    @FXML private TableColumn<UserStats, Integer> usedCreditsColumn;
+    @FXML private TableColumn<UserStats, Integer> executionCountColumn;
+
+    private String currentUserName;
+
 
     @FXML
     public void initialize() {
@@ -49,6 +72,21 @@ public class DashboardController {
         userNameField.setText(username);
         fetchUsers();
         loadCreditsFromServer();
+        nameColumn.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getName()));
+        mainProgramsColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getMainPrograms()).asObject());
+        contributedFunctionsColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getContributedFunctions()).asObject());
+        currentCreditsColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getCurrentCredits()).asObject());
+        usedCreditsColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getUsedCredits()).asObject());
+        executionCountColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getExecutionCount()).asObject());
+
+        programNameColumn.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getProgramName()));
+        uploaderColumn.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getUploaderName()));
+        instructionCountColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getInstructionCount()).asObject());
+        maxDegreeColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getMaxExpansionLevel()).asObject());
+        runCountColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getRunCount()).asObject());
+        avgCreditsColumn.setCellValueFactory(cell -> new SimpleDoubleProperty(cell.getValue().getAverageCredits()).asObject());
+
+        fetchProgramsFromServer();
 
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
@@ -56,7 +94,7 @@ public class DashboardController {
             public void run() {
                 fetchUsers();
             }
-        }, 0, 5000);
+        }, 0, 1000);
     }
 
     private void fetchUsers() {
@@ -74,12 +112,14 @@ public class DashboardController {
             public void onResponse(Call call, Response response) throws IOException {
                 if (response.isSuccessful()) {
                     String json = response.body().string();
-                    Type listType = new TypeToken<List<String>>() {}.getType();
-                    List<String> users = new Gson().fromJson(json, listType);
+                    Type listType = new TypeToken<List<UserStats>>() {}.getType();
+                    List<UserStats> users = new Gson().fromJson(json, listType);
+
 
                     Platform.runLater(() -> {
-                        usersListView.getItems().setAll(users);
+                        usersTable.getItems().setAll(users); // במקום usersListView
                     });
+
                 }
             }
         });
@@ -258,4 +298,32 @@ public class DashboardController {
             }
         });
     }
+    void fetchProgramsFromServer() {
+
+        Request request = new Request.Builder()
+                .url("http://localhost:8080/S-Emulator/api/programs")
+                .get()
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                String json = response.body().string();
+                Type listType = new TypeToken<List<ProgramStatsDTO>>(){}.getType();
+                List<ProgramStatsDTO> programs = new Gson().fromJson(json, listType);
+
+                Platform.runLater(() -> programsTable.getItems().setAll(programs));
+            }
+        });
+    }
+    public String getCurrentUserName() {
+        return currentUserName;
+    }
+
+
 }

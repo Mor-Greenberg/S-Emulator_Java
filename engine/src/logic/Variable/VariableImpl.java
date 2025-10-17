@@ -29,8 +29,7 @@ public class VariableImpl implements Variable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof VariableImpl)) return false;
-        VariableImpl that = (VariableImpl) o;
+        if (!(o instanceof VariableImpl that)) return false;
         return number == that.number && type == that.type;
     }
 

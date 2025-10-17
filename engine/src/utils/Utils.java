@@ -34,7 +34,7 @@ public class Utils {
 
         for (Instruction instr : program.getInstructions()) {
             if (instr instanceof QuoteInstruction q) {
-                q.computeDegree(context);
+                q.computeDegree();
                 maxDegree = Math.max(maxDegree, q.getDegree());
 
                 Program quoted = context.getProgramMap(q.getQuotedProgramName());

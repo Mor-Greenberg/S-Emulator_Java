@@ -30,7 +30,7 @@ public class DecreaseInstruction extends AbstractInstruction {
     @Override
     public String commandDisplay(){
         Variable variable = getVariable();
-        String output = variable.toString() +"<-" + variable.toString() + "-1";
+        String output = variable.toString() +"<-" + variable + "-1";
         return output;
     }
     @Override

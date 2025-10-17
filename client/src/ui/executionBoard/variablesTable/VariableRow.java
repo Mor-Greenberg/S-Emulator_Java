@@ -1,8 +1,7 @@
-package gui.variablesTable;
+package ui.executionBoard.variablesTable;
 
 import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
-
 public class VariableRow {
     private final SimpleStringProperty name;
     private final SimpleLongProperty value;
@@ -12,11 +11,11 @@ public class VariableRow {
         this.value = new SimpleLongProperty(value);
     }
 
-    public String getName() {
-        return name.get();
+    public SimpleStringProperty nameProperty() {
+        return name;
     }
 
-    public long getValue() {
-        return value.get();
+    public SimpleLongProperty valueProperty() {
+        return value;
     }
 }
