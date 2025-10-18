@@ -32,7 +32,7 @@ import javafx.util.Duration;
 import logic.Variable.Variable;
 import logic.execution.ExecutionContext;
 import logic.execution.ExecutionContextImpl;
-import handleExecution.ExecutionRunner;
+import logic.execution.ExecutionRunner;
 import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
 import logic.instruction.QuoteInstruction;

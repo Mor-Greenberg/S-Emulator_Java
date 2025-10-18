@@ -1,25 +1,26 @@
-package handleExecution;
+package logic.execution;
 
 import gui.MainScreenController;
+import handleExecution.HandleExecution;
+import ui.executionBoard.ExecutionBoardController;
 import ui.executionBoard.instructionTable.InstructionRow;
 import javafx.application.Platform;
 import javafx.scene.control.TableView;
 import logic.Variable.Variable;
-import logic.execution.ExecutionContext;
-import logic.execution.ExecutionContextImpl;
-import logic.execution.ProgramExecutorImpl;
 import logic.history.RunHistoryEntry;
 import logic.program.Program;
 import printExpand.expansion.PrintExpansion;
 import logic.instruction.AbstractInstruction;
 import logic.instruction.Instruction;
+import ui.guiUtils.DegreeDialog;
+import user.User;
+import utils.UiUtils;
 
 import java.util.*;
 
 import static logic.blaxBox.BlackBox.blackBoxStepDegree0;
 import static logic.blaxBox.BlackBox.executeBlackBox;
-import static ui.guiUtils.DegreeDialog.askForDegree;
-import static utils.UiUtils.showError;
+
 import static utils.Utils.generateSummary;
 
 public class ExecutionRunner {
@@ -59,7 +60,7 @@ public class ExecutionRunner {
             usePrefilledDegree = false;
             return prefilledDegree;
         }
-        return askForDegree(context,program);
+        return DegreeDialog.askForDegree(context,program);
     }
 
     public static void runProgram(Program program) {
@@ -80,7 +81,7 @@ public class ExecutionRunner {
             debugInstructions = new ArrayList<>(program.getInstructions());
 
             Platform.runLater(() -> {
-                MainScreenController ctrl = MainScreenController.getInstance();
+                ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
                 ctrl.setOriginalInstructions(debugInstructions);
                 ctrl.clearInstructionTable();
 
@@ -132,7 +133,7 @@ public class ExecutionRunner {
         List<Instruction> activeInstr = program.getActiveInstructions();
 
         Platform.runLater(() -> {
-            MainScreenController ctrl = MainScreenController.getInstance();
+            ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
             ctrl.setOriginalInstructions(activeInstr);
             ctrl.clearInstructionTable();
 
@@ -164,6 +165,17 @@ public class ExecutionRunner {
 
         int sumCycles = program.calculateCycles();
 
+        User uploader = null;
+        if (program.getUploaderName() != null) {
+            uploader = User.getManager().getUser(program.getUploaderName());
+        }
+
+        if (uploader != null) {
+            uploader.trackExecution(program.getName(), sumCycles);
+        } else {
+            System.out.println("⚠️ No uploader found for program '" + program.getName() + "', skipping tracking.");
+        }
+
         RunHistoryEntry entry = new RunHistoryEntry(
                 runCounter++, currentDegree,
                 lastInputsMap, result, sumCycles, false);
@@ -180,7 +192,7 @@ public class ExecutionRunner {
         currentIndex = 0;
         executedCycles = 0;
 
-        Platform.runLater(() -> MainScreenController.getInstance().clearInstructionTable());
+        Platform.runLater(() -> ExecutionBoardController.getInstance().clearInstructionTable());
 
          debugContext = new ExecutionContextImpl(new HashMap<>());
         debugContext.setFunctionMap(program.getFunctionMap());
@@ -205,7 +217,7 @@ public class ExecutionRunner {
             bbPc = 0;
 
             Platform.runLater(() -> {
-                MainScreenController ctrl = MainScreenController.getInstance();
+                ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
                 ctrl.setOriginalInstructions(debugInstructions);
                 ctrl.clearInstructionTable();
                 ctrl.updateVariablesView();
@@ -235,7 +247,7 @@ public class ExecutionRunner {
         debugInstructions = new ArrayList<>(expandedProgram.getActiveInstructions());
 
         Platform.runLater(() -> {
-            MainScreenController ctrl = MainScreenController.getInstance();
+            ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
             ctrl.setOriginalInstructions(debugInstructions);
             ctrl.clearInstructionTable();
             ctrl.updateVariablesView();
@@ -251,7 +263,7 @@ public class ExecutionRunner {
     public static void stepOver() {
 
         if (!debugMode){
-            showError("Not on debug mode");
+            UiUtils.showError("Not on debug mode");
             return;
         }
         // -------- Degree 0: black-box single step --------
@@ -266,7 +278,7 @@ public class ExecutionRunner {
             currentIndex   = bbPc;
 
             Platform.runLater(() -> {
-                MainScreenController ctrl = MainScreenController.getInstance();
+                ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
 
                 int rowNumber = ctrl.getInstructionTable().getItems().size() + 1;
 
@@ -315,7 +327,7 @@ public class ExecutionRunner {
         executedCycles += currentInstr.getCycles();
 
         Platform.runLater(() -> {
-            MainScreenController ctrl = MainScreenController.getInstance();
+            ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
 
             int rowNumber = ctrl.getInstructionTable().getItems().size() + 1;
             InstructionRow row = new InstructionRow(
@@ -360,7 +372,7 @@ public class ExecutionRunner {
                             currentInstr.commandDisplay(),
                             currentInstr.getCycles(),architecture
                     );
-                    MainScreenController ctrl = MainScreenController.getInstance();
+                    ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
                     ctrl.addInstructionRow(row);
                     ctrl.highlightCurrentInstruction(rowIndex);
                     ctrl.updateVariablesView();
@@ -403,12 +415,23 @@ public class ExecutionRunner {
                 true
         );
         history.add(entry);
+        User uploader = null;
+        if (expandedProgram.getUploaderName() != null) {
+            uploader = User.getManager().getUser(expandedProgram.getUploaderName());
+        }
+
+        if (uploader != null) {
+            uploader.trackExecution(expandedProgram.getName(), executedCycles);
+        } else {
+            System.out.println("⚠️ No uploader found for program '" + expandedProgram.getName() + "', skipping tracking.");
+        }
+
         lastVariableState = new HashMap<>(debugContext.getVariableState());
     }
 
     public static void stop() {
         if (!debugMode){
-            showError("Not on debug mode");
+            UiUtils.showError("Not on debug mode");
             return;
         }
         debugMode = false;

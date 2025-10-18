@@ -58,6 +58,9 @@ public class XmlMapper {
         for (Map.Entry<String, Program> entry : localFunctionMap.entrySet()) {
             ExecutionContextImpl.addGlobalProgram(entry.getValue());
         }
+        System.out.println("Saved to program map: " + mainProgram.getName());
+        System.out.println("Now in map: " + ExecutionContextImpl.getGlobalProgramMap().keySet());
+
 
         System.out.println("After upload: " + ExecutionContextImpl.getGlobalProgramMap().keySet());
 

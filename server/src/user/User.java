@@ -17,6 +17,10 @@ public class User {
         this.credits = 0;
     }
 
+    public static UserManager getManager() {
+        return UserManager.getInstance();
+    }
+
     public String getUsername() { return username; }
 
     public int getCredits() { return credits; }

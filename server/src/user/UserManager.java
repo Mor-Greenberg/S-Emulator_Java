@@ -14,29 +14,35 @@ public class UserManager {
 
     private UserManager() {} // private constructor
 
-
+    // ✅ מוסיף משתמש אם לא קיים כבר
     public void addUser(String username) {
+        if (username == null || username.isBlank()) return;
         users.putIfAbsent(username, new User(username));
     }
 
+    // ✅ גרסה בטוחה שלא תחזיר null לעולם
     public User getUser(String username) {
-        return users.get(username);
+        if (username == null || username.isBlank())
+            return null;
+
+        // אם המשתמש לא קיים — ניצור אחד חדש אוטומטית
+        return users.computeIfAbsent(username, User::new);
     }
 
     public int getCredits(String username) {
-        User user = users.get(username);
+        User user = getUser(username);
         return (user != null) ? user.getCredits() : 0;
     }
 
     public void addCredits(String username, int amount) {
-        User user = users.get(username);
+        User user = getUser(username);
         if (user != null) {
             user.addCredits(amount);
         }
     }
 
     public void deductCredits(String username, int amount) {
-        User user = users.get(username);
+        User user = getUser(username);
         if (user != null) {
             user.deductCredits(amount);
         }

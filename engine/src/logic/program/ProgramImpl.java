@@ -229,6 +229,26 @@ public class ProgramImpl implements Program {
         }
         return map;
     }
+
+    @Override
+    public int getRunCount() {
+        return 0;
+    }
+
+    @Override
+    public double getAverageCredits() {
+        if (uploaderName == null)
+            return 0.0;
+
+        User uploader = User.getManager().getUser(uploaderName);
+        if (uploader == null) {
+            System.out.println("⚠️ getAverageCredits: uploader not found for " + uploaderName);
+            return 0.0;
+        }
+        return uploader.getAverageCreditsForProgram(name);
+    }
+
+
     public Set<String> getFunctionRefs() {
         Set<String> refs = new HashSet<>();
 

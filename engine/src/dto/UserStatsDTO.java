@@ -1,6 +1,7 @@
-package user;
+package dto;
 
 
+import user.User;
 
 public class UserStatsDTO {
     private final String name;

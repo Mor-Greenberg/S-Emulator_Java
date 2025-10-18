@@ -1,6 +1,6 @@
 package gui.stats;
 
-import handleExecution.ExecutionRunner;
+import logic.execution.ExecutionRunner;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;

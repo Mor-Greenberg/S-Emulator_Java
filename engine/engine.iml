@@ -122,5 +122,7 @@
     <orderEntry type="library" name="lib1" level="project" />
     <orderEntry type="library" name="jaxb" level="project" />
     <orderEntry type="module" module-name="server" />
+    <orderEntry type="module" module-name="console" />
+    <orderEntry type="module" module-name="client" />
   </component>
 </module>

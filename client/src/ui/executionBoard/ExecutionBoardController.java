@@ -1,6 +1,8 @@
 package ui.executionBoard;
 
-import handleExecution.ExecutionRunner;
+import com.google.gson.Gson;
+import dto.ProgramStatsDTO;
+import logic.execution.ExecutionRunner;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -11,9 +13,10 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import logic.Variable.Variable;
+import logic.execution.ExecutionContextImpl;
 import logic.instruction.Instruction;
 import logic.program.Program;
-import okhttp3.OkHttpClient;
+import okhttp3.*;
 
 import session.UserSession;
 import ui.executionBoard.instructionTable.InstructionRow;
@@ -21,7 +24,9 @@ import ui.executionBoard.variablesTable.VariableRow;
 import util.HttpClientUtil;
 import utils.UiUtils;
 
+import java.io.IOException;
 import java.util.*;
+
 
 public class ExecutionBoardController {
 
@@ -39,6 +44,7 @@ public class ExecutionBoardController {
 
     @FXML private Label summaryLabel;
 
+
     // --- Variables Table ---
     @FXML private TableView<VariableRow> variablesTable;
     @FXML private TableColumn<VariableRow, String> variableNameCol;
@@ -53,6 +59,33 @@ public class ExecutionBoardController {
     private final ObservableList<InstructionRow> instructionData = FXCollections.observableArrayList();
 
     private List<Instruction> originalInstructions = Collections.emptyList();
+    private ProgramStatsDTO selectedProgram;
+    private int userCredits;
+    private static ExecutionBoardController instance;
+
+    public static ExecutionBoardController getInstance() {
+        return instance;
+    }
+    public void setProgramStats(ProgramStatsDTO programStats) {
+        this.selectedProgram = programStats;
+        String name = programStats.getProgramName();
+        Program program = ExecutionContextImpl.getGlobalProgramMap().get(name);
+
+        if (program == null) {
+            System.err.println("❌ Program not found in local map: " + name);
+            System.err.println("Available programs: " + ExecutionContextImpl.getGlobalProgramMap().keySet());
+            return;
+        }
+
+        printInstructions(program.getInstructions());
+    }
+
+
+    public void setUserCredits(int credits) {
+        this.userCredits = credits;
+        creditsLabel.setText("Available Credits:" + credits);
+    }
+
 
     // =====================================================
     // Initialization
@@ -61,6 +94,8 @@ public class ExecutionBoardController {
     public void initialize() {
         String username = UserSession.getUsername();
         userNameField.setText(username);
+
+        instance=this;
         // --- Instructions Table setup ---
         colIndex.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getNumber()));
         colBS.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getType()));
@@ -75,6 +110,7 @@ public class ExecutionBoardController {
         variableValueCol.setCellValueFactory(
                 data -> data.getValue().nameProperty().length());
     }
+
 
     // =====================================================
     // Execution Actions
@@ -199,13 +235,67 @@ public class ExecutionBoardController {
         });
     }
 
-    // =====================================================
-    // External Loaders
-    // =====================================================
+
+
+    public void setProgramName(String programName) {
+        this.selectedProgram.setProgramName(programName);
+    }
+    private void fetchProgramFromServer(String name) {
+        Request request = new Request.Builder()
+                .url("http://localhost:8080/S-Emulator/get-program?name=" + name)
+                .get()
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Platform.runLater(() -> UiUtils.showError("Failed to fetch program: " + e.getMessage()));
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    Platform.runLater(() -> UiUtils.showError("Program not found on server."));
+                    return;
+                }
+                String json = response.body().string();
+                loadedProgram = new Gson().fromJson(json, Program.class);
+
+                Platform.runLater(() -> {
+                    printInstructions(loadedProgram.getInstructions());
+                    summaryLabel.setText("Program loaded: " + name);
+                });
+            }
+        });
+    }
 
     public void setLoadedProgram(Program program) {
         this.loadedProgram = program;
         printInstructions(program.getInstructions());
     }
 
+    public void setOriginalInstructions(List<Instruction> list) {
+        this.originalInstructions = (list != null) ? list : java.util.Collections.emptyList();
+    }
+
+    public void clearInstructionTable() {
+        instructionsTable.getItems().clear();
+    }
+    public void addInstructionRow(InstructionRow row) {
+        instructionsTable.getItems().add(row);
+    }
+
+
+    public void updateSummaryView(int total, int basic, int synthetic, int cycles) {
+        Platform.runLater(() -> {
+            summaryLabel.setText(
+                    String.format("SUMMARY: Total instructions: %d | Basic: %d | Synthetic: %d | cycles: %d",
+                            total, basic, synthetic, cycles)
+            );
+        });
+    }
+
+    public TableView<InstructionRow> getInstructionTable() {
+        return instructionsTable;
+    }
 }

@@ -18,6 +18,8 @@ public class ExecutionContextImpl implements ExecutionContext {
     private Map<String, Program> loadedPrograms;
 
     private static final Map<String, Program> globalProgramMap = new HashMap<>();
+    private static final Map<String, String> globalXmlMap = new HashMap<>();
+
 
     public ExecutionContextImpl() {
         this.variableState = new HashMap<>();
@@ -43,17 +45,40 @@ public class ExecutionContextImpl implements ExecutionContext {
         return globalProgramMap.containsKey(name);
     }
 
+    public static void loadProgram(Program program, String xml) {
+        globalProgramMap.put(program.getName(), program);
+        globalXmlMap.put(program.getName(), xml);
+    }
+
+
 
 
     @Override
     public void setFunctionMap(Map<String, Program> functionMap) {
+        if (functionMap == null || functionMap.isEmpty()) {
+            System.out.println("⚠️ setFunctionMap: received empty or null function map.");
+            return;
+        }
+
         for (Map.Entry<String, Program> entry : functionMap.entrySet()) {
-            if (globalProgramMap.containsKey(entry.getKey())) {
-                throw new IllegalArgumentException("Function '" + entry.getKey() + "' already exists in the system.");
+            String funcName = entry.getKey();
+            Program funcProg = entry.getValue();
+
+            if (funcName == null || funcName.isBlank() || funcProg == null) {
+                System.out.println("⚠️ Skipping invalid function entry (null/blank).");
+                continue;
             }
-            globalProgramMap.put(entry.getKey(), entry.getValue());
+
+            if (globalProgramMap.containsKey(funcName)) {
+                System.out.println("ℹ️ Function '" + funcName + "' already exists — skipping duplicate.");
+                continue; // לא נזרוק שגיאה
+            }
+
+            globalProgramMap.put(funcName, funcProg);
+            System.out.println("✅ Added function: " + funcName);
         }
     }
+
 
 
 
@@ -168,18 +193,44 @@ public class ExecutionContextImpl implements ExecutionContext {
         }
     }
 
-    public static void loadPrograms(Map<String, Program> programs) {
-        globalProgramMap.putAll(programs);
+
+
+    public static Map<String, Program> getGlobalProgramMap() {
+        return globalProgramMap;
     }
+
+    public static String getXmlForProgram(String name) {
+        if (name == null || name.isBlank()) {
+            System.err.println("⚠️ getXmlForProgram called with null/blank name");
+            return null;
+        }
+
+        if (globalXmlMap == null || globalXmlMap.isEmpty()) {
+            System.err.println("⚠️ globalXmlMap is empty or not initialized");
+            return null;
+        }
+
+        String key = name.trim();
+        String xml = globalXmlMap.get(key);
+
+        if (xml == null) {
+            // ננסה גם lowercase אם השמות שונים רק באותיות
+            xml = globalXmlMap.get(key.toLowerCase());
+        }
+
+        if (xml == null) {
+            System.err.println("❌ XML not found in memory for program: " + key);
+        } else {
+            System.out.println("📄 XML found locally for program: " + key);
+        }
+
+        return xml;
+    }
+
 
     public static void clearPrograms() {
         globalProgramMap.clear();
+        globalXmlMap.clear();
     }
-
-    public static Map<String, Program> getGlobalProgramMap() {
-            return globalProgramMap;
-        }
-
-
 }
 

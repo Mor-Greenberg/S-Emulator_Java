@@ -1,47 +1,46 @@
 package servlets;
 
 import com.google.gson.Gson;
-
+import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-import jakarta.servlet.annotation.*;
 import user.User;
 import user.UserManager;
-import user.UserStatsDTO;
+import dto.UserStatsDTO;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+
 @WebServlet("/get-users")
 public class GetUsersServlet extends HttpServlet {
 
-    private final UserManager userManager = UserManager.getInstance();
-
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.setContentType("application/json; charset=UTF-8");
 
-        Set<String> connectedUsers;
+        // ודא ש-UserManager מוכן
+        UserManager userManager = UserManager.getInstance();
+
+        // העתק מוגן של רשימת המשתמשים המחוברים
+        Set<String> connectedUsersSnapshot;
         synchronized (LoginServlet.getConnectedUsers()) {
-            connectedUsers = Set.copyOf(LoginServlet.getConnectedUsers());
+            connectedUsersSnapshot = new HashSet<>(LoginServlet.getConnectedUsers());
         }
 
         List<UserStatsDTO> statsList = new ArrayList<>();
 
-        for (String username : connectedUsers) {
+        for (String username : connectedUsersSnapshot) {
             User user = userManager.getUser(username);
             if (user != null) {
                 statsList.add(new UserStatsDTO(user));
+            } else {
+                // אם משום מה המשתמש לא קיים, נוסיף אותו
+                userManager.addUser(username);
+                statsList.add(new UserStatsDTO(userManager.getUser(username)));
+                System.out.println("⚠️ Added missing user to manager: " + username);
             }
         }
 
         String json = new Gson().toJson(statsList);
-        PrintWriter out = response.getWriter();
-        out.write(json);
-        out.flush();
+        response.getWriter().write(json);
     }
 }
-

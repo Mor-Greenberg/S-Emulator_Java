@@ -1,90 +1,118 @@
 package ui.dashboard;
 
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
-import javafx.event.ActionEvent;
 import okhttp3.*;
+import session.UserSession;
+import util.HttpClientUtil;
+import logic.xml.XmlLoader;
+import logic.program.Program;
+import dto.ProgramStatsDTO;
+import utils.UiUtils;
+import com.google.gson.Gson;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
-import static utils.UiUtils.*;
-import util.HttpClientUtil;
-
 public class LoadFile {
+    private final OkHttpClient client = HttpClientUtil.getClient();
 
-    public void loadProgram(ActionEvent event, Object controller) {
-        String username = (controller instanceof DashboardController dc) ? dc.getCurrentUserName() : "unknown";
-
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Select XML File");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML files", "*.xml"));
+    public void loadProgram(ActionEvent event, DashboardController controller) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Select XML File");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML files", "*.xml"));
 
         Window window = ((javafx.scene.Node) event.getSource()).getScene().getWindow();
-        File selectedFile = fileChooser.showOpenDialog(window);
+        File selectedFile = chooser.showOpenDialog(window);
+        if (selectedFile == null) return;
 
-        if (selectedFile != null) {
-            if (controller instanceof DashboardController dashboardController) {
-                Platform.runLater(() -> {
-                    dashboardController.xmlPathLabel.setText(selectedFile.getName());
-                    dashboardController.statusLabel.setText("Uploading...");
-                });
-            }
+        try {
+            // === קריאה וטעינה מקומית ===
+            String xml = Files.readString(selectedFile.toPath(), StandardCharsets.UTF_8);
+            Program program = XmlLoader.fromXmlString(xml);
 
-            try {
-                byte[] fileContent = Files.readAllBytes(selectedFile.toPath());
+            // חשוב מאוד — שומר את שם המשתמש כמעלה התוכנית
+            program.setUploaderName(UserSession.getUsername());
 
-                RequestBody requestBody = RequestBody.create(
-                        fileContent,
-                        MediaType.parse("application/xml; charset=utf-8")
-                );
+            // שמירה רק בזיכרון המקומי (לא על השרת)
+            logic.execution.ExecutionContextImpl.loadProgram(program, xml);
 
-                Request request = new Request.Builder()
-                        .url("http://localhost:8080/S-Emulator/load-program?username=" + username)
-                        .post(requestBody)
-                        .build();
+            Platform.runLater(() ->
+                    controller.xmlPathLabel.setText(selectedFile.getName())
+            );
 
-                OkHttpClient client = HttpClientUtil.getClient();
+            // === שליחה לשרת רק לצורך שיתוף (לא נשמר בדיסק) ===
+            RequestBody xmlBody = RequestBody.create(xml, MediaType.parse("application/xml; charset=utf-8"));
+            Request xmlReq = new Request.Builder()
+                    .url("http://localhost:8080/S-Emulator/request-program?name=" + program.getName())
+                    .post(xmlBody)
+                    .build();
 
-                client.newCall(request).enqueue(new Callback() {
-                    @Override
-                    public void onFailure(Call call, IOException e) {
-                        Platform.runLater(() -> {
-                            showError("Failed to upload file: " + e.getMessage());
-                            if (controller instanceof DashboardController dc)
-                                dc.statusLabel.setText("Upload failed");
-                        });
-                    }
+            client.newCall(xmlReq).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    Platform.runLater(() ->
+                            UiUtils.showError("❌ Server error: " + e.getMessage())
+                    );
+                }
 
-                    @Override
-                    public void onResponse(Call call, Response response) throws IOException {
-                        String responseText = response.body() != null ? response.body().string() : "(no response)";
-                        Platform.runLater(() -> {
-                            if (response.isSuccessful()) {
-                                showInfo("Server response:\n" + responseText);
-                                if (controller instanceof DashboardController dc) {
-                                    dc.statusLabel.setText("File uploaded successfully");
-                                    dc.fetchProgramsFromServer();
-                                }
+                @Override
+                public void onResponse(Call call, Response response) {
+                    try (response) { // סוגר אוטומטית את ה־Response
+                        if (!response.isSuccessful()) {
+                            Platform.runLater(() ->
+                                    UiUtils.showError("❌ Server returned: " + response.code())
+                            );
+                            return;
+                        }
 
-                            } else {
-                                showError("Server returned error " + response.code() + ":\n" + responseText);
-                                if (controller instanceof DashboardController dc)
-                                    dc.statusLabel.setText("Validation error");
+                        // יצירת DTO עם נתונים ל־ProgramStatsServlet
+                        ProgramStatsDTO dto = new ProgramStatsDTO(
+                                program.getName(),
+                                UserSession.getUsername(),
+                                program.getInstructions().size(),
+                                program.calculateMaxDegree(),
+                                program.getRunCount(),
+                                0.0 // ✅ לא ניגשים ל־UserManager בצד הלקוח!
+                        );
+
+                        RequestBody statsBody = RequestBody.create(
+                                new Gson().toJson(dto),
+                                MediaType.parse("application/json; charset=utf-8")
+                        );
+
+                        Request statsReq = new Request.Builder()
+                                .url("http://localhost:8080/S-Emulator/api/programs")
+                                .post(statsBody)
+                                .build();
+
+                        client.newCall(statsReq).enqueue(new Callback() {
+                            @Override
+                            public void onFailure(Call call, IOException e) {
+                                System.err.println("❌ Failed to update shared table: " + e.getMessage());
+                            }
+
+                            @Override
+                            public void onResponse(Call call, Response res) {
+                                res.close();
+                                Platform.runLater(() -> {
+                                    controller.statusLabel.setText(
+                                            "✅ Program uploaded successfully: " + program.getName());
+                                    controller.fetchProgramsFromServer();
+                                });
                             }
                         });
                     }
-                });
+                }
+            });
 
-            } catch (IOException e) {
-                Platform.runLater(() -> {
-                    showAlert("Error reading file: " + e.getMessage());
-                    if (controller instanceof DashboardController dc)
-                        dc.statusLabel.setText("Error reading file");
-                });
-            }
+        } catch (Exception e) {
+            UiUtils.showError("Failed to load program: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

@@ -44,4 +44,8 @@ public interface Program {
     Set<String> getFunctionRefs();
 
     Map<Variable, Long> getVarsAsMapWithZeroes();
+
+    int getRunCount();
+
+    double getAverageCredits();
 }
