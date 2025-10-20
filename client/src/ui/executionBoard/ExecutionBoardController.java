@@ -1,7 +1,18 @@
 package ui.executionBoard;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import dto.FunctionDTO;
 import dto.ProgramStatsDTO;
+import gui.reRun.ReRunService;
+import ui.executionBoard.highlightSelectionPopup.HighlightAction;
+import ui.executionBoard.highlightSelectionPopup.HighlightChoiceListener;
+import ui.executionBoard.highlightSelectionPopup.HighlightSelectionController;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import logic.execution.ExecutionRunner;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -25,13 +36,23 @@ import util.HttpClientUtil;
 import utils.UiUtils;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import static ui.executionBoard.instructionTable.InstructionRow.getAllLabels;
+import static ui.executionBoard.instructionTable.InstructionRow.getAllVariables;
+import static utils.UiUtils.showError;
 
 
 public class ExecutionBoardController {
 
     @FXML private Label userNameField;
     @FXML private Label creditsLabel;
+
+    private final ObservableList<InstructionRow> instructionData = FXCollections.observableArrayList();
 
     // --- Instruction Table ---
     @FXML private TableView<InstructionRow> instructionsTable;
@@ -43,12 +64,15 @@ public class ExecutionBoardController {
     @FXML private TableColumn<InstructionRow, String> colArch;
 
     @FXML private Label summaryLabel;
+    @FXML private Button highlightButton;
 
-
+    @FXML
+    private TextArea historyContainer;
     // --- Variables Table ---
     @FXML private TableView<VariableRow> variablesTable;
     @FXML private TableColumn<VariableRow, String> variableNameCol;
     @FXML private TableColumn<VariableRow, Number> variableValueCol;
+
 
     @FXML private Label debugCycles;
     @FXML private VBox vboxDebuggerArea;
@@ -56,7 +80,6 @@ public class ExecutionBoardController {
     private Program loadedProgram;
 
     private final OkHttpClient client = HttpClientUtil.getClient();
-    private final ObservableList<InstructionRow> instructionData = FXCollections.observableArrayList();
 
     private List<Instruction> originalInstructions = Collections.emptyList();
     private ProgramStatsDTO selectedProgram;
@@ -109,6 +132,7 @@ public class ExecutionBoardController {
         variableNameCol.setCellValueFactory(data -> data.getValue().nameProperty());
         variableValueCol.setCellValueFactory(
                 data -> data.getValue().nameProperty().length());
+
     }
 
 
@@ -231,7 +255,6 @@ public class ExecutionBoardController {
         originalInstructions = instructions;
         Platform.runLater(() -> {
             instructionsTable.setItems(rows);
-            summaryLabel.setText("Loaded " + rows.size() + " instructions");
         });
     }
 
@@ -263,7 +286,6 @@ public class ExecutionBoardController {
 
                 Platform.runLater(() -> {
                     printInstructions(loadedProgram.getInstructions());
-                    summaryLabel.setText("Program loaded: " + name);
                 });
             }
         });
@@ -298,4 +320,103 @@ public class ExecutionBoardController {
     public TableView<InstructionRow> getInstructionTable() {
         return instructionsTable;
     }
+    @FXML
+    void onHighlightSelectionClicked() throws IOException {
+        if (loadedProgram == null) {
+            showError("No program loaded.");
+            return;
+        }
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/ui/executionBoard/highlightSelectionPopup/highlight_selection_popup.fxml"));
+        Parent root = loader.load();
+
+        HighlightAction highlightAction = new HighlightAction(instructionsTable);
+        List<InstructionRow> rows = instructionsTable.getItems();
+        HighlightSelectionController controller = loader.getController();
+
+        controller.setListener(new HighlightChoiceListener() {
+            @Override
+            public void onLabelChosen() {
+                try {
+                    List<String> labelOptions = getAllLabels(rows);
+                    String selected = highlightAction.showChoicePopup(labelOptions, "Highlight by Label");
+                    if (selected != null) {
+                        highlightAction.highlightByLabel(selected);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onVariableChosen() {
+                try {
+                    List<String> variableOptions = getAllVariables(rows);
+                    String selected = highlightAction.showChoicePopup(variableOptions, "Highlight by Variable");
+                    if (selected != null) {
+                        highlightAction.highlightByVariable(selected);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            @Override
+            public void onClearHighlight() {
+                highlightAction.clearHighlight();
+            }
+        });
+
+        Stage stage = new Stage();
+        stage.setTitle("Highlight Selection");
+        stage.setScene(new Scene(root));
+        stage.initModality(Modality.APPLICATION_MODAL);
+        stage.showAndWait();
+    }
+    @FXML
+    void onReRunClicked() {
+        if (loadedProgram == null) {
+            showError("No program loaded.");
+            return;
+        }
+
+        ReRunService.prepareReRun(loadedProgram);
+
+        List<String> options = Arrays.asList("Run", "Debug");
+        ChoiceDialog<String> dialog = new ChoiceDialog<>("Run", options);
+        dialog.setTitle("Re-Run Options");
+        dialog.setHeaderText("Select how you want to re-run the program");
+        dialog.setContentText("Mode:");
+
+        Optional<String> result = dialog.showAndWait();
+
+        if (result.isEmpty()) return;
+
+        String choice = result.get();
+        if (choice.equals("Run")) {
+            ExecutionRunner.runProgram(loadedProgram);
+        } else if (choice.equals("Debug")) {
+            ExecutionRunner.startDebug(loadedProgram);
+        }
+    }
+    @FXML
+    void onShowStatusClicked() {
+        if (loadedProgram == null) {
+            showError("No program loaded.");
+            return;
+        }
+
+        Map<Variable, Long> allVariables;
+
+        if (ExecutionRunner.isDebugMode()) {
+            allVariables = ExecutionRunner.getDebugContext().getVariableState();
+        } else {
+            allVariables = ExecutionRunner.getExecutionContextMap();
+        }
+    }
+    public void loadProgramByName(String name) {
+        fetchProgramFromServer(name);
+    }
+
+
+
 }
+

@@ -1,8 +1,8 @@
 package gui;
 
-import gui.highlightSelectionPopup.HighlightAction;
-import gui.highlightSelectionPopup.HighlightChoiceListener;
-import gui.highlightSelectionPopup.HighlightSelectionController;
+import ui.executionBoard.highlightSelectionPopup.HighlightAction;
+import ui.executionBoard.highlightSelectionPopup.HighlightChoiceListener;
+import ui.executionBoard.highlightSelectionPopup.HighlightSelectionController;
 import ui.executionBoard.instructionTable.ExpandedTable;
 import gui.reRun.ReRunService;
 import gui.showStatus.Status;
@@ -312,7 +312,7 @@ public class MainScreenController {
             showError("No program loaded.");
             return;
         }
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/gui/highlightSelectionPopup/highlight_selection_popup.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/ui/executionBoard/highlightSelectionPopup/highlight_selection_popup.fxml"));
         Parent root = loader.load();
 
         HighlightAction highlightAction = new HighlightAction(instructionTable, enableAnimation);
@@ -347,7 +347,7 @@ public class MainScreenController {
             }
             @Override
             public void onClearHighlight() {
-                highlightAction.clearHighlight(enableAnimation);
+               // highlightAction.clearHighlight(enableAnimation);
             }
         });
 

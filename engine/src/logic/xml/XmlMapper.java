@@ -25,10 +25,12 @@ public class XmlMapper {
     public Program map(SProgram sProgram, String path) {
         this.context.reset();
 
+
         Map<String, Program> localFunctionMap = new HashMap<>();
         if (sProgram.getSFunctions() != null && sProgram.getSFunctions().getSFunction() != null) {
-            localFunctionMap = loadFunctions(sProgram.getSFunctions().getSFunction());
+            localFunctionMap = loadFunctions(sProgram.getSFunctions().getSFunction(), sProgram.getName());
         }
+
 
         Program mainProgram = convertToProgram(
                 sProgram.getName(),
@@ -56,10 +58,16 @@ public class XmlMapper {
 
         ExecutionContextImpl.addGlobalProgram(mainProgram);
         for (Map.Entry<String, Program> entry : localFunctionMap.entrySet()) {
-            ExecutionContextImpl.addGlobalProgram(entry.getValue());
+            ProgramImpl func = (ProgramImpl) entry.getValue();
+            func.setFunction(true);
+            func.setParentProgramName(mainProgram.getName());
+            ExecutionContextImpl.addGlobalProgram(func);
+            System.out.println("✅ Added function: " + func.getName() + " (parent=" + func.getParentProgramName() + ")");
         }
+
         System.out.println("Saved to program map: " + mainProgram.getName());
         System.out.println("Now in map: " + ExecutionContextImpl.getGlobalProgramMap().keySet());
+
 
 
         System.out.println("After upload: " + ExecutionContextImpl.getGlobalProgramMap().keySet());
@@ -97,20 +105,6 @@ public class XmlMapper {
         return program;
     }
 
-    private Map<String, Program> loadFunctions(List<SFunction> functionList) {
-        Map<String, Program> functionMap = new HashMap<>();
-
-        for (SFunction func : functionList) {
-            functionMap.put(func.getName(), new ProgramImpl(func.getName()));
-        }
-
-        for (SFunction func : functionList) {
-            Program prog = convertToProgram(func.getName(), func.getSInstructions().getSInstruction(), functionMap);
-            functionMap.put(prog.getName(), prog);
-        }
-
-        return functionMap;
-    }
 
     private Label extractJumpLabel(SInstruction sInstr) {
         if (sInstr.getSInstructionArguments() == null) return FixedLabel.EMPTY;
@@ -142,6 +136,9 @@ public class XmlMapper {
             case "JUMP_NOT_ZERO":
                 return new JumpNotZeroInstruction(variable, jumpLabel, regularLabel);
 
+            case "NEUTRAL":
+                return new NoOpInstruction(variable, regularLabel);
+
             case "JUMP_ZERO":
                 return new JumpZeroInstruction(variable, jumpLabel, regularLabel);
 
@@ -161,8 +158,6 @@ public class XmlMapper {
                 return new JumpEqualVariableInstruction(variable, cmpVar, jumpLabel, regularLabel);
             }
 
-            case "NEUTRAL":
-                return new NoOpInstruction(variable, regularLabel);
 
             case "ZERO_VARIABLE":
                 return new ZeroVariableInstruction(variable, regularLabel);
@@ -303,4 +298,29 @@ public class XmlMapper {
             }
         }
     }
+    private Map<String, Program> loadFunctions(List<SFunction> functionList, String mainProgramName) {
+        Map<String, Program> functionMap = new HashMap<>();
+
+        for (SFunction func : functionList) {
+            ProgramImpl prog = new ProgramImpl(func.getName());
+            prog.setFunction(true);
+            prog.setParentProgramName(mainProgramName);
+            functionMap.put(func.getName(), prog);
+        }
+
+        for (SFunction func : functionList) {
+            Program prog = convertToProgram(func.getName(), func.getSInstructions().getSInstruction(), functionMap);
+
+            if (prog instanceof ProgramImpl impl) {
+                impl.setFunction(true);
+                impl.setParentProgramName(mainProgramName);
+            }
+
+            functionMap.put(prog.getName(), prog);
+            System.out.println("✅ Added function to map: " + prog.getName() + " (parent=" + mainProgramName + ")");
+        }
+
+        return functionMap;
+    }
+
 }

@@ -29,6 +29,18 @@ public class ProgramImpl implements Program {
         labels = new HashSet<>();
 
     }
+    private String parentProgramName;
+
+    @Override
+    public void setParentProgramName(String parentProgramName) {
+        this.parentProgramName = parentProgramName;
+    }
+
+    @Override
+    public String getParentProgramName() {
+        return parentProgramName != null ? parentProgramName : "N/A";
+    }
+
 
     @Override
     public List <AbstractInstruction> getExpandedInstructions(){

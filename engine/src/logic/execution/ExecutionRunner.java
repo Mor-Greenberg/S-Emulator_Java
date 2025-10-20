@@ -421,9 +421,9 @@ public class ExecutionRunner {
         }
 
         if (uploader != null) {
-            uploader.trackExecution(expandedProgram.getName(), executedCycles);
+            uploader.trackExecution(expandedProgram.getUploaderName(), executedCycles);
         } else {
-            System.out.println("⚠️ No uploader found for program '" + expandedProgram.getName() + "', skipping tracking.");
+            System.out.println("⚠️ No uploader found for program '" + expandedProgram.getUploaderName() + "', skipping tracking.");
         }
 
         lastVariableState = new HashMap<>(debugContext.getVariableState());

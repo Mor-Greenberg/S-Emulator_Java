@@ -1,4 +1,4 @@
-package gui.highlightSelectionPopup;
+package ui.executionBoard.highlightSelectionPopup;
 
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;

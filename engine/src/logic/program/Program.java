@@ -48,4 +48,6 @@ public interface Program {
     int getRunCount();
 
     double getAverageCredits();
-}
+    public void setParentProgramName(String parentProgramName) ;
+    public String getParentProgramName() ;
+    }

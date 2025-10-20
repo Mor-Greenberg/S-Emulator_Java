@@ -1,4 +1,4 @@
-package gui.highlightSelectionPopup;
+package ui.executionBoard.highlightSelectionPopup;
 
 import ui.executionBoard.instructionTable.InstructionRow;
 import javafx.animation.FadeTransition;
@@ -23,6 +23,10 @@ public class HighlightAction {
     public HighlightAction(TableView<InstructionRow> instructionTable, boolean enableAnimation) {
         this.instructionTable = instructionTable;
         this.enableLoadingAnimation = enableAnimation;
+        initRowFactory();
+    }
+    public HighlightAction(TableView<InstructionRow> instructionTable) {
+        this.instructionTable = instructionTable;
         initRowFactory();
     }
 
@@ -76,16 +80,15 @@ public class HighlightAction {
         instructionTable.refresh();
     }
 
-    public void clearHighlight(boolean enableAnimation) {
+    public void clearHighlight() {
         this.labelToHighlight = null;
         this.variableToHighlight = null;
-        this.enableLoadingAnimation = enableAnimation;
         initRowFactory();
         instructionTable.refresh();
     }
 
     public String showChoicePopup(List<String> choices, String title) throws IOException {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/gui/highlightSelectionPopup/highlight_choice_popup.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/ui/executionBoard/highlightSelectionPopup/highlight_choice_popup.fxml"));
         Parent root = loader.load();
 
         HighlightChoiceController controller = loader.getController();

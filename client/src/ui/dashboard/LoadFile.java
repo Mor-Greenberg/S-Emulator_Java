@@ -31,21 +31,17 @@ public class LoadFile {
         if (selectedFile == null) return;
 
         try {
-            // === קריאה וטעינה מקומית ===
             String xml = Files.readString(selectedFile.toPath(), StandardCharsets.UTF_8);
             Program program = XmlLoader.fromXmlString(xml);
 
-            // חשוב מאוד — שומר את שם המשתמש כמעלה התוכנית
             program.setUploaderName(UserSession.getUsername());
 
-            // שמירה רק בזיכרון המקומי (לא על השרת)
             logic.execution.ExecutionContextImpl.loadProgram(program, xml);
 
             Platform.runLater(() ->
                     controller.xmlPathLabel.setText(selectedFile.getName())
             );
 
-            // === שליחה לשרת רק לצורך שיתוף (לא נשמר בדיסק) ===
             RequestBody xmlBody = RequestBody.create(xml, MediaType.parse("application/xml; charset=utf-8"));
             Request xmlReq = new Request.Builder()
                     .url("http://localhost:8080/S-Emulator/request-program?name=" + program.getName())
@@ -103,8 +99,20 @@ public class LoadFile {
                                     controller.statusLabel.setText(
                                             "✅ Program uploaded successfully: " + program.getName());
                                     controller.fetchProgramsFromServer();
+                                    controller.fetchFunctionsFromServer();
+                                    controller.updateFunctionsTableFromLoadedProgram();
+
+
+
+                                    // 🕓 דחייה קצרה כדי לאפשר לשרת לעדכן את המפה לפני הקריאה
+                                    java.util.concurrent.Executors.newSingleThreadScheduledExecutor()
+                                            .schedule(() -> Platform.runLater(() -> {
+                                                System.out.println("🔁 Refreshing functions after upload...");
+                                                controller.updateFunctionsTableFromLoadedProgram();
+                                            }), 1, java.util.concurrent.TimeUnit.SECONDS);
                                 });
                             }
+
                         });
                     }
                 }
@@ -114,5 +122,6 @@ public class LoadFile {
             UiUtils.showError("Failed to load program: " + e.getMessage());
             e.printStackTrace();
         }
+
     }
 }

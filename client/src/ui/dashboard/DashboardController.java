@@ -5,16 +5,15 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
+import dto.FunctionDTO;
 import dto.ProgramStatsDTO;
 import dto.UserStats;
 import javafx.application.Platform;
-import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -27,18 +26,15 @@ import okhttp3.*;
 import session.UserSession;
 import ui.executionBoard.ExecutionBoardController;
 import util.HttpClientUtil;
-import util.ProgramFetcher;
 import utils.UiUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static utils.UiUtils.showAlert;
-import static utils.UiUtils.showError;
 
 public class DashboardController {
     private SProgram loadedProgram;
@@ -50,81 +46,77 @@ public class DashboardController {
     @FXML
     public Label statusLabel;
 
+    @FXML Button executeFunctionButton;
     @FXML
     private ListView<String> usersListView;
 
     private final OkHttpClient client = HttpClientUtil.getClient();
 
+    final ObservableList<FunctionDTO> functionList = FXCollections.observableArrayList();
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    FunctionDTO selectedFunction;
+
     @FXML
     public Label userNameField;
-    @FXML private TableView<ProgramStatsDTO> programsTable;
-    @FXML private TableColumn<ProgramStatsDTO, String> programNameColumn;
-    @FXML private TableColumn<ProgramStatsDTO, String> uploaderColumn;
-    @FXML private TableColumn<ProgramStatsDTO, Integer> instructionCountColumn;
-    @FXML private TableColumn<ProgramStatsDTO, Integer> maxDegreeColumn;
-    @FXML private TableColumn<ProgramStatsDTO, Integer> runCountColumn;
-    @FXML private TableColumn<ProgramStatsDTO, Double> avgCreditsColumn;
+    @FXML
+    TableView<ProgramStatsDTO> programsTable;
+    @FXML
+    TableColumn<ProgramStatsDTO, String> programNameColumn;
+    @FXML
+    TableColumn<ProgramStatsDTO, String> uploaderColumn;
+    @FXML
+    TableColumn<ProgramStatsDTO, Integer> instructionCountColumn;
+    @FXML
+    TableColumn<ProgramStatsDTO, Integer> maxDegreeColumn;
+    @FXML
+    TableColumn<ProgramStatsDTO, Integer> runCountColumn;
+    @FXML
+    TableColumn<ProgramStatsDTO, Double> avgCreditsColumn;
+
+    // --- Functions Table ---
+    @FXML
+    TableView<FunctionDTO> functionsTable;
+    @FXML
+    TableColumn<FunctionDTO, String> colFunctionName;
+    @FXML
+    TableColumn<FunctionDTO, String> colProgramName;
+    @FXML
+    TableColumn<FunctionDTO, String> colUploader;
+    @FXML
+    TableColumn<FunctionDTO, Number> colNumInstructions;
+    @FXML
+    TableColumn<FunctionDTO, Number> colMaxDegree;
+
 
 
     @FXML
     private Label creditsLabel;
     @FXML private TableView<UserStats> usersTable;
-    @FXML private TableColumn<UserStats, String> nameColumn;
-    @FXML private TableColumn<UserStats, Integer> mainProgramsColumn;
-    @FXML private TableColumn<UserStats, Integer> contributedFunctionsColumn;
-    @FXML private TableColumn<UserStats, Integer> currentCreditsColumn;
-    @FXML private TableColumn<UserStats, Integer> usedCreditsColumn;
-    @FXML private TableColumn<UserStats, Integer> executionCountColumn;
+    @FXML
+    TableColumn<UserStats, String> nameColumn;
+    @FXML
+    TableColumn<UserStats, Integer> mainProgramsColumn;
+    @FXML
+    TableColumn<UserStats, Integer> contributedFunctionsColumn;
+    @FXML
+    TableColumn<UserStats, Integer> currentCreditsColumn;
+    @FXML
+    TableColumn<UserStats, Integer> usedCreditsColumn;
+    @FXML
+    TableColumn<UserStats, Integer> executionCountColumn;
 
     private String currentUserName;
     @FXML
-    private Button executeProgramButton;
-    private ProgramStatsDTO selectedProgram;
-
+    public Button executeProgramButton;
+    ProgramStatsDTO selectedProgram;
 
     @FXML
     public void initialize() {
-        executeProgramButton.setDisable(true);
-        programsTable.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        programsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
-            if (newSelection != null) {
-                selectedProgram = newSelection;
-                executeProgramButton.setDisable(false);
-            }
-        });
-
-
-        String username = UserSession.getUsername();
-        userNameField.setText(username);
-        fetchUsers();
-        loadCreditsFromServer();
-        nameColumn.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getName()));
-        mainProgramsColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getMainPrograms()).asObject());
-        contributedFunctionsColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getContributedFunctions()).asObject());
-        currentCreditsColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getCurrentCredits()).asObject());
-        usedCreditsColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getUsedCredits()).asObject());
-        executionCountColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getExecutionCount()).asObject());
-
-        programNameColumn.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getProgramName()));
-        uploaderColumn.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getUploaderName()));
-        instructionCountColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getInstructionCount()).asObject());
-        maxDegreeColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getMaxExpansionLevel()).asObject());
-        runCountColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getRunCount()).asObject());
-        avgCreditsColumn.setCellValueFactory(cell -> new SimpleDoubleProperty(cell.getValue().getAverageCredits()).asObject());
-
-        fetchProgramsFromServer();
-
-        Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                fetchUsers();
-                fetchProgramsFromServer();
-            }
-        }, 0, 1000);
+        InitDashboardHelper.initialize(this);
     }
 
-    private void fetchUsers() {
+
+    void fetchUsers() {
         Request request = new Request.Builder()
                 .url("http://localhost:8080/S-Emulator/get-users")
                 .build();
@@ -175,14 +167,12 @@ public class DashboardController {
 
         String programName = selectedProgram.getProgramName();
 
-        // 1️⃣ קודם ננסה להביא את התוכנית מהמפה המקומית
         Program localProgram = ExecutionContextImpl.getGlobalProgramMap().get(programName);
         if (localProgram != null) {
             openExecutionBoard(localProgram);
             return;
         }
 
-        // 2️⃣ אם לא קיימת מקומית – נבקש אותה מהשרת
         String url = "http://localhost:8080/S-Emulator/request-program?name=" + programName;
         Request request = new Request.Builder().url(url).get().build();
 
@@ -224,10 +214,6 @@ public class DashboardController {
         });
     }
 
-    @FXML
-    private void executeFunctionPressed(ActionEvent event) {
-        // פעולה כלשהי
-    }
 
     private void updateCreditsLabel(int credits) {
         System.out.println("Updating label to: Available Credits: " + credits);
@@ -235,7 +221,7 @@ public class DashboardController {
     }
 
 
-    private void loadCreditsFromServer() {
+    void loadCreditsFromServer() {
         System.out.println("loadCreditsFromServer called");
 
         Request request = new Request.Builder()
@@ -297,7 +283,6 @@ public class DashboardController {
 
             ExecutionBoardController controller = loader.getController();
             controller.setLoadedProgram(program);
-            controller.setProgramStats(selectedProgram);
             controller.setUserCredits(UserSession.getUserCredits());
 
             Stage stage = new Stage();
@@ -310,8 +295,6 @@ public class DashboardController {
             e.printStackTrace();
         }
     }
-
-
 
     @FXML
     private void handleChargeCredits() {
@@ -447,6 +430,196 @@ public class DashboardController {
         }
     }
 
+
+    @FXML
+    private void onExecuteFunctionClicked(ActionEvent event) {
+        if (selectedFunction == null) {
+            UiUtils.showError("Select a function first.");
+            return;
+        }
+
+        String functionName = selectedFunction.getFunctionName();
+
+        // קודם נבדוק אם הפונקציה כבר קיימת בזיכרון
+        Program localFunction = ExecutionContextImpl.getGlobalProgramMap().get(functionName);
+        if (localFunction != null) {
+            openExecutionBoard(localFunction);
+            return;
+        }
+
+        // אם לא קיימת — נבקש אותה מהשרת
+        String url = "http://localhost:8080/S-Emulator/request-program?name=" + functionName;
+        Request request = new Request.Builder().url(url).get().build();
+
+        OkHttpClient client = HttpClientUtil.getClient();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Platform.runLater(() -> UiUtils.showError("Server error: " + e.getMessage()));
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (!response.isSuccessful() || response.body() == null) {
+                    Platform.runLater(() ->
+                            UiUtils.showError("❌ Function unavailable on server."));
+                    return;
+                }
+
+                String xml = response.body().string();
+
+                try {
+                    Program functionProgram = logic.xml.XmlLoader.fromXmlString(xml);
+
+                    // שמירה בזיכרון בלבד (לא נכתב לשרת)
+                    ExecutionContextImpl.loadProgram(functionProgram, xml);
+                    System.out.println("♻️ Loaded shared function from server: " + functionProgram.getName());
+
+                    Platform.runLater(() -> openExecutionBoard(functionProgram));
+
+                } catch (Exception e) {
+                    Platform.runLater(() ->
+                            UiUtils.showError("Failed to load function: " + e.getMessage()));
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    private long lastKnownUpdate = 0;
+
+    void startFunctionsAutoRefresh() {
+        OkHttpClient client = HttpClientUtil.getClient();
+        Timer timer = new Timer(true);
+
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                Request req = new Request.Builder()
+                        .url("http://localhost:8080/S-Emulator/functions/last-update")
+                        .get().build();
+
+                try (Response res = client.newCall(req).execute()) {
+                    if (res.isSuccessful() && res.body() != null) {
+                        long serverTime = new Gson().fromJson(res.body().string(), Map.class)
+                                .get("lastUpdate") instanceof Double d ? d.longValue() : 0L;
+
+                        if (serverTime > lastKnownUpdate) {
+                            lastKnownUpdate = serverTime;
+                            Platform.runLater(() -> updateFunctionsTableFromServer());
+                        }
+                    }
+                } catch (IOException e) {
+                    System.err.println("⚠️ Auto-refresh failed: " + e.getMessage());
+                }
+            }
+        }, 0, 2000); // כל 2 שניות
+    }
+
+    public void updateFunctionsTableFromServer() {
+        String url = "http://localhost:8080/S-Emulator/functions";
+
+        OkHttpClient client = HttpClientUtil.getClient();
+        Request request = new Request.Builder().url(url).get().build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Platform.runLater(() ->
+                        UiUtils.showError("❌ Failed to fetch functions: " + e.getMessage()));
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (!response.isSuccessful() || response.body() == null) {
+                    Platform.runLater(() ->
+                            UiUtils.showError("❌ Server returned error while fetching functions"));
+                    return;
+                }
+
+                String json = response.body().string();
+                response.close(); // 🔒 חובה למנוע דליפת חיבורים
+
+                FunctionDTO[] funcs = new Gson().fromJson(json, FunctionDTO[].class);
+
+                Platform.runLater(() -> {
+                    functionList.clear();
+                    functionList.addAll(Arrays.asList(funcs));
+                    System.out.println("📥 Updated functions table with " + funcs.length + " items");
+                });
+            }
+        });
+    }
+
+    @FXML
+    private void onClose() {
+        scheduler.shutdownNow();
+    }
+    public void updateFunctionsTableFromLoadedProgram() {
+        Request request = new Request.Builder()
+                .url("http://localhost:8080/S-Emulator/functions")
+                .get()
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                System.err.println("❌ Failed to fetch functions: " + e.getMessage());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (!response.isSuccessful() || response.body() == null) return;
+
+                String json = response.body().string();
+                Type listType = new TypeToken<List<FunctionDTO>>() {}.getType();
+                List<FunctionDTO> allFunctions = new Gson().fromJson(json, listType);
+
+                String currentProgramName = xmlPathLabel.getText().replace(".xml", "").toLowerCase();
+
+                System.out.println("📥 Received " + allFunctions.size() + " functions from server.");
+                allFunctions.forEach(f -> System.out.println("   → " + f.getFunctionName() + " (parent=" + f.getProgramName() + ")"));
+
+                List<FunctionDTO> programFunctions = allFunctions.stream()
+                        .filter(f -> f.getProgramName() != null && f.getProgramName().equalsIgnoreCase(currentProgramName))
+                        .toList();
+
+                System.out.println("🟢 Found " + programFunctions.size() + " functions for program: " + currentProgramName);
+                programFunctions.forEach(f -> System.out.println("   ✅ " + f.getFunctionName()));
+
+                Platform.runLater(() -> functionsTable.getItems().setAll(programFunctions));
+            }
+        });
+    }
+    public void fetchFunctionsFromServer() {
+        String url = "http://localhost:8080/S-Emulator/functions";
+        Request request = new Request.Builder().url(url).get().build();
+
+        HttpClientUtil.getClient().newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Platform.runLater(() -> UiUtils.showError("Server error: " + e.getMessage()));
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (!response.isSuccessful() || response.body() == null) {
+                    Platform.runLater(() -> UiUtils.showError("Failed to load functions from server"));
+                    return;
+                }
+
+                String json = response.body().string();
+                FunctionDTO[] functions = new Gson().fromJson(json, FunctionDTO[].class);
+
+                Platform.runLater(() -> {
+                    functionList.clear();
+                    functionList.addAll(Arrays.asList(functions));
+                    System.out.println("📥 Updated functions table with " + functions.length + " items");
+                });
+            }
+        });
+    }
 
 
 }

@@ -1,10 +1,7 @@
 package logic.xml;
 
-import jakarta.xml.bind.JAXBElement;
+import jakarta.xml.bind.*;
 import jaxbV2.jaxb.v2.*;
-import jakarta.xml.bind.JAXBContext;
-import jakarta.xml.bind.JAXBException;
-import jakarta.xml.bind.Unmarshaller;
 import logic.Variable.Variable;
 import logic.Variable.VariableImpl;
 import logic.Variable.VariableType;
@@ -19,6 +16,7 @@ import logic.program.ProgramImpl;
 
 import java.io.File;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.*;
 
 public class XmlLoader {
@@ -65,6 +63,14 @@ public class XmlLoader {
             throw e;
         }
     }
+    public static String toXmlString(Program program) throws Exception {
+        JAXBContext context = JAXBContext.newInstance("jaxbV2.jaxb.v2");
+        Marshaller marshaller = context.createMarshaller();
+        StringWriter writer = new StringWriter();
+        marshaller.marshal(program, writer);
+        return writer.toString();
+    }
+
 
 
 }
