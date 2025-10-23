@@ -53,4 +53,20 @@ public class RunHistoryEntry {
     public Map<Variable, Long> getInputsMap() {
         return inputs;
     }
+
+    public int getRunId() {
+        return runNumber;
+    }
+
+    public long getResult() {
+        return resultY;
+    }
+
+    public int getCycles() {
+        return totalCycles;
+    }
+
+    public int getDegree() {
+        return expansionDegree;
+    }
 }

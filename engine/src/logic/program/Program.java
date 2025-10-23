@@ -50,4 +50,6 @@ public interface Program {
     double getAverageCredits();
     public void setParentProgramName(String parentProgramName) ;
     public String getParentProgramName() ;
-    }
+
+    boolean isMain();
+}

@@ -41,6 +41,12 @@ public class ProgramImpl implements Program {
         return parentProgramName != null ? parentProgramName : "N/A";
     }
 
+    @Override
+    public boolean isMain() {
+        return parentProgramName != null && parentProgramName.equals("MAIN");
+    }
+
+
 
     @Override
     public List <AbstractInstruction> getExpandedInstructions(){

@@ -7,10 +7,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import logic.program.Program;
 import logic.xml.XmlLoader;
-import serverProgram.ProgramManager;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,7 +30,6 @@ public class LoadProgramServlet extends HttpServlet {
 
         String uploader = (String) request.getSession().getAttribute("username");
 
-        // עדכון רשימת התוכניות (metadata בלבד)
         ServletContext context = getServletContext();
         List<ProgramStatsDTO> allPrograms =
                 (List<ProgramStatsDTO>) context.getAttribute("programStatsList");

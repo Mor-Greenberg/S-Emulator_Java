@@ -1,8 +1,6 @@
 package ui.executionBoard;
 
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import dto.FunctionDTO;
 import dto.ProgramStatsDTO;
 import gui.reRun.ReRunService;
 import ui.executionBoard.highlightSelectionPopup.HighlightAction;
@@ -36,12 +34,10 @@ import util.HttpClientUtil;
 import utils.UiUtils;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
+
+import static gui.showStatus.Status.showVariablesPopup;
 import static ui.executionBoard.instructionTable.InstructionRow.getAllLabels;
 import static ui.executionBoard.instructionTable.InstructionRow.getAllVariables;
 import static utils.UiUtils.showError;
@@ -76,8 +72,9 @@ public class ExecutionBoardController {
 
     @FXML private Label debugCycles;
     @FXML private VBox vboxDebuggerArea;
-
+    @FXML private Button ReRunButton;
     private Program loadedProgram;
+    @FXML private Button showStatusButton;
 
     private final OkHttpClient client = HttpClientUtil.getClient();
 
@@ -88,19 +85,6 @@ public class ExecutionBoardController {
 
     public static ExecutionBoardController getInstance() {
         return instance;
-    }
-    public void setProgramStats(ProgramStatsDTO programStats) {
-        this.selectedProgram = programStats;
-        String name = programStats.getProgramName();
-        Program program = ExecutionContextImpl.getGlobalProgramMap().get(name);
-
-        if (program == null) {
-            System.err.println("❌ Program not found in local map: " + name);
-            System.err.println("Available programs: " + ExecutionContextImpl.getGlobalProgramMap().keySet());
-            return;
-        }
-
-        printInstructions(program.getInstructions());
     }
 
 
@@ -127,6 +111,7 @@ public class ExecutionBoardController {
         colCycles.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getCycles()));
         colArch.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getArchitecture()));
         instructionsTable.setItems(instructionData);
+
 
         // --- Variables Table setup ---
         variableNameCol.setCellValueFactory(data -> data.getValue().nameProperty());
@@ -191,20 +176,7 @@ public class ExecutionBoardController {
         updateVariablesView();
     }
 
-    @FXML
-    private void onReRunClicked(ActionEvent e) {
-        if (loadedProgram == null) {
-            UiUtils.showError("No program loaded.");
-            return;
-        }
 
-        ExecutionRunner.setPrefilledInputs(ExecutionRunner.getExecutionContextMap());
-        ExecutionRunner.setPrefilledDegree(ExecutionRunner.getCurrentDegree());
-
-        ExecutionRunner.runProgram(loadedProgram);
-
-        updateVariablesView();
-    }
 
 
     // =====================================================
@@ -371,6 +343,49 @@ public class ExecutionBoardController {
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.showAndWait();
     }
+
+    @FXML
+    void onShowStatusClicked() {
+        if (loadedProgram == null) {
+            showError("No program loaded.");
+            return;
+        }
+
+        Map<Variable, Long> allVariables;
+
+        if (ExecutionRunner.isDebugMode()) {
+            allVariables = ExecutionRunner.getDebugContext().getVariableState();
+        } else {
+            allVariables = ExecutionRunner.getExecutionContextMap();
+        }
+        showVariablesPopup(allVariables);
+
+    }
+    public void loadProgramByName(String name) {
+        fetchProgramFromServer(name);
+    }
+
+    public void notifyExecutionCompleted(String programName, int creditsUsed) {
+        Request request = new Request.Builder()
+                .url("http://localhost:8080/S-Emulator/execution-update?program=" + programName + "&creditsUsed=" + creditsUsed)
+                .post(RequestBody.create(new byte[0], null))
+                .build();
+
+        HttpClientUtil.getClient().newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                System.err.println("⚠️ Failed to update execution stats: " + e.getMessage());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) {
+                response.close();
+                System.out.println("✅ Execution stats updated for " + programName);
+            }
+
+        });
+    }
+
     @FXML
     void onReRunClicked() {
         if (loadedProgram == null) {
@@ -397,25 +412,6 @@ public class ExecutionBoardController {
             ExecutionRunner.startDebug(loadedProgram);
         }
     }
-    @FXML
-    void onShowStatusClicked() {
-        if (loadedProgram == null) {
-            showError("No program loaded.");
-            return;
-        }
-
-        Map<Variable, Long> allVariables;
-
-        if (ExecutionRunner.isDebugMode()) {
-            allVariables = ExecutionRunner.getDebugContext().getVariableState();
-        } else {
-            allVariables = ExecutionRunner.getExecutionContextMap();
-        }
-    }
-    public void loadProgramByName(String name) {
-        fetchProgramFromServer(name);
-    }
-
 
 
 }

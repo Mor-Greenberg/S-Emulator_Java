@@ -8,8 +8,7 @@ import logic.program.Program;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+
 @WebServlet("/api/programs")
 public class ProgramStatsServlet extends HttpServlet {
     @Override
@@ -32,7 +31,6 @@ public class ProgramStatsServlet extends HttpServlet {
             list.add(dto);
         }
 
-        System.out.println("📤 Sending " + list.size() + " programs to all clients.");
         resp.getWriter().write(new Gson().toJson(list));
     }
 }

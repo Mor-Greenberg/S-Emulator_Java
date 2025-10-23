@@ -20,15 +20,9 @@ import logic.program.Program;
 
 import java.util.*;
 
-/**
- * Utility class for handling quoted programs (used in QuoteInstruction).
- */
 public class QuoteProcessor {
 
-    /**
-     * Computes the degree of a quoted program.
-     * The degree is defined as 1 + max(degree of instruction in program).
-     */
+
     public static int computeDegree(Program quotedProgram) {
         if (quotedProgram == null || quotedProgram.getInstructions().isEmpty()) {
             return 1;
@@ -40,15 +34,7 @@ public class QuoteProcessor {
                 .orElse(0) + 1;
     }
 
-    /**
-     * Rewrites a quoted program's instructions, replacing variable and label references according to given maps.
-     *
-     * @param quotedProgram The quoted function (Program)
-     * @param variableMap   Mapping from formal param names (x1, x2, ..., y) to actual Variables
-     * @param endLabel      Label to use instead of EXIT
-     * @param context       Execution context (for generating new labels/vars)
-     * @return A list of AbstractInstructions with replacements applied
-     */
+
     public static List<AbstractInstruction> rewriteInstructions(Program quotedProgram,
                                                                 Map<String, Variable> variableMap,
                                                                 Label endLabel,
@@ -56,12 +42,10 @@ public class QuoteProcessor {
         List<AbstractInstruction> result = new ArrayList<>();
 
         for (Instruction instr : quotedProgram.getInstructions()) {
-            AbstractInstruction clone = instr.clone(); // בהנחה שיש clone()
+            AbstractInstruction clone = instr.clone();
 
-            // החלפת משתנים
             clone.replaceVariables(variableMap);
 
-            // החלפת תווית קפיצה ל־EXIT
             if (clone.jumpsTo(FixedLabel.EXIT)) {
                 clone.replaceJumpLabel(FixedLabel.EXIT, endLabel);
             }

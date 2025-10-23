@@ -1,7 +1,9 @@
 package logic.execution;
 
+import dto.UserRunEntryDTO;
 import gui.MainScreenController;
 import handleExecution.HandleExecution;
+import ui.dashboard.UserHistory;
 import ui.executionBoard.ExecutionBoardController;
 import ui.executionBoard.instructionTable.InstructionRow;
 import javafx.application.Platform;
@@ -24,6 +26,27 @@ import static logic.blaxBox.BlackBox.executeBlackBox;
 import static utils.Utils.generateSummary;
 
 public class ExecutionRunner {
+    private static RunCompletionListener runCompletionListener;
+    public static void setRunCompletionListener(RunCompletionListener l) {
+        runCompletionListener = l;
+    }
+    private static UserRunEntryDTO buildDto(Program program, RunHistoryEntry entry) {
+        String runType = (program != null && program.isMain()) ? "Program" : "Function";
+        return new UserRunEntryDTO(
+                entry.getRunId(),
+                runType,
+                (program != null ? program.getName() : "UNKNOWN"),
+                architecture,
+                entry.getDegree(),
+                entry.getResult(),
+                entry.getCycles()
+        );
+    }
+    private static void notifyRunCompleted(Program program, RunHistoryEntry entry) {
+        if (runCompletionListener != null) {
+            runCompletionListener.onRunCompleted(buildDto(program, entry));
+        }
+    }
 
     private static Map<Variable, Long> lastInputsMap = new HashMap<>();
     private static HandleExecution debugHandleExecution;
@@ -119,7 +142,13 @@ public class ExecutionRunner {
                     false
             );
             history.add(entry);
+
             lastVariableState = new HashMap<>(context.getVariableState());
+            notifyRunCompleted(program, entry);
+            UserHistory.sendRunToServer(buildDto(program, entry));
+
+
+
             return;
         }
 
@@ -172,14 +201,23 @@ public class ExecutionRunner {
 
         if (uploader != null) {
             uploader.trackExecution(program.getName(), sumCycles);
+            Platform.runLater(() -> {
+                ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
+                ctrl.notifyExecutionCompleted(program.getName(), sumCycles);
+            });
+
         } else {
-            System.out.println("⚠️ No uploader found for program '" + program.getName() + "', skipping tracking.");
+            System.out.println("No uploader found for program '" + program.getName() + "', skipping tracking.");
         }
 
         RunHistoryEntry entry = new RunHistoryEntry(
                 runCounter++, currentDegree,
                 lastInputsMap, result, sumCycles, false);
         history.add(entry);
+        notifyRunCompleted(program, entry);
+        UserHistory.sendRunToServer(buildDto(program, entry));
+
+
         lastVariableState = new HashMap<>(variableState);
     }
 
@@ -239,6 +277,10 @@ public class ExecutionRunner {
                     lastInputsMap, result, 0, true);
             history.add(entry);
             lastVariableState = new HashMap<>(debugContext.getVariableState());
+            notifyRunCompleted(program, entry);
+            UserHistory.sendRunToServer(buildDto(program, entry));
+
+
             return;
         }
 
@@ -315,6 +357,9 @@ public class ExecutionRunner {
                 );
                 history.add(entry);
                 lastVariableState = new HashMap<>(debugContext.getVariableState());
+                notifyRunCompleted(expandedProgram, entry);
+                UserHistory.sendRunToServer(buildDto(expandedProgram, entry));
+
             }
             return;
         }
@@ -390,7 +435,7 @@ public class ExecutionRunner {
             }
 
             if (currentIndex >= debugInstructions.size()) {
-                saveDebugHistory();   // ← עכשיו בטוח לא יקרוס
+                saveDebugHistory();
                 generateSummary(debugInstructions);
             }
         }).start();
@@ -415,6 +460,10 @@ public class ExecutionRunner {
                 true
         );
         history.add(entry);
+        notifyRunCompleted(expandedProgram, entry);
+        UserHistory.sendRunToServer(buildDto(expandedProgram, entry));
+
+
         User uploader = null;
         if (expandedProgram.getUploaderName() != null) {
             uploader = User.getManager().getUser(expandedProgram.getUploaderName());
@@ -423,7 +472,7 @@ public class ExecutionRunner {
         if (uploader != null) {
             uploader.trackExecution(expandedProgram.getUploaderName(), executedCycles);
         } else {
-            System.out.println("⚠️ No uploader found for program '" + expandedProgram.getUploaderName() + "', skipping tracking.");
+            System.out.println("No uploader found for program '" + expandedProgram.getUploaderName() + "', skipping tracking.");
         }
 
         lastVariableState = new HashMap<>(debugContext.getVariableState());

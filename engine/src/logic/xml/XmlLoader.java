@@ -51,14 +51,14 @@ public class XmlLoader {
         } else if (unmarshalled instanceof SProgram sp) {
             sProgram = sp;
         } else {
-            throw new IllegalArgumentException("❌ Expected root element <S-Program> but got: " + unmarshalled.getClass().getSimpleName());
+            throw new IllegalArgumentException("Expected root element <S-Program> but got: " + unmarshalled.getClass().getSimpleName());
         }
 
         try {
             XmlMapper mapper = new XmlMapper(new ExecutionContextImpl());
             return mapper.map(sProgram, "FromString");
         } catch (Exception e) {
-            System.err.println("❌ Error during XmlMapper.map:");
+            System.err.println("Error during XmlMapper.map:");
             e.printStackTrace();
             throw e;
         }

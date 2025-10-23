@@ -1,5 +1,6 @@
 package servlets;
 
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import user.UserManager;
@@ -11,8 +12,14 @@ import java.util.Set;
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
 
-    // רשימת משתמשים מחוברים (בזיכרון בלבד)
     private static final Set<String> connectedUsers = new HashSet<>();
+
+    @Override
+    public void init() {
+        getServletContext().setAttribute("userManager", UserManager.getInstance());
+    }
+
+
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -31,18 +38,15 @@ public class LoginServlet extends HttpServlet {
                 return;
             }
 
-            // מוסיפים לרשימת המשתמשים המחוברים
             connectedUsers.add(username);
 
-            // שומרים שם משתמש בסשן
             HttpSession session = request.getSession(true);
             session.setAttribute("username", username);
 
-            // מוסיפים את המשתמש למערכת הגלובלית (Singleton)
             UserManager userManager = UserManager.getInstance();
             userManager.addUser(username);
 
-            System.out.println("✅ User logged in: " + username);
+            System.out.println("User logged in: " + username);
             response.setStatus(HttpServletResponse.SC_OK);
             response.getWriter().write("OK");
         }

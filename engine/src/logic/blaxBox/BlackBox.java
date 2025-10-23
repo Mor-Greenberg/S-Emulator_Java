@@ -86,7 +86,7 @@ public class BlackBox {
             case "GOTO_LABEL" -> {
                 logic.instruction.GoToLabelInstruction g = (logic.instruction.GoToLabelInstruction) instr;
                 if (g.getGoToLabel() == logic.label.FixedLabel.EXIT) {
-                    return instrs.size();  // יציאה
+                    return instrs.size();
                 }
                 return labelToIndex.getOrDefault(g.getGoToLabel().toString(), pc + 1);
             }
@@ -94,7 +94,7 @@ public class BlackBox {
                 JumpEqualFunctionInstruction jef = (JumpEqualFunctionInstruction) instr;
                 Program func = program.getFunctionMap().get(jef.getFunctionName());
                 if (func == null) {
-                    System.out.println("⚠ Unknown function in JUMP_EQUAL_FUNCTION: " + jef.getFunctionName());
+                    System.out.println("Unknown function in JUMP_EQUAL_FUNCTION: " + jef.getFunctionName());
                     return pc + 1;
                 }
 

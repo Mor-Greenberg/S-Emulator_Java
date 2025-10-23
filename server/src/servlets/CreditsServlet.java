@@ -61,7 +61,6 @@ public class CreditsServlet extends HttpServlet {
             return;
         }
 
-        // נוודא שיש UserManager ב-context
         UserManager userManager = (UserManager) getServletContext().getAttribute("userManager");
         if (userManager == null) {
             userManager = UserManager.getInstance();

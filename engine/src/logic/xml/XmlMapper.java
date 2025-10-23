@@ -38,6 +38,8 @@ public class XmlMapper {
                 localFunctionMap
         );
         mainProgram.setFunctionMap(localFunctionMap);
+        (mainProgram).setParentProgramName("MAIN");
+
 
         Map<String, Program> globalProgramsSnapshot = new HashMap<>(ExecutionContextImpl.getGlobalProgramMap());
         System.out.println("Before validation (snapshot): " + globalProgramsSnapshot.keySet());
@@ -62,7 +64,7 @@ public class XmlMapper {
             func.setFunction(true);
             func.setParentProgramName(mainProgram.getName());
             ExecutionContextImpl.addGlobalProgram(func);
-            System.out.println("✅ Added function: " + func.getName() + " (parent=" + func.getParentProgramName() + ")");
+            System.out.println("Added function: " + func.getName() + " (parent=" + func.getParentProgramName() + ")");
         }
 
         System.out.println("Saved to program map: " + mainProgram.getName());
@@ -317,7 +319,6 @@ public class XmlMapper {
             }
 
             functionMap.put(prog.getName(), prog);
-            System.out.println("✅ Added function to map: " + prog.getName() + " (parent=" + mainProgramName + ")");
         }
 
         return functionMap;

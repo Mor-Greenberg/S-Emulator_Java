@@ -4,7 +4,7 @@ package util;
 import coockie.SessionCookieJar;
 import okhttp3.OkHttpClient;
 public class HttpClientUtil {
-    private static final OkHttpClient client = new OkHttpClient.Builder()
+    public static final OkHttpClient client = new OkHttpClient.Builder()
             .cookieJar(new SessionCookieJar())
             .build();
 

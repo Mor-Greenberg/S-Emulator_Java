@@ -29,7 +29,6 @@ public class FunctionsServlet extends HttpServlet {
             list.add(dto);
         }
 
-        System.out.println("📤 Sending " + list.size() + " global functions to clients.");
         resp.getWriter().write(new Gson().toJson(list));
     }
 }

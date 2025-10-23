@@ -7,7 +7,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import dto.FunctionDTO;
 import dto.ProgramStatsDTO;
-import dto.UserStats;
+import dto.UserStatsDTO;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -91,19 +91,20 @@ public class DashboardController {
 
     @FXML
     private Label creditsLabel;
-    @FXML private TableView<UserStats> usersTable;
     @FXML
-    TableColumn<UserStats, String> nameColumn;
+    TableView<UserStatsDTO> usersTable;
     @FXML
-    TableColumn<UserStats, Integer> mainProgramsColumn;
+    TableColumn<UserStatsDTO, String> nameColumn;
     @FXML
-    TableColumn<UserStats, Integer> contributedFunctionsColumn;
+    TableColumn<UserStatsDTO, Integer> mainProgramsColumn;
     @FXML
-    TableColumn<UserStats, Integer> currentCreditsColumn;
+    TableColumn<UserStatsDTO, Integer> contributedFunctionsColumn;
     @FXML
-    TableColumn<UserStats, Integer> usedCreditsColumn;
+    TableColumn<UserStatsDTO, Integer> currentCreditsColumn;
     @FXML
-    TableColumn<UserStats, Integer> executionCountColumn;
+    TableColumn<UserStatsDTO, Integer> usedCreditsColumn;
+    @FXML
+    TableColumn<UserStatsDTO, Integer> executionCountColumn;
 
     private String currentUserName;
     @FXML
@@ -131,12 +132,12 @@ public class DashboardController {
             public void onResponse(Call call, Response response) throws IOException {
                 if (response.isSuccessful()) {
                     String json = response.body().string();
-                    Type listType = new TypeToken<List<UserStats>>() {}.getType();
-                    List<UserStats> users = new Gson().fromJson(json, listType);
+                    Type listType = new TypeToken<List<UserStatsDTO>>() {}.getType();
+                    List<UserStatsDTO> users = new Gson().fromJson(json, listType);
 
 
                     Platform.runLater(() -> {
-                        usersTable.getItems().setAll(users); // במקום usersListView
+                        usersTable.getItems().setAll(users);
                     });
 
                 }
@@ -188,21 +189,18 @@ public class DashboardController {
             public void onResponse(Call call, Response response) throws IOException {
                 if (!response.isSuccessful() || response.body() == null) {
                     Platform.runLater(() ->
-                            UiUtils.showError("❌ Program unavailable on server."));
+                            UiUtils.showError("Program unavailable on server."));
                     return;
                 }
 
                 String xml = response.body().string();
 
                 try {
-                    // 3️⃣ המרה מ־XML ל־Program
                     Program program = logic.xml.XmlLoader.fromXmlString(xml);
 
-                    // 4️⃣ שמירה רק בזיכרון המקומי
                     ExecutionContextImpl.loadProgram(program, xml);
-                    System.out.println("♻️ Loaded shared program from server: " + program.getName());
+                    System.out.println("Loaded shared program from server: " + program.getName());
 
-                    // 5️⃣ פתיחת מסך ההרצה
                     Platform.runLater(() -> openExecutionBoard(program));
 
                 } catch (Exception e) {
@@ -463,7 +461,7 @@ public class DashboardController {
             public void onResponse(Call call, Response response) throws IOException {
                 if (!response.isSuccessful() || response.body() == null) {
                     Platform.runLater(() ->
-                            UiUtils.showError("❌ Function unavailable on server."));
+                            UiUtils.showError("Function unavailable on server."));
                     return;
                 }
 
@@ -511,10 +509,10 @@ public class DashboardController {
                         }
                     }
                 } catch (IOException e) {
-                    System.err.println("⚠️ Auto-refresh failed: " + e.getMessage());
+                    System.err.println("Auto-refresh failed: " + e.getMessage());
                 }
             }
-        }, 0, 2000); // כל 2 שניות
+        }, 0, 2000);
     }
 
     public void updateFunctionsTableFromServer() {
@@ -527,26 +525,25 @@ public class DashboardController {
             @Override
             public void onFailure(Call call, IOException e) {
                 Platform.runLater(() ->
-                        UiUtils.showError("❌ Failed to fetch functions: " + e.getMessage()));
+                        UiUtils.showError("Failed to fetch functions: " + e.getMessage()));
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 if (!response.isSuccessful() || response.body() == null) {
                     Platform.runLater(() ->
-                            UiUtils.showError("❌ Server returned error while fetching functions"));
+                            UiUtils.showError("Server returned error while fetching functions"));
                     return;
                 }
 
                 String json = response.body().string();
-                response.close(); // 🔒 חובה למנוע דליפת חיבורים
+                response.close();
 
                 FunctionDTO[] funcs = new Gson().fromJson(json, FunctionDTO[].class);
 
                 Platform.runLater(() -> {
                     functionList.clear();
                     functionList.addAll(Arrays.asList(funcs));
-                    System.out.println("📥 Updated functions table with " + funcs.length + " items");
                 });
             }
         });
@@ -565,7 +562,7 @@ public class DashboardController {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                System.err.println("❌ Failed to fetch functions: " + e.getMessage());
+                System.err.println("Failed to fetch functions: " + e.getMessage());
             }
 
             @Override
@@ -578,15 +575,11 @@ public class DashboardController {
 
                 String currentProgramName = xmlPathLabel.getText().replace(".xml", "").toLowerCase();
 
-                System.out.println("📥 Received " + allFunctions.size() + " functions from server.");
-                allFunctions.forEach(f -> System.out.println("   → " + f.getFunctionName() + " (parent=" + f.getProgramName() + ")"));
 
                 List<FunctionDTO> programFunctions = allFunctions.stream()
                         .filter(f -> f.getProgramName() != null && f.getProgramName().equalsIgnoreCase(currentProgramName))
                         .toList();
 
-                System.out.println("🟢 Found " + programFunctions.size() + " functions for program: " + currentProgramName);
-                programFunctions.forEach(f -> System.out.println("   ✅ " + f.getFunctionName()));
 
                 Platform.runLater(() -> functionsTable.getItems().setAll(programFunctions));
             }
@@ -615,7 +608,6 @@ public class DashboardController {
                 Platform.runLater(() -> {
                     functionList.clear();
                     functionList.addAll(Arrays.asList(functions));
-                    System.out.println("📥 Updated functions table with " + functions.length + " items");
                 });
             }
         });

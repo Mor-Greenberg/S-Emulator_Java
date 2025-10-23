@@ -35,7 +35,6 @@ public class LoadFile {
             Program program = XmlLoader.fromXmlString(xml);
 
             program.setUploaderName(UserSession.getUsername());
-
             logic.execution.ExecutionContextImpl.loadProgram(program, xml);
 
             Platform.runLater(() ->
@@ -52,28 +51,27 @@ public class LoadFile {
                 @Override
                 public void onFailure(Call call, IOException e) {
                     Platform.runLater(() ->
-                            UiUtils.showError("❌ Server error: " + e.getMessage())
+                            UiUtils.showError("Server error: " + e.getMessage())
                     );
                 }
 
                 @Override
                 public void onResponse(Call call, Response response) {
-                    try (response) { // סוגר אוטומטית את ה־Response
+                    try (response) {
                         if (!response.isSuccessful()) {
                             Platform.runLater(() ->
-                                    UiUtils.showError("❌ Server returned: " + response.code())
+                                    UiUtils.showError("Server returned: " + response.code())
                             );
                             return;
                         }
 
-                        // יצירת DTO עם נתונים ל־ProgramStatsServlet
                         ProgramStatsDTO dto = new ProgramStatsDTO(
                                 program.getName(),
                                 UserSession.getUsername(),
                                 program.getInstructions().size(),
                                 program.calculateMaxDegree(),
                                 program.getRunCount(),
-                                0.0 // ✅ לא ניגשים ל־UserManager בצד הלקוח!
+                                0.0
                         );
 
                         RequestBody statsBody = RequestBody.create(
@@ -89,7 +87,7 @@ public class LoadFile {
                         client.newCall(statsReq).enqueue(new Callback() {
                             @Override
                             public void onFailure(Call call, IOException e) {
-                                System.err.println("❌ Failed to update shared table: " + e.getMessage());
+                                System.err.println("Failed to update shared table: " + e.getMessage());
                             }
 
                             @Override
@@ -97,22 +95,23 @@ public class LoadFile {
                                 res.close();
                                 Platform.runLater(() -> {
                                     controller.statusLabel.setText(
-                                            "✅ Program uploaded successfully: " + program.getName());
+                                            "Program uploaded successfully: " + program.getName());
+
+                                    // --- 🔁 Refresh dashboard tables ---
                                     controller.fetchProgramsFromServer();
                                     controller.fetchFunctionsFromServer();
                                     controller.updateFunctionsTableFromLoadedProgram();
 
+                                    controller.fetchUsers();
 
-
-                                    // 🕓 דחייה קצרה כדי לאפשר לשרת לעדכן את המפה לפני הקריאה
                                     java.util.concurrent.Executors.newSingleThreadScheduledExecutor()
                                             .schedule(() -> Platform.runLater(() -> {
                                                 System.out.println("🔁 Refreshing functions after upload...");
                                                 controller.updateFunctionsTableFromLoadedProgram();
+                                                controller.fetchUsers();
                                             }), 1, java.util.concurrent.TimeUnit.SECONDS);
                                 });
                             }
-
                         });
                     }
                 }
@@ -122,6 +121,5 @@ public class LoadFile {
             UiUtils.showError("Failed to load program: " + e.getMessage());
             e.printStackTrace();
         }
-
     }
 }

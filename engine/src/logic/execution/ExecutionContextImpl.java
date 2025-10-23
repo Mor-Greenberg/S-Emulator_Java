@@ -56,7 +56,7 @@ public class ExecutionContextImpl implements ExecutionContext {
     @Override
     public void setFunctionMap(Map<String, Program> functionMap) {
         if (functionMap == null || functionMap.isEmpty()) {
-            System.out.println("⚠️ setFunctionMap: received empty or null function map.");
+            System.out.println("setFunctionMap: received empty or null function map.");
             return;
         }
 
@@ -65,17 +65,17 @@ public class ExecutionContextImpl implements ExecutionContext {
             Program funcProg = entry.getValue();
 
             if (funcName == null || funcName.isBlank() || funcProg == null) {
-                System.out.println("⚠️ Skipping invalid function entry (null/blank).");
+                System.out.println("Skipping invalid function entry (null/blank).");
                 continue;
             }
 
             if (globalProgramMap.containsKey(funcName)) {
-                System.out.println("ℹ️ Function '" + funcName + "' already exists — skipping duplicate.");
-                continue; // לא נזרוק שגיאה
+                System.out.println("Function '" + funcName + "' already exists — skipping duplicate.");
+                continue;
             }
 
             globalProgramMap.put(funcName, funcProg);
-            System.out.println("✅ Added function: " + funcName);
+            System.out.println("Added function: " + funcName);
         }
     }
 

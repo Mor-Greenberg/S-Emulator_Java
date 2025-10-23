@@ -4,6 +4,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import logic.program.Program;
 import logic.xml.XmlLoader;
+import user.UserManager;
 
 import java.io.*;
 import java.util.*;
@@ -23,6 +24,12 @@ public class RequestProgramServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String uploader = (String) req.getSession().getAttribute("username");
 
+        if (uploader == null) {
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            resp.getWriter().write("User not logged in.");
+            return;
+        }
+
         String xmlContent = new BufferedReader(new InputStreamReader(req.getInputStream()))
                 .lines().collect(Collectors.joining("\n"));
         String programName = req.getParameter("name");
@@ -39,25 +46,39 @@ public class RequestProgramServlet extends HttpServlet {
             Program program = XmlLoader.fromXmlString(xmlContent);
             program.setUploaderName(uploader);
 
-            // --- Save main program ---
+            //Save main program
             serverProgram.GlobalProgramsManager.addProgram(program);
-            System.out.println("📦 Added main program: " + program.getName() + " (uploader=" + uploader + ")");
+            uploaderMap.put(program.getName(), uploader);
+            System.out.println("Added main program: " + program.getName() + " (uploader=" + uploader + ")");
 
-            // --- Save all inner functions ---
+            //Save all inner functions
             int count = 0;
             for (Program func : program.getFunctionMap().values()) {
                 if (func.isFunction()) {
                     func.setUploaderName(uploader);
                     serverProgram.GlobalFunctionsManager.addFunction(func);
                     count++;
-                    System.out.println("🧩 Added function: " + func.getName() +
+                    System.out.println("Added function: " + func.getName() +
                             " (parent=" + program.getName() + ", uploader=" + uploader + ")");
                 }
             }
 
-            System.out.println("✅ Total functions saved: " + count);
-            System.out.println("📊 Current GlobalFunctionsManager keys: " +
+            System.out.println("Total functions saved: " + count);
+            System.out.println("Current GlobalFunctionsManager keys: " +
                     serverProgram.GlobalFunctionsManager.getAllFunctions().keySet());
+
+            //Update UserManager stats
+            UserManager userManager = UserManager.getInstance();
+            userManager.incrementMainProgramsUploaded(uploader);
+            if (count > 0) {
+                for (int i = 0; i < count; i++) {
+                    userManager.incrementContributedFunctions(uploader);
+                }
+            }
+
+            System.out.println("Updated user stats: " + uploader +
+                    " | mainPrograms=" + userManager.getUser(uploader).getMainProgramsUploaded() +
+                    " | functions=" + userManager.getUser(uploader).getContributedFunctions());
 
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.getWriter().write("Program and functions saved successfully.");
@@ -69,7 +90,6 @@ public class RequestProgramServlet extends HttpServlet {
         }
     }
 
-
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String programName = req.getParameter("name");
@@ -79,19 +99,17 @@ public class RequestProgramServlet extends HttpServlet {
             return;
         }
 
-        // נחפש קודם בתוכניות ובפונקציות הגלובליות
         String xml = programXmlMap.get(programName.trim());
-
         if (xml == null) {
             resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
             resp.getWriter().write("Program/function not found on server.");
-            System.out.println("❌ '" + programName + "' not found in memory maps");
+            System.out.println( programName + "' not found in memory maps");
             return;
         }
 
         resp.setContentType("application/xml; charset=UTF-8");
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write(xml);
-        System.out.println("📤 Sent XML for '" + programName + "' to client");
+        System.out.println("Sent XML for '" + programName + "' to client");
     }
 }

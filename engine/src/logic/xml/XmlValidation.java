@@ -19,19 +19,16 @@ public class XmlValidation {
 
         List<String> errors = new ArrayList<>();
 
-        // 1. בדיקת תקינות קובץ
         if (path != null && !path.equalsIgnoreCase("FromString")) {
             int fileCheck = validateXmlFilePath(path);
             if (fileCheck == 1) errors.add("XML file does not exist: " + path);
             else if (fileCheck == 2) errors.add("Invalid file type (must be .xml): " + path);
         }
 
-        // 2. לכל תוכנית (ראשית) יש שם ייחודי משלה
         if (globalProgramsMap.containsKey(mainProgram.getName())) {
             errors.add("Main program name '" + mainProgram.getName() + "' already exists in the system.");
         }
 
-        // 3. כל הפונקציות שהתוכנית הראשית משתמשת בהן קיימות
         Set<String> calledFunctions = mainProgram.getFunctionRefs();
         Set<String> definedFunctionNames = newFunctions.stream()
                 .map(Program::getName)
@@ -43,20 +40,17 @@ public class XmlValidation {
             }
         }
 
-        // 4. אם אחת מהפונקציות בקובץ כבר קיימת במערכת
         for (Program func : newFunctions) {
             if (globalProgramsMap.containsKey(func.getName())) {
                 errors.add("Function '" + func.getName() + "' already exists in the system.");
             }
         }
 
-        // 5. בדיקת תוויות
         validateLabels(mainProgram.getInstructions(), errors, "Main Program");
         for (Program func : newFunctions) {
             validateLabels(func.getInstructions(), errors, "Function '" + func.getName() + "'");
         }
 
-        // אם יש בעיות אמיתיות — נכשלים
         if (!errors.isEmpty()) {
             throw new IllegalArgumentException("File validation failed:\n" + String.join("\n", errors));
         }

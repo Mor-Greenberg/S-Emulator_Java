@@ -77,7 +77,7 @@ public class User {
         programRunCounts.merge(programName, 1, Integer::sum);
         programUsedCredits.merge(programName, creditsUsed, Integer::sum);
         executionCount++;
-        deductCredits(creditsUsed); // כבר מעדכן usedCredits כולל
+        deductCredits(creditsUsed);
     }
 
     public int getRunCountForProgram(String programName) {

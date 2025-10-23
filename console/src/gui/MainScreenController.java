@@ -547,10 +547,8 @@ public class MainScreenController {
             return;
         }
 
-        // שלב 1: מכינים את הדרגה והקלטים מההרצה האחרונה
         ReRunService.prepareReRun(loadedProgram);
 
-        // שלב 2: שואלים את המשתמש איך להמשיך
         List<String> options = Arrays.asList("Run", "Debug");
         ChoiceDialog<String> dialog = new ChoiceDialog<>("Run", options);
         dialog.setTitle("Re-Run Options");

@@ -1,9 +1,8 @@
 package ui.dashboard;
 
-import com.google.gson.Gson;
 import dto.FunctionDTO;
 import dto.ProgramStatsDTO;
-import dto.UserStats;
+import dto.UserStatsDTO;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -14,9 +13,23 @@ import session.UserSession;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static ui.dashboard.UserHistory.showUserHistoryPopup;
+
+
 public class InitDashboardHelper {
 
     public static void initialize(DashboardController controller) {
+        controller.usersTable.setRowFactory(tv -> {
+            TableRow<UserStatsDTO> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (!row.isEmpty() && event.getClickCount() == 2) {
+                    UserStatsDTO selectedUser = row.getItem();
+                    showUserHistoryPopup(selectedUser.getName());
+                }
+            });
+            return row;
+        });
+
         // --- Disable both buttons initially ---
         controller.executeProgramButton.setDisable(true);
         controller.executeFunctionButton.setDisable(true);

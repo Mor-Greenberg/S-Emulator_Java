@@ -17,10 +17,8 @@ public class AvailableProgramsServlet extends HttpServlet {
             throws IOException {
         response.setContentType("application/json; charset=UTF-8");
 
-        // אוספים את שמות התוכניות בלבד
         List<String> programNames = new ArrayList<>(ExecutionContextImpl.getGlobalProgramMap().keySet());
 
-        // מחזירים JSON
         String json = new Gson().toJson(programNames);
         response.getWriter().write(json);
     }

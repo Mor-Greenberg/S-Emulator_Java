@@ -18,7 +18,5 @@ public class GetProgramXmlServlet extends HttpServlet {
             return;
         }
 
-        // כאן תחפשי את הקובץ או תשחזרי XML לפי איך שהוא נשמר בשרת
-        // ⚠️ אם השרת שלך לא שומר את ה־XML (לפי דרישת הבודק) – צריך פתרון אחר (ראו שלב 2)
     }
 }
