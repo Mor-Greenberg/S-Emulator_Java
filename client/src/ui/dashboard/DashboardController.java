@@ -608,10 +608,33 @@ public class DashboardController {
             }
         });
     }
+    UserStatsDTO selectedUser;
+
     @FXML
-    private void onUnselectUserClicked(){
+    private void onShowHistoryClicked() {
+        UserStatsDTO selected = selectedUser;
+        String username;
+
+        if (selected != null) {
+            username = selected.getName();
+        } else {
+            username = UserSession.getUsername();
+        }
+
+        UserHistory.showUserHistoryPopup(username);
+    }
+
+    @FXML
+    private void onUnselectUserClicked() {
+        usersTable.getSelectionModel().clearSelection();
+        selectedUser = null;
+
+        usersTable.refresh();
+
 
     }
+
+
 
 
 }

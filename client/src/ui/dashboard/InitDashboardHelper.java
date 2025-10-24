@@ -21,14 +21,25 @@ public class InitDashboardHelper {
     public static void initialize(DashboardController controller) {
         controller.usersTable.setRowFactory(tv -> {
             TableRow<UserStatsDTO> row = new TableRow<>();
+
             row.setOnMouseClicked(event -> {
-                if (!row.isEmpty() && event.getClickCount() == 2) {
-                    UserStatsDTO selectedUser = row.getItem();
-                    showUserHistoryPopup(selectedUser.getName());
+                if (!row.isEmpty() && event.getClickCount() == 1) {
+                    controller.selectedUser = row.getItem();
+                    controller.usersTable.refresh(); // רענון מיידי כדי לצבוע
                 }
             });
+
+            row.itemProperty().addListener((obs, oldItem, newItem) -> {
+                updateRowStyle(row, controller);
+            });
+
+            row.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+                updateRowStyle(row, controller);
+            });
+
             return row;
         });
+
 
         // --- Disable both buttons initially ---
         controller.executeProgramButton.setDisable(true);
@@ -130,4 +141,16 @@ public class InitDashboardHelper {
             }
         }, 0, 3000);
     }
+    private static void updateRowStyle(TableRow<UserStatsDTO> row, DashboardController controller) {
+        UserStatsDTO current = row.getItem();
+
+        if (current == null) {
+            row.setStyle("");
+        } else if (current.equals(controller.selectedUser)) {
+            row.setStyle("-fx-background-color: #87CEFA; -fx-font-weight: bold;");
+        } else {
+            row.setStyle("");
+        }
+    }
+
 }

@@ -20,18 +20,18 @@ public class UserHistoryServlet extends HttpServlet {
         String username = req.getParameter("username");
         if (username == null || username.isEmpty()) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("{\"error\":\"Missing username parameter\"}");
             return;
         }
 
-        UserManager userManager = (UserManager) getServletContext().getAttribute("userManager");
-        if (userManager == null) {
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            return;
-        }
-
+        UserManager userManager = UserManager.getInstance();
         List<UserRunEntryDTO> history = userManager.getUserHistory(username);
 
-
+        if (history == null) {
+            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            resp.getWriter().write("{\"error\": \"No history found for user: " + username + "\"}");
+            return;
+        }
 
         String json = gson.toJson(history);
         resp.setContentType("application/json; charset=UTF-8");
