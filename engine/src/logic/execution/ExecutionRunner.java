@@ -97,7 +97,6 @@ public class ExecutionRunner {
         // ---------------- Degree 0 (black-box) ----------------
         if (currentDegree == 0) {
             long result = executeBlackBox(context,program);
-            System.out.println("Black-box result for y = " + result);
 
             debugContext = context;
             expandedProgram = program;
@@ -241,7 +240,6 @@ public class ExecutionRunner {
 
         if (currentDegree == 0) {
             long result = executeBlackBox(debugContext,program);
-            System.out.println("Black-box result for y = " + result);
 
             expandedProgram = program;
             debugInstructions = new ArrayList<>(program.getInstructions());

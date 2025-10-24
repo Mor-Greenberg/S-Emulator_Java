@@ -5,6 +5,8 @@ import dto.FunctionDTO;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import logic.program.Program;
+import serverProgram.GlobalProgramStore;
+
 import java.io.IOException;
 import java.util.*;
 
@@ -12,13 +14,14 @@ import java.util.*;
 public class FunctionsServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.setContentType("application/json");
-        resp.setCharacterEncoding("UTF-8");
+        resp.setContentType("application/json; charset=UTF-8");
 
-        Map<String, Program> funcs = serverProgram.GlobalFunctionsManager.getAllFunctions();
+        Map<String, Program> allPrograms = GlobalProgramStore.getProgramCache();
         List<FunctionDTO> list = new ArrayList<>();
 
-        for (Program func : funcs.values()) {
+        for (Program func : allPrograms.values()) {
+            if (!func.isFunction()) continue;
+
             FunctionDTO dto = new FunctionDTO(
                     func.getName(),
                     func.getParentProgramName(),

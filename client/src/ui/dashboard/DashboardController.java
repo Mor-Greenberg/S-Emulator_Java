@@ -438,14 +438,12 @@ public class DashboardController {
 
         String functionName = selectedFunction.getFunctionName();
 
-        // קודם נבדוק אם הפונקציה כבר קיימת בזיכרון
         Program localFunction = ExecutionContextImpl.getGlobalProgramMap().get(functionName);
         if (localFunction != null) {
             openExecutionBoard(localFunction);
             return;
         }
 
-        // אם לא קיימת — נבקש אותה מהשרת
         String url = "http://localhost:8080/S-Emulator/request-program?name=" + functionName;
         Request request = new Request.Builder().url(url).get().build();
 
@@ -470,9 +468,7 @@ public class DashboardController {
                 try {
                     Program functionProgram = logic.xml.XmlLoader.fromXmlString(xml);
 
-                    // שמירה בזיכרון בלבד (לא נכתב לשרת)
                     ExecutionContextImpl.loadProgram(functionProgram, xml);
-                    System.out.println("♻️ Loaded shared function from server: " + functionProgram.getName());
 
                     Platform.runLater(() -> openExecutionBoard(functionProgram));
 
@@ -611,6 +607,10 @@ public class DashboardController {
                 });
             }
         });
+    }
+    @FXML
+    private void onUnselectUserClicked(){
+
     }
 
 

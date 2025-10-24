@@ -42,7 +42,6 @@ public class XmlMapper {
 
 
         Map<String, Program> globalProgramsSnapshot = new HashMap<>(ExecutionContextImpl.getGlobalProgramMap());
-        System.out.println("Before validation (snapshot): " + globalProgramsSnapshot.keySet());
 
         XmlValidation.validateAll(
                 path,
@@ -72,7 +71,6 @@ public class XmlMapper {
 
 
 
-        System.out.println("After upload: " + ExecutionContextImpl.getGlobalProgramMap().keySet());
 
         return mainProgram;
     }

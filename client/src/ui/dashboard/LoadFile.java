@@ -106,7 +106,7 @@ public class LoadFile {
 
                                     java.util.concurrent.Executors.newSingleThreadScheduledExecutor()
                                             .schedule(() -> Platform.runLater(() -> {
-                                                System.out.println("🔁 Refreshing functions after upload...");
+                                                System.out.println("Refreshing functions after upload...");
                                                 controller.updateFunctionsTableFromLoadedProgram();
                                                 controller.fetchUsers();
                                             }), 1, java.util.concurrent.TimeUnit.SECONDS);

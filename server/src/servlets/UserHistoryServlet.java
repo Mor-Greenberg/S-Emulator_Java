@@ -31,8 +31,7 @@ public class UserHistoryServlet extends HttpServlet {
 
         List<UserRunEntryDTO> history = userManager.getUserHistory(username);
 
-        System.out.println("🔎 Fetching history for " + username +
-                " → " + history.size() + " runs");
+
 
         String json = gson.toJson(history);
         resp.setContentType("application/json; charset=UTF-8");

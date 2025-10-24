@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 
 public class GlobalProgramsManager {
+
     private static final Map<String, Program> globalPrograms = new ConcurrentHashMap<>();
 
     public static void addProgram(Program program) {

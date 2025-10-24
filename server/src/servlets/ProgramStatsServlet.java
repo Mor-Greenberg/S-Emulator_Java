@@ -5,6 +5,7 @@ import dto.ProgramStatsDTO;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import logic.program.Program;
+import serverProgram.GlobalProgramStore;
 
 import java.io.IOException;
 import java.util.*;
@@ -13,13 +14,14 @@ import java.util.*;
 public class ProgramStatsServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.setContentType("application/json");
-        resp.setCharacterEncoding("UTF-8");
+        resp.setContentType("application/json; charset=UTF-8");
 
-        Map<String, Program> programs = serverProgram.GlobalProgramsManager.getAllPrograms();
+        Map<String, Program> programs = GlobalProgramStore.getProgramCache();
         List<ProgramStatsDTO> list = new ArrayList<>();
 
         for (Program p : programs.values()) {
+            if (p.isFunction()) continue;
+
             ProgramStatsDTO dto = new ProgramStatsDTO(
                     p.getName(),
                     p.getUploaderName(),
@@ -31,6 +33,7 @@ public class ProgramStatsServlet extends HttpServlet {
             list.add(dto);
         }
 
-        resp.getWriter().write(new Gson().toJson(list));
+        String json = new Gson().toJson(list);
+        resp.getWriter().write(json);
     }
 }
