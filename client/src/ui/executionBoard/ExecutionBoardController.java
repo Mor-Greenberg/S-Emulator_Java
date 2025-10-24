@@ -3,6 +3,8 @@ package ui.executionBoard;
 import com.google.gson.Gson;
 import dto.ProgramStatsDTO;
 import gui.reRun.ReRunService;
+import logic.execution.ExecutionContext;
+import printExpand.expansion.Expand;
 import ui.executionBoard.highlightSelectionPopup.HighlightAction;
 import ui.executionBoard.highlightSelectionPopup.HighlightChoiceListener;
 import ui.executionBoard.highlightSelectionPopup.HighlightSelectionController;
@@ -32,9 +34,11 @@ import ui.executionBoard.instructionTable.InstructionRow;
 import ui.executionBoard.variablesTable.VariableRow;
 import util.HttpClientUtil;
 import utils.UiUtils;
+import utils.Utils;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 import static gui.showStatus.Status.showVariablesPopup;
@@ -82,6 +86,7 @@ public class ExecutionBoardController {
     private ProgramStatsDTO selectedProgram;
     private int userCredits;
     private static ExecutionBoardController instance;
+    public String architecture;
 
     public static ExecutionBoardController getInstance() {
         return instance;
@@ -374,13 +379,13 @@ public class ExecutionBoardController {
         HttpClientUtil.getClient().newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                System.err.println("⚠️ Failed to update execution stats: " + e.getMessage());
+                System.err.println("Failed to update execution stats: " + e.getMessage());
             }
 
             @Override
             public void onResponse(Call call, Response response) {
                 response.close();
-                System.out.println("✅ Execution stats updated for " + programName);
+                System.out.println("Execution stats updated for " + programName);
             }
 
         });
@@ -411,6 +416,64 @@ public class ExecutionBoardController {
         } else if (choice.equals("Debug")) {
             ExecutionRunner.startDebug(loadedProgram);
         }
+    }
+    @FXML
+    private void onDegreeCommandsAndInformationClicked() {
+        if (loadedProgram == null) {
+            UiUtils.showError("No program loaded.");
+            return;
+        }
+
+        // Get current expansion degree (from ExecutionRunner)
+        int currentDegree = ExecutionRunner.getCurrentDegree();
+        boolean hasRun = currentDegree > 0;
+
+        // Compute max expansion degree based on program definition
+        Map<Variable, Long> variableState = new HashMap<>();
+        loadedProgram.getVars().forEach(v -> variableState.put(v, 0L));
+
+        ExecutionContext context = new ExecutionContextImpl(
+                variableState,
+                loadedProgram.getFunctionMap(),
+                new HashMap<>()
+        );
+
+        int maxDegree = Utils.computeProgramDegree(loadedProgram, context);
+
+        // Prepare message depending on execution state
+        String message;
+        if (!hasRun) {
+            message = "No execution has been performed yet.\n\n" +
+                    "Current Degree: ---\n" +
+                    "Maximum Possible Degree: " + maxDegree;
+        } else {
+            message = "Current Degree: " + currentDegree + "\n" +
+                    "Maximum Possible Degree: " + maxDegree;
+        }
+
+        // Create information popup
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Expansion Degree Information");
+        alert.setHeaderText("Current and Maximum Expansion Degree");
+        alert.setContentText(message);
+
+        // Add an 'Expand Now' button to trigger the Expand action
+        ButtonType expandButton = new ButtonType("Expand Now", ButtonBar.ButtonData.APPLY);
+        alert.getButtonTypes().setAll(expandButton, ButtonType.CLOSE);
+
+        // Handle 'Expand Now' click
+        alert.showAndWait().ifPresent(response -> {
+            if (response == expandButton) {
+                onExpandButton();
+            }
+        });
+    }
+
+    private void onExpandButton() {
+        if (loadedProgram == null) {
+            showError("No program loaded.");
+        }
+        Expand.expandAction(loadedProgram,architecture);
     }
 
 

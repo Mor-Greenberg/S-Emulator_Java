@@ -130,16 +130,17 @@ public static void expandAction(Program loadedProgram, String architecture) {
 
         ObservableList<InstructionRow> rows = FXCollections.observableArrayList();
         int counter = 1;
-//        for (AbstractInstruction instr : expanded) {
-//            rows.add(new InstructionRow(
-//                    counter++,
-//                    instr.getType().toString(),
-//                    instr.getLabel() != null ? instr.getLabel().toString() : "",
-//                    instr.commandDisplay(),
-//                    instr.getCycles(),
-//            ));
-//        }
-//        table.setItems(rows);
+        for (AbstractInstruction instr : expanded) {
+            rows.add(new InstructionRow(
+                    counter++,
+                    instr.getType().toString(),
+                    instr.getLabel() != null ? instr.getLabel().toString() : "",
+                    instr.commandDisplay(),
+                    instr.getCycles(),
+                    instr.getArchitecture()
+            ));
+        }
+        table.setItems(rows);
 
         Scene scene = new Scene(new BorderPane(table), 600, 400);
         popup.setScene(scene);
