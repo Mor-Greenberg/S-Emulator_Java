@@ -7,9 +7,8 @@ import java.util.*;
 public class UserManager {
     private static final UserManager instance = new UserManager();
     public static UserManager getInstance() { return instance; }
-
-    private final Map<String, User> users = new HashMap<>();
-    private final Map<String, List<UserRunEntryDTO>> userHistories = new HashMap<>();
+    private final Map<String, User> users = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<String, List<UserRunEntryDTO>> userHistories = new java.util.concurrent.ConcurrentHashMap<>();
 
 
     public UserManager() {}
@@ -25,8 +24,10 @@ public class UserManager {
         return users.computeIfAbsent(username, User::new);
     }
     public void addRun(String username, UserRunEntryDTO entry) {
-        userHistories.computeIfAbsent(username, k -> new ArrayList<>()).add(entry);
+        userHistories.computeIfAbsent(username, k -> Collections.synchronizedList(new ArrayList<>()))
+                .add(entry);
     }
+
 
     public List<UserRunEntryDTO> getUserHistory(String username) {
         return userHistories.getOrDefault(username, Collections.emptyList());
@@ -43,8 +44,8 @@ public class UserManager {
         getUser(username).addCredits(amount);
     }
 
-    public void deductCredits(String username, int amount) {
-        getUser(username).deductCredits(amount);
+    public boolean deductCredits(String username, int amount) {
+        return getUser(username).tryDeductCredits(amount);
     }
 
     public int getCredits(String username) {
@@ -59,9 +60,13 @@ public class UserManager {
         getUser(username).incrementContributedFunctions();
     }
 
-    public void trackExecution(String username, String programName, int creditsUsed) {
-        getUser(username).trackExecution(programName, creditsUsed);
+    public boolean trackExecution(String username, String programName, int creditsUsed) {
+        User user = getUser(username);
+        if (user == null) return false;
+        return user.trackExecutionIfEnough(programName, creditsUsed);
     }
+
+
 
     public Map<String, User> getAllUsers() { return users; }
 

@@ -196,17 +196,17 @@ public class DashboardController {
                 String xml = response.body().string();
 
                 try {
-                    Program program = logic.xml.XmlLoader.fromXmlString(xml,UserSession.getUsername());
+                    Program program = safeLoadProgram(xml, UserSession.getUsername());
 
                     ExecutionContextImpl.loadProgram(program, xml);
-                    System.out.println("Loaded shared program from server: " + program.getName());
+                    System.out.println("Loaded program from server: " + program.getName());
 
                     Platform.runLater(() -> openExecutionBoard(program));
 
                 } catch (Exception e) {
+                    e.printStackTrace();
                     Platform.runLater(() ->
                             UiUtils.showError("Failed to load program: " + e.getMessage()));
-                    e.printStackTrace();
                 }
             }
         });
@@ -279,20 +279,29 @@ public class DashboardController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/ui/executionBoard/S-Emulator-Execution.fxml"));
             Parent root = loader.load();
 
+            // get controller
             ExecutionBoardController controller = loader.getController();
             controller.setLoadedProgram(program);
             controller.setUserCredits(UserSession.getUserCredits());
+            controller.architecture = null; // לא נבחרה עדיין
 
+            // פתיחת המסך החדש
             Stage stage = new Stage();
-            stage.setTitle("Execution Board - " + program.getName());
+            stage.setTitle("Execution Board – " + program.getName());
             stage.setScene(new Scene(root));
             stage.show();
 
+            // סגירת מסך הדאשבורד הקודם
+            Stage currentStage = (Stage) executeProgramButton.getScene().getWindow(); // או userNameField
+            currentStage.close();
+
         } catch (IOException e) {
-            UiUtils.showError("Failed to open execution screen: " + e.getMessage());
             e.printStackTrace();
+            UiUtils.showError("Failed to open Execution Board: " + e.getMessage());
         }
     }
+
+
 
     @FXML
     private void handleChargeCredits() {
@@ -633,8 +642,41 @@ public class DashboardController {
 
 
     }
+    private Program safeLoadProgram(String xml, String username) throws Exception {
+        try {
+            return XmlLoader.fromXmlString(xml, username);
+        } catch (IllegalArgumentException e) {
+            String msg = e.getMessage();
+            if (!msg.contains("undefined function")) throw e;
+
+            List<String> missingFunctions = Arrays.stream(msg.split("\n"))
+                    .filter(line -> line.contains("undefined function"))
+                    .map(line -> line.substring(line.lastIndexOf(":") + 2).trim())
+                    .toList();
 
 
+            for (String funcName : missingFunctions) {
+                try {
+                    String funcUrl = "http://localhost:8080/S-Emulator/request-program?name=" + funcName;
+                    Request req = new Request.Builder().url(funcUrl).get().build();
+                    try (Response res = HttpClientUtil.getClient().newCall(req).execute()) {
+                        if (res.isSuccessful() && res.body() != null) {
+                            String funcXml = res.body().string();
+                            Program funcProg = XmlLoader.fromXmlString(funcXml, username);
+                            ExecutionContextImpl.loadProgram(funcProg, funcXml);
+                            System.out.println("Loaded missing dependency: " + funcName);
+                        } else {
+                            System.out.println("Could not load " + funcName + " from server.");
+                        }
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+
+            return XmlLoader.fromXmlString(xml, username);
+        }
+    }
 
 
 }

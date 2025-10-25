@@ -1,9 +1,13 @@
 package ui.executionBoard;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import dto.ProgramStatsDTO;
 import gui.reRun.ReRunService;
+import logic.architecture.ArchitectureData;
 import logic.execution.ExecutionContext;
+import logic.execution.HandleCredits;
 import printExpand.expansion.Expand;
 import ui.executionBoard.highlightSelectionPopup.HighlightAction;
 import ui.executionBoard.highlightSelectionPopup.HighlightChoiceListener;
@@ -86,17 +90,13 @@ public class ExecutionBoardController {
     private ProgramStatsDTO selectedProgram;
     private int userCredits;
     private static ExecutionBoardController instance;
-    public String architecture;
+    public String architecture = null;
 
     public static ExecutionBoardController getInstance() {
         return instance;
     }
 
 
-    public void setUserCredits(int credits) {
-        this.userCredits = credits;
-        creditsLabel.setText("Available Credits:" + credits);
-    }
 
 
     // =====================================================
@@ -129,16 +129,40 @@ public class ExecutionBoardController {
     // =====================================================
     // Execution Actions
     // =====================================================
-
     @FXML
     private void startExecution(ActionEvent event) {
         if (loadedProgram == null) {
             UiUtils.showError("No program loaded.");
             return;
         }
+
+        // 🧠 Architecture not selected yet
+        if (architecture == null || architecture.isBlank()) {
+            UiUtils.showError("No architecture selected.\nPlease select an architecture before running the program.");
+            return;
+        }
+
+        if (userCredits <= 0) {
+            UiUtils.showError("You don't have enough credits to run this program.");
+            return;
+        }
+
+        // continue normally
         ExecutionRunner.runProgram(loadedProgram);
         updateVariablesView();
+
+        int cost = Utils.computeProgramDegree(
+                loadedProgram,
+                new ExecutionContextImpl(
+                        new HashMap<>(),
+                        loadedProgram.getFunctionMap(),
+                        new HashMap<>()
+                )
+        );
+
+        updateCreditsAfterExecution(loadedProgram.getName(), cost);
     }
+
 
     @FXML
     private void stepOverExecution(ActionEvent e) {
@@ -160,16 +184,29 @@ public class ExecutionBoardController {
         ExecutionRunner.stop();
         UiUtils.showAlert("Program stopped.");
     }
-
     @FXML
     private void startDebug(ActionEvent e) {
         if (loadedProgram == null) {
             UiUtils.showError("No program loaded.");
             return;
         }
+
+        // Architecture not selected yet
+        if (architecture == null || architecture.isBlank()) {
+            UiUtils.showError("No architecture selected.\nPlease select an architecture before starting debug mode.");
+            return;
+        }
+
+        if (userCredits <= 0) {
+            UiUtils.showError("You don't have enough credits to start debugging this program.");
+            return;
+        }
+
+        // continue normally
         ExecutionRunner.startDebug(loadedProgram);
         updateVariablesView();
     }
+
 
     @FXML
     private void resumeExecution(ActionEvent e) {
@@ -180,9 +217,6 @@ public class ExecutionBoardController {
         ExecutionRunner.resume();
         updateVariablesView();
     }
-
-
-
 
     // =====================================================
     // UI & Data Updates
@@ -398,6 +432,17 @@ public class ExecutionBoardController {
             return;
         }
 
+        // 🧠 Architecture not selected yet
+        if (architecture == null || architecture.isBlank()) {
+            UiUtils.showError("No architecture selected.\nPlease select an architecture before re-running the program.");
+            return;
+        }
+
+        if (getUserCredits() <= 0) {
+            UiUtils.showError("You don't have enough credits to re-run this program.");
+            return;
+        }
+
         ReRunService.prepareReRun(loadedProgram);
 
         List<String> options = Arrays.asList("Run", "Debug");
@@ -407,7 +452,6 @@ public class ExecutionBoardController {
         dialog.setContentText("Mode:");
 
         Optional<String> result = dialog.showAndWait();
-
         if (result.isEmpty()) return;
 
         String choice = result.get();
@@ -417,6 +461,7 @@ public class ExecutionBoardController {
             ExecutionRunner.startDebug(loadedProgram);
         }
     }
+
     @FXML
     private void onDegreeCommandsAndInformationClicked() {
         if (loadedProgram == null) {
@@ -476,6 +521,100 @@ public class ExecutionBoardController {
         Expand.expandAction(loadedProgram,architecture);
     }
 
+    // =====================================================
+    // Credits
+    // =====================================================
+
+
+    public void setUserCredits(int credits) {
+        this.userCredits = credits;
+        Platform.runLater(() -> creditsLabel.setText("Available Credits: " + credits));
+    }
+    private void updateCreditsAfterExecution(String programName, int creditsUsed) {
+        HttpUrl url = HttpUrl.parse("http://localhost:8080/S-Emulator/execution-update")
+                .newBuilder()
+                .addQueryParameter("program", programName)
+                .addQueryParameter("creditsUsed", String.valueOf(creditsUsed))
+                .build();
+
+        Request request = new Request.Builder()
+                .url(url)
+                .post(RequestBody.create(new byte[0]))
+                .build();
+
+        HttpClientUtil.getClient().newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                System.err.println("Credit update failed: " + e.getMessage());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                String body = response.body() != null ? response.body().string() : "";
+                if (!response.isSuccessful()) {
+                    System.err.println("Server returned: " + response.code() + " " + body);
+                    return;
+                }
+
+                JsonObject json = JsonParser.parseString(body).getAsJsonObject();
+                int remaining = json.get("remaining").getAsInt();
+                userCredits = remaining;
+
+                Platform.runLater(() -> creditsLabel.setText("Available Credits: " + remaining));
+            }
+        });
+    }
+    @FXML
+    public void onBackToDashboard() {
+        Stage stage = (Stage) creditsLabel.getScene().getWindow();
+        stage.close();
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/ui/dashboard/S-Emulator-Dashboard.fxml"));
+            Parent root = loader.load();
+            Stage dashboardStage = new Stage();
+            dashboardStage.setTitle("S-Emulator – Dashboard");
+            dashboardStage.setScene(new Scene(root));
+            dashboardStage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+            UiUtils.showError("Failed to return to dashboard: " + e.getMessage());
+        }
+    }
+
+
+    public int getUserCredits() {
+        return  userCredits;
+    }
+    @FXML
+    private void onArchitectureSelectionClicked() {
+        ChoiceDialog<ArchitectureData> dialog = new ChoiceDialog<>(
+                ArchitectureData.I, ArchitectureData.values());
+        dialog.setTitle("Architecture Selection");
+        dialog.setHeaderText("Choose execution architecture");
+        dialog.setContentText("Available architectures:");
+
+        Optional<ArchitectureData> result = dialog.showAndWait();
+        if (result.isEmpty()) return;
+
+        ArchitectureData chosenArch = result.get();
+        int cost = chosenArch.getCreditsCost();
+        int currentCredits = userCredits;
+
+        if (currentCredits < cost) {
+            UiUtils.showError("Not enough credits to select " + chosenArch.name());
+            return;
+        }
+
+        userCredits -= cost;
+        architecture = chosenArch.name();
+
+        ExecutionRunner.architecture = architecture;
+
+        Platform.runLater(() -> creditsLabel.setText("Available Credits: " + userCredits));
+
+        UiUtils.showAlert("Architecture '" + chosenArch.name() + "' selected.\nCost: " + cost + " credits.");
+    }
 
 }
 

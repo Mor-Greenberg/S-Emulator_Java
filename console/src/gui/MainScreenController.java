@@ -238,7 +238,7 @@ public class MainScreenController {
         }
         ExecutionRunner.stepOver();
         updateVariablesView();
-        ExecutionRunner.highlightCurrentInstruction(ExecutionRunner.getCurrentIndex(),instructionTable);
+        //ExecutionRunner.highlightCurrentInstruction(ExecutionRunner.getCurrentIndex(),instructionTable);
     }
     @FXML
     private void stopExecution(ActionEvent e) {

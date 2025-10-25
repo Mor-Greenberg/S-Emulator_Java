@@ -1,35 +1,53 @@
 package logic.execution;
 
 import dto.UserRunEntryDTO;
-import gui.MainScreenController;
 import handleExecution.HandleExecution;
+import logic.architecture.ArchitectureData;
+import logic.history.RunHistoryEntry;
+import logic.instruction.Instruction;
+import logic.program.Program;
+import logic.Variable.Variable;
+import printExpand.expansion.PrintExpansion;
 import ui.dashboard.UserHistory;
 import ui.executionBoard.ExecutionBoardController;
 import ui.executionBoard.instructionTable.InstructionRow;
-import javafx.application.Platform;
-import javafx.scene.control.TableView;
-import logic.Variable.Variable;
-import logic.history.RunHistoryEntry;
-import logic.program.Program;
-import printExpand.expansion.PrintExpansion;
-import logic.instruction.AbstractInstruction;
-import logic.instruction.Instruction;
 import ui.guiUtils.DegreeDialog;
 import user.User;
 import utils.UiUtils;
 
+import javafx.application.Platform;
+import javafx.scene.control.TableView;
 import java.util.*;
 
 import static logic.blaxBox.BlackBox.blackBoxStepDegree0;
 import static logic.blaxBox.BlackBox.executeBlackBox;
-
 import static utils.Utils.generateSummary;
 
 public class ExecutionRunner {
+
     private static RunCompletionListener runCompletionListener;
-    public static void setRunCompletionListener(RunCompletionListener l) {
-        runCompletionListener = l;
-    }
+    public static void setRunCompletionListener(RunCompletionListener l) { runCompletionListener = l; }
+
+    private static Map<Variable, Long> lastInputsMap = new HashMap<>();
+    private static HandleExecution debugHandleExecution;
+    private static Map<Variable, Long> lastVariableState = new HashMap<>();
+    private static int currentDegree = 0;
+    private static int runCounter = 1;
+    private static final List<RunHistoryEntry> history = new ArrayList<>();
+
+    public static String architecture;
+    private static List<Instruction> debugInstructions;
+    private static int currentIndex;
+    private static ExecutionContext debugContext;
+    private static boolean debugMode = false;
+    private static int executedCycles = 0;
+    private static Program expandedProgram;
+    // --- Debug internals for degree 0 black-box mode ---
+    private static int bbPc = -1;
+    private static final Map<String, Integer> bbLabelToIndex = new HashMap<>();
+
+
+    // === Run completion DTO ===
     private static UserRunEntryDTO buildDto(Program program, RunHistoryEntry entry) {
         String runType = (program != null && program.isMain()) ? "Program" : "Function";
         return new UserRunEntryDTO(
@@ -42,270 +60,95 @@ public class ExecutionRunner {
                 entry.getCycles()
         );
     }
+
     private static void notifyRunCompleted(Program program, RunHistoryEntry entry) {
-        if (runCompletionListener != null) {
+        if (runCompletionListener != null)
             runCompletionListener.onRunCompleted(buildDto(program, entry));
-        }
     }
 
-    private static Map<Variable, Long> lastInputsMap = new HashMap<>();
-    private static HandleExecution debugHandleExecution;
-
-    private static Map<Variable, Long> lastVariableState = new HashMap<>();
-    private static int currentDegree = 0;
-    private static int runCounter = 1;
-    private static final List<RunHistoryEntry> history = new ArrayList<>();
-
-    public static String architecture;
-    // Debug fields
-    private static List<Instruction> debugInstructions;
-    private static int currentIndex;
-    private static ExecutionContext debugContext;
-    private static boolean debugMode = false;
-    private static int executedCycles = 0;
-    private static Program expandedProgram;
-
-    public static int getCurrentDegree() {
-        return currentDegree;
-    }
-
-    public static void setPrefilledDegree(int degree) {
-        usePrefilledDegree = true;
-        prefilledDegree = degree;
-    }
-
-    public static void setPrefilledInputs(Map<Variable, Long> inputs) {
-        prefilledInputs = (inputs == null) ? null : new HashMap<>(inputs);
-    }
-
-    private static int resolveDegree(Program program, ExecutionContext context) {
-        if (usePrefilledDegree) {
-            usePrefilledDegree = false;
-            return prefilledDegree;
-        }
-        return DegreeDialog.askForDegree(context,program);
-    }
-
+    // =====================================================
+    // NORMAL RUN
+    // =====================================================
     public static void runProgram(Program program) {
         Map<Variable, Long> variableState = new HashMap<>();
         ExecutionContextImpl context = new ExecutionContextImpl(variableState);
         context.setFunctionMap(program.getFunctionMap());
-
         currentDegree = resolveDegree(program, context);
         applyInputsToContext(program, context);
 
-        // ---------------- Degree 0 (black-box) ----------------
+        // === קרדיטים: בדיקה וגבייה ראשונית ===
+        if (!HandleCredits.prepareExecution(program, architecture))
+            return;
+
+        // === דרגה 0 ===
         if (currentDegree == 0) {
-            long result = executeBlackBox(context,program);
-
-            debugContext = context;
-            expandedProgram = program;
-            debugInstructions = new ArrayList<>(program.getInstructions());
-
-            Platform.runLater(() -> {
-                ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
-                ctrl.setOriginalInstructions(debugInstructions);
-                ctrl.clearInstructionTable();
-
-                int counter = 1;
-                for (Instruction instr : debugInstructions) {
-                    InstructionRow row = new InstructionRow(
-                            counter++,
-                            instr.getType().toString(),
-                            instr.getLabel() != null ? instr.getLabel().getLabelRepresentation() : "",
-                            instr.commandDisplay(),
-                            instr.getCycles(),architecture
-                    );
-                    ctrl.addInstructionRow(row);
-                }
-
-                ctrl.updateVariablesView();
-
-                int basicCount = (int) debugInstructions.stream()
-                        .filter(i -> i.getType().toString().equals("B"))
-                        .count();
-                int syntheticCount = (int) debugInstructions.stream()
-                        .filter(i -> i.getType().toString().equals("S"))
-                        .count();
-                int totalCycles = debugInstructions.stream().mapToInt(Instruction::getCycles).sum();
-
-                ctrl.updateSummaryView(debugInstructions.size(), basicCount, syntheticCount, totalCycles);
-                ctrl.updateCyclesView(totalCycles);
-            });
-
-            RunHistoryEntry entry = new RunHistoryEntry(
-                    runCounter++, 0,
-                    lastInputsMap,
-                    result,
-                    debugInstructions.stream().mapToInt(Instruction::getCycles).sum(),
-                    false
-            );
-            history.add(entry);
-
-            lastVariableState = new HashMap<>(context.getVariableState());
-            notifyRunCompleted(program, entry);
-            UserHistory.sendRunToServer(buildDto(program, entry));
-
-
-
+            long result = executeBlackBox(context, program);
+            updateUIAfterExecution(program, context.getVariableState(), program.getInstructions());
+            saveRunHistory(program, context, result, 0, false);
             return;
         }
 
-        // ---------------- Degree > 0 ----------------
+        // === דרגה > 0 ===
         program.expandToDegree(currentDegree, context);
         expandedProgram = program;
-
-        ProgramExecutorImpl executor = new ProgramExecutorImpl(expandedProgram);
-        long result = executor.run(context);
-
         List<Instruction> activeInstr = program.getActiveInstructions();
+        long result = 0;
+        int totalCyclesUsed = 0;
 
-        Platform.runLater(() -> {
-            ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
-            ctrl.setOriginalInstructions(activeInstr);
-            ctrl.clearInstructionTable();
+        for (Instruction instr : activeInstr) {
+            instr.execute(context);
+            totalCyclesUsed += instr.getCycles();
 
-            int counter = 1;
-            for (Instruction instr : activeInstr) {
-                InstructionRow row = new InstructionRow(
-                        counter++,
-                        instr.getType().toString(),
-                        instr.getLabel() != null ? instr.getLabel().getLabelRepresentation() : "",
-                        instr.commandDisplay(),
-                        instr.getCycles(),architecture
-                );
-                ctrl.addInstructionRow(row);
-            }
-
-            ctrl.updateVariablesView();
-
-            int basicCount = (int) activeInstr.stream().filter(i -> i.getType().toString().equals("B")).count();
-            int syntheticCount = (int) activeInstr.stream().filter(i -> i.getType().toString().equals("S")).count();
-            int totalCycles = activeInstr.stream().mapToInt(Instruction::getCycles).sum();
-
-            ctrl.updateSummaryView(activeInstr.size(), basicCount, syntheticCount, totalCycles);
-            ctrl.updateCyclesView(totalCycles);
-        });
-
-        PrintExpansion expansion = new PrintExpansion(expandedProgram);
-        AbstractInstruction.resetIdCounter();
-        expansion.printProgramWithOrigins(expandedProgram);
-
-        int sumCycles = program.calculateCycles();
-
-        User uploader = null;
-        if (program.getUploaderName() != null) {
-            uploader = User.getManager().getUser(program.getUploaderName());
+            // הורדת קרדיטים
+            if (!HandleCredits.consumeCycles(program.getName(), instr.getCycles()))
+                return;
         }
 
-        if (uploader != null) {
-            uploader.trackExecution(program.getName(), sumCycles);
-            Platform.runLater(() -> {
-                ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
-                ctrl.notifyExecutionCompleted(program.getName(), sumCycles);
-            });
-
-        } else {
-            System.out.println("No uploader found for program '" + program.getName() + "', skipping tracking.");
-        }
-
-        RunHistoryEntry entry = new RunHistoryEntry(
-                runCounter++, currentDegree,
-                lastInputsMap, result, sumCycles, false);
-        history.add(entry);
-        notifyRunCompleted(program, entry);
-        UserHistory.sendRunToServer(buildDto(program, entry));
-
-
-        lastVariableState = new HashMap<>(variableState);
+        updateUIAfterExecution(program, variableState, activeInstr);
+        saveRunHistory(program, context, result, totalCyclesUsed, false);
+        HandleCredits.finalizeRun(program.getName(), totalCyclesUsed);
     }
 
-    // ---------------- Debug ----------------
-    private static int bbPc = -1;
-    private static final Map<String, Integer> bbLabelToIndex = new HashMap<>();
-
+    // =====================================================
+    // DEBUG MODE
+    // =====================================================
     public static void startDebug(Program program) {
         debugMode = true;
         currentIndex = 0;
         executedCycles = 0;
 
         Platform.runLater(() -> ExecutionBoardController.getInstance().clearInstructionTable());
-
-         debugContext = new ExecutionContextImpl(new HashMap<>());
+        debugContext = new ExecutionContextImpl(new HashMap<>());
         debugContext.setFunctionMap(program.getFunctionMap());
-
 
         currentDegree = resolveDegree(program, debugContext);
         applyInputsToContext(program, debugContext);
 
-        if (currentDegree == 0) {
-            long result = executeBlackBox(debugContext,program);
+        // === קרדיטים ===
+        if (!HandleCredits.prepareExecution(program, architecture))
+            return;
 
+        if (currentDegree == 0) {
+            long result = executeBlackBox(debugContext, program);
             expandedProgram = program;
             debugInstructions = new ArrayList<>(program.getInstructions());
-            bbLabelToIndex.clear();
-            for (int i = 0; i < debugInstructions.size(); i++) {
-                var lbl = debugInstructions.get(i).getLabel();
-                if (lbl != null && lbl != logic.label.FixedLabel.EMPTY) {
-                    bbLabelToIndex.put(lbl.getLabelRepresentation(), i);
-                }
-            }
-            bbPc = 0;
-
-            Platform.runLater(() -> {
-                ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
-                ctrl.setOriginalInstructions(debugInstructions);
-                ctrl.clearInstructionTable();
-                ctrl.updateVariablesView();
-                ctrl.updateCyclesView(0);
-                ctrl.updateSummaryView(
-                        debugInstructions.size(),
-                        (int) debugInstructions.stream().filter(i -> i.getType().toString().equals("B")).count(),
-                        (int) debugInstructions.stream().filter(i -> i.getType().toString().equals("S")).count(),
-                        0
-                );
-
-                if (!debugInstructions.isEmpty()) {
-                    ctrl.highlightCurrentInstruction(0);
-                }
-            });
-
-            RunHistoryEntry entry = new RunHistoryEntry(
-                    runCounter++, 0,
-                    lastInputsMap, result, 0, true);
-            history.add(entry);
-            lastVariableState = new HashMap<>(debugContext.getVariableState());
-            notifyRunCompleted(program, entry);
-            UserHistory.sendRunToServer(buildDto(program, entry));
-
-
+            setupDebugUI(debugInstructions);
+            saveRunHistory(program, debugContext, result, 0, true);
             return;
         }
 
         program.expandToDegree(currentDegree, debugContext);
         expandedProgram = program;
         debugInstructions = new ArrayList<>(expandedProgram.getActiveInstructions());
-
-        Platform.runLater(() -> {
-            ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
-            ctrl.setOriginalInstructions(debugInstructions);
-            ctrl.clearInstructionTable();
-            ctrl.updateVariablesView();
-            ctrl.updateSummaryView(
-                    debugInstructions.size(),
-                    (int) debugInstructions.stream().filter(i -> i.getType().toString().equals("B")).count(),
-                    (int) debugInstructions.stream().filter(i -> i.getType().toString().equals("S")).count(),
-                    0
-            );
-            ctrl.updateCyclesView(0);
-        });
+        setupDebugUI(debugInstructions);
     }
-    public static void stepOver() {
 
-        if (!debugMode){
+    public static void stepOver() {
+        if (!debugMode) {
             UiUtils.showError("Not on debug mode");
             return;
         }
+
         // -------- Degree 0: black-box single step --------
         if (currentDegree == 0) {
             if (bbPc < 0 || bbPc >= debugInstructions.size()) return;
@@ -315,7 +158,11 @@ public class ExecutionRunner {
 
             bbPc = blackBoxStepDegree0(instr, bbPc, bbLabelToIndex, debugInstructions, debugContext, expandedProgram);
             executedCycles += instr.getCycles();
-            currentIndex   = bbPc;
+            currentIndex = bbPc;
+
+            // 💳 Deduct credits after each instruction
+            boolean hasCredits = HandleCredits.consumeCycles(expandedProgram.getName(), instr.getCycles());
+            if (!hasCredits) return; // stop if credits ran out
 
             Platform.runLater(() -> {
                 ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
@@ -327,12 +174,11 @@ public class ExecutionRunner {
                         instr.getType().toString(),
                         instr.getLabel() != null ? instr.getLabel().getLabelRepresentation() : "",
                         instr.commandDisplay(),
-                        instr.getCycles(),architecture
+                        instr.getCycles(),
+                        architecture
                 );
                 ctrl.addInstructionRow(row);
-
                 ctrl.highlightCurrentInstruction(rowNumber - 1);
-
                 ctrl.updateVariablesView();
                 ctrl.updateCyclesView(executedCycles);
                 ctrl.updateSummaryView(
@@ -357,7 +203,6 @@ public class ExecutionRunner {
                 lastVariableState = new HashMap<>(debugContext.getVariableState());
                 notifyRunCompleted(expandedProgram, entry);
                 UserHistory.sendRunToServer(buildDto(expandedProgram, entry));
-
             }
             return;
         }
@@ -369,6 +214,10 @@ public class ExecutionRunner {
         currentInstr.execute(debugContext);
         executedCycles += currentInstr.getCycles();
 
+        // 💳 Deduct credits here as well
+        boolean hasCredits = HandleCredits.consumeCycles(expandedProgram.getName(), currentInstr.getCycles());
+        if (!hasCredits) return; // if no credits left, stop execution
+
         Platform.runLater(() -> {
             ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
 
@@ -378,11 +227,11 @@ public class ExecutionRunner {
                     currentInstr.getType().toString(),
                     currentInstr.getLabel() != null ? currentInstr.getLabel().getLabelRepresentation() : "",
                     currentInstr.commandDisplay(),
-                    currentInstr.getCycles(),architecture
+                    currentInstr.getCycles(),
+                    architecture
             );
             ctrl.addInstructionRow(row);
             ctrl.highlightCurrentInstruction(rowNumber - 1);
-
             ctrl.updateVariablesView();
             ctrl.updateCyclesView(executedCycles);
             ctrl.updateSummaryView(
@@ -395,6 +244,7 @@ public class ExecutionRunner {
 
         currentIndex++;
     }
+
     public static void resume() {
         if (!debugMode || currentIndex >= debugInstructions.size()) return;
 
@@ -404,18 +254,22 @@ public class ExecutionRunner {
                 currentInstr.execute(debugContext);
                 executedCycles += currentInstr.getCycles();
 
-                int rowNumber = currentIndex + 1;
-                final int rowIndex = currentIndex;
+                if (!HandleCredits.consumeCycles(expandedProgram.getName(), currentInstr.getCycles())) {
+                    debugMode = false;
+                    return;
+                }
 
+                int rowIndex = currentIndex;
                 Platform.runLater(() -> {
+                    ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
                     InstructionRow row = new InstructionRow(
-                            rowNumber,
+                            rowIndex + 1,
                             currentInstr.getType().toString(),
                             currentInstr.getLabel() != null ? currentInstr.getLabel().getLabelRepresentation() : "",
                             currentInstr.commandDisplay(),
-                            currentInstr.getCycles(),architecture
+                            currentInstr.getCycles(),
+                            architecture
                     );
-                    ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
                     ctrl.addInstructionRow(row);
                     ctrl.highlightCurrentInstruction(rowIndex);
                     ctrl.updateVariablesView();
@@ -423,61 +277,16 @@ public class ExecutionRunner {
                 });
 
                 currentIndex++;
-
-                try {
-                    Thread.sleep(200);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
+                try { Thread.sleep(200); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
             }
-
             if (currentIndex >= debugInstructions.size()) {
                 saveDebugHistory();
                 generateSummary(debugInstructions);
             }
         }).start();
     }
-
-    private static void saveDebugHistory() {
-        long result = debugContext.getVariableState().getOrDefault(Variable.RESULT, -1L);
-
-        Map<Variable, Long> inputs;
-        if (debugHandleExecution != null) {
-            inputs = debugHandleExecution.getInputsMap();
-        } else {
-            inputs = lastInputsMap;
-        }
-
-        RunHistoryEntry entry = new RunHistoryEntry(
-                runCounter++,
-                currentDegree,
-                inputs != null ? new HashMap<>(inputs) : Collections.emptyMap(),
-                result,
-                executedCycles,
-                true
-        );
-        history.add(entry);
-        notifyRunCompleted(expandedProgram, entry);
-        UserHistory.sendRunToServer(buildDto(expandedProgram, entry));
-
-
-        User uploader = null;
-        if (expandedProgram.getUploaderName() != null) {
-            uploader = User.getManager().getUser(expandedProgram.getUploaderName());
-        }
-
-        if (uploader != null) {
-            uploader.trackExecution(expandedProgram.getUploaderName(), executedCycles);
-        } else {
-            System.out.println("No uploader found for program '" + expandedProgram.getUploaderName() + "', skipping tracking.");
-        }
-
-        lastVariableState = new HashMap<>(debugContext.getVariableState());
-    }
-
     public static void stop() {
-        if (!debugMode){
+        if (!debugMode) {
             UiUtils.showError("Not on debug mode");
             return;
         }
@@ -486,26 +295,80 @@ public class ExecutionRunner {
         generateSummary(debugInstructions);
     }
 
-    // ---------------- Getters ----------------
-    public static List<RunHistoryEntry> getHistory() { return history; }
-    public static Map<Variable, Long> getExecutionContextMap() { return lastVariableState; }
-    public static ExecutionContext getDebugContext() { return debugContext; }
-    public static boolean isDebugMode() { return debugMode; }
-    public static int getCurrentIndex() { return currentIndex; }
 
-    public static void highlightCurrentInstruction(int index, TableView<InstructionRow> instructionTable) {
-        instructionTable.getSelectionModel().clearAndSelect(index);
-        instructionTable.scrollTo(index);
+    // =====================================================
+    // Helpers
+    // =====================================================
+    private static void updateUIAfterExecution(Program program, Map<Variable, Long> vars, List<Instruction> instructions) {
+        Platform.runLater(() -> {
+            ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
+            ctrl.setOriginalInstructions(instructions);
+            ctrl.clearInstructionTable();
+            int counter = 1;
+            for (Instruction instr : instructions) {
+                InstructionRow row = new InstructionRow(
+                        counter++,
+                        instr.getType().toString(),
+                        instr.getLabel() != null ? instr.getLabel().getLabelRepresentation() : "",
+                        instr.commandDisplay(),
+                        instr.getCycles(),
+                        architecture
+                );
+                ctrl.addInstructionRow(row);
+            }
+            ctrl.updateVariablesView();
+            ctrl.updateSummaryView(
+                    instructions.size(),
+                    (int) instructions.stream().filter(i -> i.getType().toString().equals("B")).count(),
+                    (int) instructions.stream().filter(i -> i.getType().toString().equals("S")).count(),
+                    instructions.stream().mapToInt(Instruction::getCycles).sum()
+            );
+            ctrl.updateCyclesView(instructions.stream().mapToInt(Instruction::getCycles).sum());
+        });
     }
 
+    private static void saveRunHistory(Program program, ExecutionContext context, long result, int cycles, boolean debug) {
+        RunHistoryEntry entry = new RunHistoryEntry(runCounter++, currentDegree, lastInputsMap, result, cycles, debug);
+        history.add(entry);
+        notifyRunCompleted(program, entry);
+        UserHistory.sendRunToServer(buildDto(program, entry));
+        HandleCredits.finalizeRun(program.getName(), cycles);
+        lastVariableState = new HashMap<>(context.getVariableState());
+    }
 
-    // --- Prefill support ---
+    private static void setupDebugUI(List<Instruction> instructions) {
+        Platform.runLater(() -> {
+            ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
+            ctrl.setOriginalInstructions(instructions);
+            ctrl.clearInstructionTable();
+            ctrl.updateVariablesView();
+            ctrl.updateSummaryView(
+                    instructions.size(),
+                    (int) instructions.stream().filter(i -> i.getType().toString().equals("B")).count(),
+                    (int) instructions.stream().filter(i -> i.getType().toString().equals("S")).count(),
+                    0
+            );
+            ctrl.updateCyclesView(0);
+        });
+    }
+
+    private static void saveDebugHistory() {
+        long result = debugContext.getVariableState().getOrDefault(Variable.RESULT, -1L);
+        RunHistoryEntry entry = new RunHistoryEntry(runCounter++, currentDegree, lastInputsMap, result, executedCycles, true);
+        history.add(entry);
+        notifyRunCompleted(expandedProgram, entry);
+        UserHistory.sendRunToServer(buildDto(expandedProgram, entry));
+        HandleCredits.finalizeRun(expandedProgram.getName(), executedCycles);
+    }
+
+    // === misc ===
+    private static int resolveDegree(Program program, ExecutionContext context) {
+        return usePrefilledDegree ? prefilledDegree : DegreeDialog.askForDegree(context, program);
+    }
+
     private static Map<Variable, Long> prefilledInputs = null;
-
-
     private static boolean usePrefilledDegree = false;
     private static int prefilledDegree = 0;
-
 
     private static void applyInputsToContext(Program program, ExecutionContext context) {
         if (prefilledInputs != null) {
@@ -523,5 +386,27 @@ public class ExecutionRunner {
             lastInputsMap = new HashMap<>(handleExecution.getInputsMap());
         }
     }
+
+    // === getters ===
+    public static List<RunHistoryEntry> getHistory() { return history; }
+    public static Map<Variable, Long> getExecutionContextMap() { return lastVariableState; }
+    public static ExecutionContext getDebugContext() { return debugContext; }
+    public static boolean isDebugMode() { return debugMode; }
+    public static int getCurrentIndex() { return currentIndex; }
+    public static int getCurrentDegree() {
+        return currentDegree;
+    }
+    // =====================================================
+// Prefill support for ReRunService
+// =====================================================
+    public static void setPrefilledDegree(int degree) {
+        usePrefilledDegree = true;
+        prefilledDegree = degree;
+    }
+
+    public static void setPrefilledInputs(Map<Variable, Long> inputs) {
+        prefilledInputs = (inputs == null) ? null : new HashMap<>(inputs);
+    }
+
 
 }

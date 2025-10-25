@@ -76,7 +76,7 @@ public class CreditsServlet extends HttpServlet {
         if (delta >= 0)
             user.addCredits(delta);
         else
-            user.deductCredits(-delta);
+            user.tryDeductCredits(-delta);
 
         resp.setContentType("application/json");
         resp.getWriter().write(new Gson().toJson(Map.of("credits", user.getCredits())));

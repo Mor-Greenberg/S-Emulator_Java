@@ -12,6 +12,8 @@ public class User {
     private int contributedFunctions = 0;
     private int executionCount = 0;
 
+    private final Object lock = new Object();
+
     public User(String username) {
         this.username = username;
         this.credits = 0;
@@ -34,13 +36,22 @@ public class User {
     public int getExecutionCount() { return executionCount; }
 
     public void addCredits(int amount) {
-        this.credits += amount;
+        synchronized (lock) {
+            credits += amount;
+        }
     }
 
-    public void deductCredits(int amount) {
-        this.credits -= amount;
-        this.usedCredits += amount;
+    public boolean tryDeductCredits(int amount) {
+        synchronized (lock) {
+            if (credits < amount) {
+                return false;
+            }
+            credits -= amount;
+            usedCredits += amount;
+            return true;
+        }
     }
+
 
     public void incrementMainProgramsUploaded() {
         mainProgramsUploaded++;
@@ -73,12 +84,28 @@ public class User {
     private final Map<String, Integer> programRunCounts = new HashMap<>();
     private final Map<String, Integer> programUsedCredits = new HashMap<>();
 
-    public void trackExecution(String programName, int creditsUsed) {
-        programRunCounts.merge(programName, 1, Integer::sum);
-        programUsedCredits.merge(programName, creditsUsed, Integer::sum);
-        executionCount++;
-        deductCredits(creditsUsed);
+    public boolean trackExecutionIfEnough(String programName, int creditsUsed) {
+        synchronized (lock) {
+            if (credits < creditsUsed) {
+                return false; // not enough credits
+            }
+            credits -= creditsUsed;
+            usedCredits += creditsUsed;
+
+            programRunCounts.merge(programName, 1, Integer::sum);
+            programUsedCredits.merge(programName, creditsUsed, Integer::sum);
+            executionCount++;
+            return true;
+        }
     }
+    public void refundCredits(int amount) {
+        synchronized (lock) {
+            credits += amount;
+            usedCredits = Math.max(0, usedCredits - amount);
+        }
+    }
+
+
 
     public int getRunCountForProgram(String programName) {
         return programRunCounts.getOrDefault(programName, 0);
@@ -89,5 +116,6 @@ public class User {
         if (runs == 0) return 0;
         return (double) programUsedCredits.getOrDefault(programName, 0) / runs;
     }
+
 
 }
