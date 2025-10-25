@@ -85,6 +85,7 @@ public class UserHistory {
                 MediaType.parse("application/json; charset=utf-8")
         );
 
+
         Request request = new Request.Builder()
                 .url("http://localhost:8080/S-Emulator/api/add-run?username=" + username)
                 .post(body)

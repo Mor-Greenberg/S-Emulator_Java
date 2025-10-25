@@ -8,6 +8,7 @@ import gui.reRun.ReRunService;
 import logic.architecture.ArchitectureData;
 import logic.execution.ExecutionContext;
 import logic.execution.HandleCredits;
+import logic.instruction.AbstractInstruction;
 import printExpand.expansion.Expand;
 import ui.executionBoard.highlightSelectionPopup.HighlightAction;
 import ui.executionBoard.highlightSelectionPopup.HighlightChoiceListener;
@@ -34,6 +35,7 @@ import logic.program.Program;
 import okhttp3.*;
 
 import session.UserSession;
+import ui.executionBoard.instructionTable.ExpandedTable;
 import ui.executionBoard.instructionTable.InstructionRow;
 import ui.executionBoard.variablesTable.VariableRow;
 import util.HttpClientUtil;
@@ -46,8 +48,8 @@ import java.util.stream.Collectors;
 
 
 import static gui.showStatus.Status.showVariablesPopup;
-import static ui.executionBoard.instructionTable.InstructionRow.getAllLabels;
-import static ui.executionBoard.instructionTable.InstructionRow.getAllVariables;
+import static printExpand.expansion.PrintExpansion.getInstructionHistoryChain;
+import static ui.executionBoard.instructionTable.InstructionRow.*;
 import static utils.UiUtils.showError;
 
 
@@ -71,7 +73,7 @@ public class ExecutionBoardController {
     @FXML private Button highlightButton;
 
     @FXML
-    private TextArea historyContainer;
+    private VBox historyContainer;
     // --- Variables Table ---
     @FXML private TableView<VariableRow> variablesTable;
     @FXML private TableColumn<VariableRow, String> variableNameCol;
@@ -90,7 +92,7 @@ public class ExecutionBoardController {
     private ProgramStatsDTO selectedProgram;
     private int userCredits;
     private static ExecutionBoardController instance;
-    public String architecture = null;
+    public ArchitectureData architecture = null;
 
     public static ExecutionBoardController getInstance() {
         return instance;
@@ -116,6 +118,26 @@ public class ExecutionBoardController {
         colCycles.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getCycles()));
         colArch.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getArchitecture()));
         instructionsTable.setItems(instructionData);
+        instructionsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldRow, newRow) -> {
+            if (newRow == null) {
+                historyContainer.getChildren().clear();
+                return;
+            }
+            if (originalInstructions == null || originalInstructions.isEmpty()) {
+                historyContainer.getChildren().clear();
+                return;
+            }
+
+            Instruction matchedInstruction = findInstructionFromRow(newRow, originalInstructions);
+            if (matchedInstruction instanceof AbstractInstruction absInstr) {
+                List<AbstractInstruction> history = getInstructionHistoryChain(absInstr);
+                TableView<AbstractInstruction> historyTable = expandedTable.buildInstructionTableFrom(history);
+                historyContainer.getChildren().setAll(historyTable);
+            } else {
+                historyContainer.getChildren().clear();
+            }
+        });
+
 
 
         // --- Variables Table setup ---
@@ -136,8 +158,8 @@ public class ExecutionBoardController {
             return;
         }
 
-        // 🧠 Architecture not selected yet
-        if (architecture == null || architecture.isBlank()) {
+        // Architecture not selected yet
+        if (architecture == null ) {
             UiUtils.showError("No architecture selected.\nPlease select an architecture before running the program.");
             return;
         }
@@ -192,7 +214,7 @@ public class ExecutionBoardController {
         }
 
         // Architecture not selected yet
-        if (architecture == null || architecture.isBlank()) {
+        if (architecture == null ) {
             UiUtils.showError("No architecture selected.\nPlease select an architecture before starting debug mode.");
             return;
         }
@@ -433,7 +455,7 @@ public class ExecutionBoardController {
         }
 
         // 🧠 Architecture not selected yet
-        if (architecture == null || architecture.isBlank()) {
+        if (architecture == null) {
             UiUtils.showError("No architecture selected.\nPlease select an architecture before re-running the program.");
             return;
         }
@@ -607,7 +629,7 @@ public class ExecutionBoardController {
         }
 
         userCredits -= cost;
-        architecture = chosenArch.name();
+        architecture = ArchitectureData.valueOf(chosenArch.name());
 
         ExecutionRunner.architecture = architecture;
 
@@ -615,6 +637,11 @@ public class ExecutionBoardController {
 
         UiUtils.showAlert("Architecture '" + chosenArch.name() + "' selected.\nCost: " + cost + " credits.");
     }
+
+
+    private final ExpandedTable expandedTable = new ExpandedTable();
+
+
 
 }
 

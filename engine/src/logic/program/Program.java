@@ -24,7 +24,7 @@ public interface Program {
      void setFunction(boolean isFunction) ;
 
      String getUploaderName() ;
-
+    public void recordRun(int usedCredits) ;
      void setUploaderName(String uploaderName) ;
 
 

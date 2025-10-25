@@ -1,5 +1,6 @@
 package printExpand.expansion;
 
+import logic.architecture.ArchitectureData;
 import ui.executionBoard.instructionTable.InstructionRow;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -29,7 +30,7 @@ import static logic.blaxBox.BlackBox.executeBlackBox;
 import static ui.guiUtils.DegreeDialog.askForDegree;
 
 public class Expand {
-public static void expandAction(Program loadedProgram, String architecture) {
+public static void expandAction(Program loadedProgram, ArchitectureData architecture) {
     Map<Variable, Long> variableState = loadedProgram.getVars().stream()
             .collect(Collectors.toMap(v -> v, v -> 0L));
     ExecutionContextImpl context = new ExecutionContextImpl(variableState);
@@ -63,7 +64,7 @@ public static void expandAction(Program loadedProgram, String architecture) {
                     instr.getType().toString(),
                     instr.getLabel() != null ? instr.getLabel().getLabelRepresentation() : "",
                     instr.commandDisplay(),
-                    instr.getCycles(),architecture
+                    instr.getCycles(),architecture.name()
             ));
         }
 

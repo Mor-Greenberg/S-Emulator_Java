@@ -248,23 +248,7 @@ public class ProgramImpl implements Program {
         return map;
     }
 
-    @Override
-    public int getRunCount() {
-        return 0;
-    }
 
-    @Override
-    public double getAverageCredits() {
-        if (uploaderName == null)
-            return 0.0;
-
-        User uploader = User.getManager().getUser(uploaderName);
-        if (uploader == null) {
-            System.out.println("⚠️ getAverageCredits: uploader not found for " + uploaderName);
-            return 0.0;
-        }
-        return uploader.getAverageCreditsForProgram(name);
-    }
 
 
     public Set<String> getFunctionRefs() {
@@ -278,6 +262,22 @@ public class ProgramImpl implements Program {
 
         return refs;
     }
+    private int runCount = 0;
+    private double averageCredits = 0.0;
+
+    public void recordRun(int usedCredits) {
+        runCount++;
+        averageCredits = ((averageCredits * (runCount - 1)) + usedCredits) / runCount;
+    }
+
+    public int getRunCount() {
+        return runCount;
+    }
+
+    public double getAverageCredits() {
+        return averageCredits;
+    }
+
 
 
 

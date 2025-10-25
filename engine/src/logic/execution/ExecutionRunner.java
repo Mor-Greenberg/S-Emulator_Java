@@ -8,6 +8,7 @@ import logic.instruction.Instruction;
 import logic.program.Program;
 import logic.Variable.Variable;
 import printExpand.expansion.PrintExpansion;
+import ui.dashboard.DashboardController;
 import ui.dashboard.UserHistory;
 import ui.executionBoard.ExecutionBoardController;
 import ui.executionBoard.instructionTable.InstructionRow;
@@ -35,7 +36,7 @@ public class ExecutionRunner {
     private static int runCounter = 1;
     private static final List<RunHistoryEntry> history = new ArrayList<>();
 
-    public static String architecture;
+    public static ArchitectureData architecture;
     private static List<Instruction> debugInstructions;
     private static int currentIndex;
     private static ExecutionContext debugContext;
@@ -61,10 +62,21 @@ public class ExecutionRunner {
         );
     }
 
+    private static final Set<Integer> notifiedRuns = new HashSet<>();
+
+
     private static void notifyRunCompleted(Program program, RunHistoryEntry entry) {
+        if (notifiedRuns.contains(entry.getRunId())) return;
+        notifiedRuns.add(entry.getRunId());
+
         if (runCompletionListener != null)
             runCompletionListener.onRunCompleted(buildDto(program, entry));
+
+
+        Platform.runLater(DashboardController::refreshProgramsFromServer);
     }
+
+
 
     // =====================================================
     // NORMAL RUN
@@ -76,8 +88,8 @@ public class ExecutionRunner {
         currentDegree = resolveDegree(program, context);
         applyInputsToContext(program, context);
 
-        // === קרדיטים: בדיקה וגבייה ראשונית ===
-        if (!HandleCredits.prepareExecution(program, architecture))
+        int architectureCost = HandleCredits.prepareExecution(program, architecture);
+        if (architectureCost < 0)
             return;
 
         // === דרגה 0 ===
@@ -85,29 +97,32 @@ public class ExecutionRunner {
             long result = executeBlackBox(context, program);
             updateUIAfterExecution(program, context.getVariableState(), program.getInstructions());
             saveRunHistory(program, context, result, 0, false);
+            program.recordRun(architectureCost);
             return;
         }
 
-        // === דרגה > 0 ===
         program.expandToDegree(currentDegree, context);
         expandedProgram = program;
         List<Instruction> activeInstr = program.getActiveInstructions();
-        long result = 0;
         int totalCyclesUsed = 0;
 
         for (Instruction instr : activeInstr) {
             instr.execute(context);
             totalCyclesUsed += instr.getCycles();
 
-            // הורדת קרדיטים
             if (!HandleCredits.consumeCycles(program.getName(), instr.getCycles()))
                 return;
         }
 
         updateUIAfterExecution(program, variableState, activeInstr);
-        saveRunHistory(program, context, result, totalCyclesUsed, false);
-        HandleCredits.finalizeRun(program.getName(), totalCyclesUsed);
+
+
+        int totalUsedCredits = architectureCost + totalCyclesUsed;
+
+        program.recordRun(totalUsedCredits);
+
     }
+
 
     // =====================================================
     // DEBUG MODE
@@ -124,9 +139,10 @@ public class ExecutionRunner {
         currentDegree = resolveDegree(program, debugContext);
         applyInputsToContext(program, debugContext);
 
-        // === קרדיטים ===
-        if (!HandleCredits.prepareExecution(program, architecture))
+        int architectureCost = HandleCredits.prepareExecution(program, architecture);
+        if (architectureCost < 0)
             return;
+
 
         if (currentDegree == 0) {
             long result = executeBlackBox(debugContext, program);
@@ -175,7 +191,7 @@ public class ExecutionRunner {
                         instr.getLabel() != null ? instr.getLabel().getLabelRepresentation() : "",
                         instr.commandDisplay(),
                         instr.getCycles(),
-                        architecture
+                        architecture.toString()
                 );
                 ctrl.addInstructionRow(row);
                 ctrl.highlightCurrentInstruction(rowNumber - 1);
@@ -187,6 +203,7 @@ public class ExecutionRunner {
                         (int) debugInstructions.stream().filter(i -> i.getType().toString().equals("S")).count(),
                         executedCycles
                 );
+
             });
 
             if (bbPc >= debugInstructions.size()) {
@@ -199,22 +216,22 @@ public class ExecutionRunner {
                         executedCycles,
                         true
                 );
-                history.add(entry);
-                lastVariableState = new HashMap<>(debugContext.getVariableState());
-                notifyRunCompleted(expandedProgram, entry);
-                UserHistory.sendRunToServer(buildDto(expandedProgram, entry));
+                saveRunHistory(expandedProgram, debugContext, result, executedCycles, true);
+
             }
+            expandedProgram.recordRun(executedCycles);
+
             return;
         }
 
-        // -------- Degree > 0: regular step over on expanded instructions --------
+        //  Degree > 0: regular step over on expanded instructions
         if (currentIndex >= debugInstructions.size()) return;
 
         Instruction currentInstr = debugInstructions.get(currentIndex);
         currentInstr.execute(debugContext);
         executedCycles += currentInstr.getCycles();
 
-        // 💳 Deduct credits here as well
+        // Deduct credits here as well
         boolean hasCredits = HandleCredits.consumeCycles(expandedProgram.getName(), currentInstr.getCycles());
         if (!hasCredits) return; // if no credits left, stop execution
 
@@ -228,7 +245,7 @@ public class ExecutionRunner {
                     currentInstr.getLabel() != null ? currentInstr.getLabel().getLabelRepresentation() : "",
                     currentInstr.commandDisplay(),
                     currentInstr.getCycles(),
-                    architecture
+                    architecture.name()
             );
             ctrl.addInstructionRow(row);
             ctrl.highlightCurrentInstruction(rowNumber - 1);
@@ -241,6 +258,8 @@ public class ExecutionRunner {
                     executedCycles
             );
         });
+        expandedProgram.recordRun(executedCycles);
+
 
         currentIndex++;
     }
@@ -268,12 +287,14 @@ public class ExecutionRunner {
                             currentInstr.getLabel() != null ? currentInstr.getLabel().getLabelRepresentation() : "",
                             currentInstr.commandDisplay(),
                             currentInstr.getCycles(),
-                            architecture
+                            architecture.name()
                     );
                     ctrl.addInstructionRow(row);
                     ctrl.highlightCurrentInstruction(rowIndex);
                     ctrl.updateVariablesView();
                     ctrl.updateCyclesView(executedCycles);
+                    expandedProgram.recordRun(executedCycles);
+
                 });
 
                 currentIndex++;
@@ -312,7 +333,7 @@ public class ExecutionRunner {
                         instr.getLabel() != null ? instr.getLabel().getLabelRepresentation() : "",
                         instr.commandDisplay(),
                         instr.getCycles(),
-                        architecture
+                        architecture.name()
                 );
                 ctrl.addInstructionRow(row);
             }
@@ -326,15 +347,20 @@ public class ExecutionRunner {
             ctrl.updateCyclesView(instructions.stream().mapToInt(Instruction::getCycles).sum());
         });
     }
-
     private static void saveRunHistory(Program program, ExecutionContext context, long result, int cycles, boolean debug) {
         RunHistoryEntry entry = new RunHistoryEntry(runCounter++, currentDegree, lastInputsMap, result, cycles, debug);
         history.add(entry);
+
         notifyRunCompleted(program, entry);
-        UserHistory.sendRunToServer(buildDto(program, entry));
-        HandleCredits.finalizeRun(program.getName(), cycles);
+
+        int totalUsedCredits = architecture.getCreditsCost() + cycles;
+        program.recordRun(totalUsedCredits);
+
         lastVariableState = new HashMap<>(context.getVariableState());
     }
+
+
+
 
     private static void setupDebugUI(List<Instruction> instructions) {
         Platform.runLater(() -> {
@@ -351,17 +377,13 @@ public class ExecutionRunner {
             ctrl.updateCyclesView(0);
         });
     }
-
     private static void saveDebugHistory() {
         long result = debugContext.getVariableState().getOrDefault(Variable.RESULT, -1L);
-        RunHistoryEntry entry = new RunHistoryEntry(runCounter++, currentDegree, lastInputsMap, result, executedCycles, true);
-        history.add(entry);
-        notifyRunCompleted(expandedProgram, entry);
-        UserHistory.sendRunToServer(buildDto(expandedProgram, entry));
-        HandleCredits.finalizeRun(expandedProgram.getName(), executedCycles);
+        saveRunHistory(expandedProgram, debugContext, result, executedCycles, true);
     }
 
-    // === misc ===
+
+
     private static int resolveDegree(Program program, ExecutionContext context) {
         return usePrefilledDegree ? prefilledDegree : DegreeDialog.askForDegree(context, program);
     }

@@ -75,6 +75,7 @@ public class CreditsServlet extends HttpServlet {
 
         if (delta >= 0)
             user.addCredits(delta);
+
         else
             user.tryDeductCredits(-delta);
 

@@ -1,16 +1,18 @@
 package dto;
 
+import logic.architecture.ArchitectureData;
+
 public class UserRunEntryDTO {
     private int runId;
     private String runType;      // "Program" or "Function"
     private String programName;
-    private String architecture;
+    private ArchitectureData architecture;
     private int degree;
     private long yValue;
     private int cycles;
 
     public UserRunEntryDTO(int runId, String runType, String programName,
-                           String architecture, int degree, long yValue, int cycles) {
+                           ArchitectureData architecture, int degree, long yValue, int cycles) {
         this.runId = runId;
         this.runType = runType;
         this.programName = programName;
@@ -23,7 +25,7 @@ public class UserRunEntryDTO {
     public int getRunId() { return runId; }
     public String getRunType() { return runType; }
     public String getProgramName() { return programName; }
-    public String getArchitecture() { return architecture; }
+    public ArchitectureData getArchitecture() { return architecture; }
     public int getDegree() { return degree; }
     public long getYValue() { return yValue; }
     public int getCycles() { return cycles; }

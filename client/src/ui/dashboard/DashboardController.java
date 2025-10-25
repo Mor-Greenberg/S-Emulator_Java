@@ -111,8 +111,23 @@ public class DashboardController {
     public Button executeProgramButton;
     ProgramStatsDTO selectedProgram;
 
+
+    public static void refreshProgramsFromServer() {
+        if (instance != null) {
+            Platform.runLater(() -> {
+                System.out.println("🔄 Refreshing programs table...");
+                instance.fetchProgramsFromServer();
+            });
+        } else {
+            System.err.println("⚠ DashboardController instance is null");
+        }
+    }
+
+    private static DashboardController instance;
+
     @FXML
     public void initialize() {
+        instance = this; // ✅ רק אחרי שטעינת ה־FXML הושלמה
         InitDashboardHelper.initialize(this);
     }
 
@@ -214,7 +229,6 @@ public class DashboardController {
 
 
     private void updateCreditsLabel(int credits) {
-        System.out.println("Updating label to: Available Credits: " + credits);
         Platform.runLater(() -> creditsLabel.setText("Available Credits: " + credits));
     }
 
@@ -236,10 +250,8 @@ public class DashboardController {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 int statusCode = response.code();
-                System.out.println("Server responded with status code: " + statusCode);
 
                 String responseBody = response.body() != null ? response.body().string() : null;
-                System.out.println("Response body: " + responseBody);
 
                 if (!response.isSuccessful()) {
                     System.err.println("Server returned error status: " + statusCode);
@@ -282,8 +294,9 @@ public class DashboardController {
             // get controller
             ExecutionBoardController controller = loader.getController();
             controller.setLoadedProgram(program);
+            controller.setOriginalInstructions(program.getInstructions());
             controller.setUserCredits(UserSession.getUserCredits());
-            controller.architecture = null; // לא נבחרה עדיין
+            controller.architecture = null;
 
             // פתיחת המסך החדש
             Stage stage = new Stage();

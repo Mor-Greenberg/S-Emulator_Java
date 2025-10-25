@@ -38,6 +38,7 @@ public class User {
     public void addCredits(int amount) {
         synchronized (lock) {
             credits += amount;
+
         }
     }
 

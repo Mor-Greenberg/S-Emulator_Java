@@ -70,7 +70,6 @@ public class ExecutionContextImpl implements ExecutionContext {
             }
 
             if (globalProgramMap.containsKey(funcName)) {
-                System.out.println("Function '" + funcName + "' already exists — skipping duplicate.");
                 continue;
             }
 

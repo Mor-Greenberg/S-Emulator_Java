@@ -1,90 +1,42 @@
 package logic.execution;
 
-import javafx.application.Platform;
 import logic.architecture.ArchitectureData;
 import logic.program.Program;
 import session.UserSession;
-import ui.executionBoard.ExecutionBoardController;
 import utils.UiUtils;
 
-/**
- * Centralized credit management for program execution.
- * Handles:
- *  - Initial cost (architecture charge)
- *  - Per-cycle deduction
- *  - Out-of-credit handling and UI updates
- */
+import static session.UserSession.updateCreditsLabel;
+
 public class HandleCredits {
 
-    private static int remainingCredits;
+    public static int prepareExecution(Program program, ArchitectureData architecture) {
+        int architectureCost = architecture.getCreditsCost();
+        int current = UserSession.getUserCredits();
 
-    public static boolean prepareExecution(Program program, String architectureName) {
-        System.out.println("Architecture name received: " + architectureName);
+        if (current < architectureCost) {
+            UiUtils.showError("Not enough credits! Required: " + architectureCost + ", Available: " + current);
+            return -1;
+        }
 
-        ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
-        if (ctrl == null) return false;
+        UserSession.deductCredits(architectureCost);
+       updateCreditsLabel();
+        System.out.println("💰 Deducted architecture cost: " + architectureCost);
+        return architectureCost; // ✅ נחזיר את עלות הארכיטקטורה
+    }
 
-        int userCredits = ctrl.getUserCredits();
-        ArchitectureData archType = ArchitectureData.valueOf(architectureName);
-        int architectureCost = archType.getCreditsCost();
 
-        // Estimate program cost (average)
-        int estimatedCycles = program.calculateCycles();
-        int totalRequired = estimatedCycles + architectureCost;
 
-        if (userCredits < totalRequired) {
-            UiUtils.showError(
-                    "Not enough credits to run this program.\n" +
-                            "Required: " + totalRequired + ", Available: " + userCredits
-            );
+    public static boolean consumeCycles(String programName, int cycles) {
+        int current = UserSession.getUserCredits();
+        if (current < cycles) {
+            UiUtils.showError("⚠️ Out of credits while running " + programName);
             return false;
         }
 
-        // Deduct architecture cost upfront
-        remainingCredits = userCredits - architectureCost;
-        Platform.runLater(() -> ctrl.setUserCredits(remainingCredits));
-
-        System.out.println("Architecture cost charged: " + architectureCost +
-                " | Remaining credits: " + remainingCredits);
-
+        UserSession.deductCredits(cycles);
+        updateCreditsLabel();
         return true;
     }
 
 
-    public static boolean consumeCycles(String programName, int cyclesUsed) {
-        ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
-        if (ctrl == null) return false;
-
-        remainingCredits -= cyclesUsed;
-        Platform.runLater(() -> ctrl.setUserCredits(remainingCredits));
-
-        // Out of credits → stop execution and return to dashboard
-        if (remainingCredits <= 0) {
-            Platform.runLater(() -> {
-                UiUtils.showError("You have run out of credits. Execution stopped.");
-                ctrl.onBackToDashboard();
-            });
-            return false;
-        }
-
-        return true;
-    }
-
-    public static void finalizeRun(String programName, int totalCyclesUsed) {
-        ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
-        if (ctrl == null) return;
-
-        Platform.runLater(() -> {
-            ctrl.setUserCredits(remainingCredits);
-            System.out.println("Run of " + programName + " completed. " +
-                    "Total cycles: " + totalCyclesUsed +
-                    " | Remaining credits: " + remainingCredits);
-        });
-
-        UserSession.setUserCredits(remainingCredits);
-    }
-
-    public static int getRemainingCredits() {
-        return remainingCredits;
-    }
 }
