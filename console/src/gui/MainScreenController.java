@@ -1,5 +1,6 @@
 package gui;
 
+import session.UserSession;
 import ui.executionBoard.highlightSelectionPopup.HighlightAction;
 import ui.executionBoard.highlightSelectionPopup.HighlightChoiceListener;
 import ui.executionBoard.highlightSelectionPopup.HighlightSelectionController;
@@ -182,7 +183,7 @@ public class MainScreenController {
                     ExecutionContextImpl context = new ExecutionContextImpl(new HashMap<>(), new HashMap<>(),new HashMap<>());
 
                     XmlMapper mapper = new XmlMapper(context);
-                    loadedProgram = mapper.map(sProgram,path);
+                    loadedProgram = mapper.map(sProgram,path, UserSession.getUsername());
 
 
                     context.initializeVarsFromProgram(loadedProgram);

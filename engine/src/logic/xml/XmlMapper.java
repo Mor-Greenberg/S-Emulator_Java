@@ -10,6 +10,7 @@ import logic.label.FixedLabel;
 import logic.label.Label;
 import logic.program.Program;
 import logic.program.ProgramImpl;
+import session.UserSession;
 
 import java.util.*;
 
@@ -22,7 +23,7 @@ public class XmlMapper {
         this.context = context;
     }
 
-    public Program map(SProgram sProgram, String path) {
+    public Program map(SProgram sProgram, String path, String uploader) {
         this.context.reset();
 
 
@@ -40,6 +41,9 @@ public class XmlMapper {
         mainProgram.setFunctionMap(localFunctionMap);
         (mainProgram).setParentProgramName("MAIN");
 
+        for (Program func : localFunctionMap.values()) {
+            func.setUploaderName(uploader);
+        }
 
         Map<String, Program> globalProgramsSnapshot = new HashMap<>(ExecutionContextImpl.getGlobalProgramMap());
 
@@ -68,6 +72,7 @@ public class XmlMapper {
 
         System.out.println("Saved to program map: " + mainProgram.getName());
         System.out.println("Now in map: " + ExecutionContextImpl.getGlobalProgramMap().keySet());
+
 
 
 
@@ -246,23 +251,35 @@ public class XmlMapper {
 
             String head = parts.get(0).trim();
 
+            // --- 💡 זיהוי פונקציה או ביטוי ---
             if (functionMap.containsKey(head)) {
                 List<Variable> innerArgs = new ArrayList<>();
                 for (int i = 1; i < parts.size(); i++) {
-                    String inner = parts.get(i).trim();
-                    innerArgs.addAll(parseQuoteArgs(inner, functionMap, program, destination));
+                    innerArgs.addAll(parseQuoteArgs(parts.get(i).trim(), functionMap, program, destination));
                 }
                 QuoteInstruction innerQuote = new QuoteInstruction(head, innerArgs, destination);
                 argumentList.add(new QuoteVariable(innerQuote));
-            } else {
+            }
+            // --- 💡 זיהוי משתנה תקף בלבד ---
+            else if (head.matches("^[xyz]\\d*$") || head.equals("y")) {
                 Variable var = parseVariable(head);
                 program.addVar(var);
                 argumentList.add(var);
+            }
+            // --- 💡 CONST0 ופונקציות שלא מוגדרות במפה ---
+            else if (functionMap.containsKey(head) || head.startsWith("CONST")) {
+                // פונקציה פנימית כמו CONST0, NOT, EQUAL וכו'
+                QuoteInstruction innerQuote = new QuoteInstruction(head, new ArrayList<>(), destination);
+                argumentList.add(new QuoteVariable(innerQuote));
+            }
+            else {
+                System.out.println("Skipping unrecognized token: " + head);
             }
         }
 
         return argumentList;
     }
+
 
     private List<String> splitTopLevel(String expr) {
         List<String> result = new ArrayList<>();

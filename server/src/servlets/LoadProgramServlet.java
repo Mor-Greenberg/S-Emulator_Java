@@ -24,23 +24,23 @@ public class LoadProgramServlet extends HttpServlet {
 
         String xmlContent = request.getReader().lines().collect(Collectors.joining("\n"));
         Program program;
+        String uploader = (String) request.getSession().getAttribute("username");
+
 
         try {
-            program = XmlLoader.fromXmlString(xmlContent);
+            program = XmlLoader.fromXmlString(xmlContent,uploader);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.getWriter().write("Invalid XML: " + e.getMessage());
             return;
         }
 
-        String uploader = (String) request.getSession().getAttribute("username");
         if (uploader == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("User not logged in");
             return;
         }
 
-        // שמירה במפה הגלובלית (כולל פונקציות פנימיות)
         GlobalProgramsManager.addProgram(program);
         for (Program func : program.getFunctionMap().values()) {
             if (func.isFunction()) {

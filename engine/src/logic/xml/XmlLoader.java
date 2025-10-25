@@ -13,6 +13,7 @@ import logic.label.Label;
 import logic.label.LabelImpl;
 import logic.program.Program;
 import logic.program.ProgramImpl;
+import session.UserSession;
 
 import java.io.File;
 import java.io.StringReader;
@@ -38,7 +39,7 @@ public class XmlLoader {
             throw new RuntimeException("Failed to load XML: " + path, e);
         }
     }
-    public static Program fromXmlString(String xml) throws Exception {
+    public static Program fromXmlString(String xml,String username) throws Exception {
         JAXBContext jaxbContext = JAXBContext.newInstance("jaxbV2.jaxb.v2");
         Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
 
@@ -56,20 +57,14 @@ public class XmlLoader {
 
         try {
             XmlMapper mapper = new XmlMapper(new ExecutionContextImpl());
-            return mapper.map(sProgram, "FromString");
+            return mapper.map(sProgram, "FromString", username);
         } catch (Exception e) {
             System.err.println("Error during XmlMapper.map:");
             e.printStackTrace();
             throw e;
         }
     }
-    public static String toXmlString(Program program) throws Exception {
-        JAXBContext context = JAXBContext.newInstance("jaxbV2.jaxb.v2");
-        Marshaller marshaller = context.createMarshaller();
-        StringWriter writer = new StringWriter();
-        marshaller.marshal(program, writer);
-        return writer.toString();
-    }
+
 
 
 

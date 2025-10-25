@@ -1,5 +1,6 @@
 package serverProgram;
 
+import dto.UserStatsDTO;
 import logic.program.Program;
 import logic.xml.XmlLoader;
 
@@ -38,7 +39,7 @@ public class GlobalProgramStore {
     }
 
     /** Get the Program object (parse if needed from XML) */
-    public static Program getProgram(String name) {
+    public static Program getProgram(String name, String username) {
         if (name == null) return null;
 
         // try cache first
@@ -50,7 +51,7 @@ public class GlobalProgramStore {
         String xml = xmlMap.get(name);
         if (xml != null) {
             try {
-                program = XmlLoader.fromXmlString(xml);
+                program = XmlLoader.fromXmlString(xml,username);
                 programCache.put(name, program);
                 return program;
             } catch (Exception e) {

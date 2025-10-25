@@ -38,7 +38,7 @@ public class RequestProgramServlet extends HttpServlet {
         }
 
         try {
-            Program program = XmlLoader.fromXmlString(xmlContent);
+            Program program = XmlLoader.fromXmlString(xmlContent,uploader);
             program.setUploaderName(uploader);
 
             // Save program and its XML in the hybrid store
@@ -87,7 +87,7 @@ public class RequestProgramServlet extends HttpServlet {
         }
 
         // Try cache or parse from XML automatically
-        Program program = GlobalProgramStore.getProgram(programName);
+        Program program = GlobalProgramStore.getProgram(programName,uploaderMap.get(programName));
         if (program == null) {
             resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
             resp.getWriter().write("Program/function not found on server.");

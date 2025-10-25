@@ -32,7 +32,7 @@ public class LoadFile {
 
         try {
             String xml = Files.readString(selectedFile.toPath(), StandardCharsets.UTF_8);
-            Program program = XmlLoader.fromXmlString(xml);
+            Program program = XmlLoader.fromXmlString(xml,UserSession.getUsername());
 
             program.setUploaderName(UserSession.getUsername());
             logic.execution.ExecutionContextImpl.loadProgram(program, xml);

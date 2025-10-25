@@ -196,7 +196,7 @@ public class DashboardController {
                 String xml = response.body().string();
 
                 try {
-                    Program program = logic.xml.XmlLoader.fromXmlString(xml);
+                    Program program = logic.xml.XmlLoader.fromXmlString(xml,UserSession.getUsername());
 
                     ExecutionContextImpl.loadProgram(program, xml);
                     System.out.println("Loaded shared program from server: " + program.getName());
@@ -419,7 +419,7 @@ public class DashboardController {
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful()) return null;
             String xml = response.body().string();
-            Program program = XmlLoader.fromXmlString(xml);
+            Program program = XmlLoader.fromXmlString(xml,UserSession.getUsername());
             ExecutionContextImpl.loadProgram(program);
             return program;
         } catch (Exception e) {
@@ -466,7 +466,7 @@ public class DashboardController {
                 String xml = response.body().string();
 
                 try {
-                    Program functionProgram = logic.xml.XmlLoader.fromXmlString(xml);
+                    Program functionProgram = logic.xml.XmlLoader.fromXmlString(xml,UserSession.getUsername());
 
                     ExecutionContextImpl.loadProgram(functionProgram, xml);
 
