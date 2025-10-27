@@ -85,10 +85,11 @@ public class UserHistory {
         return col;
     }
 
+
     public static void sendRunToServer(UserRunEntryDTO dto) {
+
         String username = UserSession.getUsername();
 
-        // עוטפים את ה־DTO באובייקט JSON עם שם המשתמש
         JsonObject payload = new JsonObject();
         payload.addProperty("username", username);
         payload.add("run", new Gson().toJsonTree(dto));
@@ -107,23 +108,25 @@ public class UserHistory {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 if (response.isSuccessful()) {
-                    System.out.println("✅ Run saved for " + username);
+                    System.out.println("Run saved for " + username);
                     Platform.runLater(() -> {
                         DashboardController.refreshProgramsFromServer();
                         UserHistory.refreshUserHistory();
+                        DashboardController.refreshUserHistory();
                     });
                 } else {
-                    System.err.println("⚠️ Server error while saving run: " + response.code());
+                    System.err.println("Server error while saving run: " + response.code());
                 }
                 response.close();
             }
 
             @Override
             public void onFailure(Call call, IOException e) {
-                System.err.println("❌ Failed to save run: " + e.getMessage());
+                System.err.println("Failed to save run: " + e.getMessage());
             }
         });
     }
+
 
     public static void refreshUserHistory() {
         String username = UserSession.getUsername();

@@ -1,14 +1,21 @@
 package servlets;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import dto.UserRunEntryDTO;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.*;
+import logic.program.Program;
+import serverProgram.GlobalProgramStore;
+import user.User;
 import user.UserManager;
 
 import java.io.IOException;
+
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 
 @WebServlet("/api/add-run")
 public class AddRunServlet extends HttpServlet {
@@ -17,30 +24,33 @@ public class AddRunServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String username = req.getParameter("username");
-        String programName = req.getParameter("programName");
-        String usedCreditsStr = req.getParameter("usedCredits");
+        JsonObject json = gson.fromJson(req.getReader(), JsonObject.class);
 
-        if (username == null || programName == null || usedCreditsStr == null) {
+        if (json == null || !json.has("username") || !json.has("run")) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Missing parameters");
+            resp.getWriter().write("Missing fields in JSON");
             return;
         }
 
-        int usedCredits;
-        try {
-            usedCredits = Integer.parseInt(usedCreditsStr);
-        } catch (NumberFormatException e) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Invalid usedCredits value");
-            return;
+        String username = json.get("username").getAsString();
+        UserRunEntryDTO dto = gson.fromJson(json.get("run"), UserRunEntryDTO.class);
+
+        UserManager userManager = UserManager.getInstance();
+        userManager.addRun(username, dto);
+
+        int usedCredits = dto.getCycles() + dto.getArchitecture().getCreditsCost();
+
+
+
+        Program program = GlobalProgramStore.getProgramCache().get(dto.getProgramName());
+        if (program != null) {
+            program.recordRun(usedCredits);
+            System.out.println("Updated " + dto.getProgramName() + " | Runs=" + program.getRunCount() + " | Avg=" + program.getAverageCredits());
         }
 
-       // UserRunEntryDTO entry = new UserRunEntryDTO(username,programName, usedCredits);
-
-       // UserManager.getInstance().addRun(username, entry);
-
-       // System.out.println("Added run for user: " + username + " | program=" + programName + " | usedCredits=" + usedCredits);
+        System.out.println("Added run for user: " + username +
+                " | program=" + dto.getProgramName() +
+                " | usedCredits=" + usedCredits );
         resp.setStatus(HttpServletResponse.SC_OK);
     }
 }

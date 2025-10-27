@@ -120,6 +120,10 @@ public class InitDashboardHelper {
         controller.maxDegreeColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getMaxExpansionLevel()).asObject());
         controller.runCountColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getRunCount()).asObject());
         controller.avgCreditsColumn.setCellValueFactory(cell -> new SimpleDoubleProperty(cell.getValue().getAverageCredits()).asObject());
+
+        controller.avgCreditsColumn.setCellValueFactory(
+                cell -> new SimpleDoubleProperty(cell.getValue().getAverageCredits()).asObject()
+        );
         controller.avgCreditsColumn.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(Double value, boolean empty) {
@@ -127,10 +131,11 @@ public class InitDashboardHelper {
                 if (empty || value == null) {
                     setText(null);
                 } else {
-                    setText(String.format("%.2f", value)); // עיגול לשתי ספרות
+                    setText(String.format("%.2f", value));
                 }
             }
         });
+
 
         // Function's table columns
         controller.colFunctionName.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getFunctionName()));

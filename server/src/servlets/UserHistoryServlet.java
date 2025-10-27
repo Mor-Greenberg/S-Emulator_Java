@@ -38,7 +38,6 @@ public class UserHistoryServlet extends HttpServlet {
         resp.setCharacterEncoding("UTF-8");
         resp.getWriter().write(gson.toJson(runs));
     }
-
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         UserRunEntryDTO dto = gson.fromJson(req.getReader(), UserRunEntryDTO.class);
@@ -57,17 +56,18 @@ public class UserHistoryServlet extends HttpServlet {
 
         userManager.addRun(dto.getUsername(), dto);
 
-        Program program = GlobalProgramStore.getProgram(dto.getUsername(), dto.getProgramName());
+        Program program = GlobalProgramStore.getProgramCache().get(dto.getProgramName());
         if (program != null) {
             int usedCredits = dto.getCycles() + dto.getArchitecture().getCreditsCost();
-            program.recordRun(usedCredits); // מעדכן RunCount ו־Avg.Credits
-            System.out.println("Updated program stats for " + dto.getProgramName()
-                    + " | Runs=" + program.getRunCount()
-                    + " | Used credits=" + usedCredits);
+            program.recordRun(usedCredits);
+            System.out.println("✅ Updated " + program.getName() +
+                    " | Runs=" + program.getRunCount() +
+                    " | AvgCredits=" + program.getAverageCredits());
         } else {
-            System.out.println("Program not found in GlobalProgramStore: " + dto.getProgramName());
+            System.out.println("⚠ Program not found in GlobalProgramStore: " + dto.getProgramName());
         }
 
         resp.setStatus(HttpServletResponse.SC_OK);
     }
+
 }

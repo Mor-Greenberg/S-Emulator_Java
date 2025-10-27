@@ -24,9 +24,17 @@ public class UserManager {
         return users.computeIfAbsent(username, User::new);
     }
     public void addRun(String username, UserRunEntryDTO entry) {
-        userHistories.computeIfAbsent(username, k -> Collections.synchronizedList(new ArrayList<>()))
+        userHistories
+                .computeIfAbsent(username, k -> Collections.synchronizedList(new ArrayList<>()))
                 .add(entry);
+
+        User user = users.computeIfAbsent(username, User::new);
+        user.incrementExecutionCount();
+
+        int usedCredits = entry.getCycles() + entry.getArchitecture().getCreditsCost();
+        user.tryDeductCredits(usedCredits);
     }
+
 
 
     public List<UserRunEntryDTO> getUserHistory(String username) {

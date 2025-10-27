@@ -190,7 +190,7 @@ public class ExecutionRunner {
             long result = executeBlackBox(context, program);
             updateUIAfterExecution(program, context.getVariableState(), filtered);
 
-            saveRunHistory(program, context, result, 0, false);
+            saveRunHistory(program, context, result, executedCycles, false);
             return;
         }
 
@@ -251,7 +251,6 @@ public class ExecutionRunner {
             expandedProgram = program;
             debugInstructions = new ArrayList<>(program.getInstructions());
             setupDebugUI(debugInstructions);
-            saveRunHistory(program, debugContext, result, 0, true);
             return;
         }
 
@@ -394,6 +393,13 @@ public class ExecutionRunner {
                     ctrl.updateVariablesView();
                     ctrl.updateCyclesView(executedCycles);
 
+                    ctrl.updateSummaryView(
+                            debugInstructions.size(),
+                            (int) debugInstructions.stream().filter(i -> i.getType().toString().equals("B")).count(),
+                            (int) debugInstructions.stream().filter(i -> i.getType().toString().equals("S")).count(),
+                            executedCycles
+                    );
+
                 });
 
                 currentIndex++;
@@ -448,8 +454,9 @@ public class ExecutionRunner {
                     filtered.size(),
                     (int) filtered.stream().filter(i -> i.getType().toString().equals("B")).count(),
                     (int) filtered.stream().filter(i -> i.getType().toString().equals("S")).count(),
-                    filtered.stream().mapToInt(Instruction::getCycles).sum()
+                    executedCycles
             );
+
             ctrl.updateCyclesView(filtered.stream().mapToInt(Instruction::getCycles).sum());
         });
     }

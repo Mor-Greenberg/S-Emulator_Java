@@ -1,6 +1,5 @@
 package dto;
 
-
 import user.User;
 
 public class UserStatsDTO {
@@ -10,6 +9,7 @@ public class UserStatsDTO {
     private final int currentCredits;
     private final int usedCredits;
     private final int executionCount;
+    private final double averageCreditsPerRun; // ✅ חדש
 
     public UserStatsDTO(User user) {
         this.name = user.getUsername();
@@ -18,6 +18,10 @@ public class UserStatsDTO {
         this.currentCredits = user.getCredits();
         this.usedCredits = user.getUsedCredits();
         this.executionCount = user.getExecutionCount();
+
+        this.averageCreditsPerRun = (executionCount > 0)
+                ? (double) usedCredits / executionCount
+                : 0.0;
     }
 
     public String getName() { return name; }
@@ -26,5 +30,5 @@ public class UserStatsDTO {
     public int getCurrentCredits() { return currentCredits; }
     public int getUsedCredits() { return usedCredits; }
     public int getExecutionCount() { return executionCount; }
+    public double getAverageCreditsPerRun() { return averageCreditsPerRun; }
 }
-
