@@ -99,19 +99,13 @@ public class ExecutionBoardController {
     public static ExecutionBoardController getInstance() {
         return instance;
     }
-
-
-
-
-    // =====================================================
-    // Initialization
-    // =====================================================
     @FXML
     public void initialize() {
         String username = UserSession.getUsername();
         userNameField.setText(username);
 
-        instance=this;
+        instance = this;
+
         // --- Instructions Table setup ---
         colIndex.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getNumber()));
         colBS.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getType()));
@@ -120,6 +114,8 @@ public class ExecutionBoardController {
         colCycles.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getCycles()));
         colArch.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getArchitecture()));
         instructionsTable.setItems(instructionData);
+
+        // --- Instruction selection logic ---
         instructionsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldRow, newRow) -> {
             if (newRow == null) {
                 historyContainer.getChildren().clear();
@@ -140,46 +136,28 @@ public class ExecutionBoardController {
             }
         });
 
-
-
         // --- Variables Table setup ---
         variableNameCol.setCellValueFactory(data -> data.getValue().nameProperty());
-        variableValueCol.setCellValueFactory(
-                data -> data.getValue().nameProperty().length());
+        variableValueCol.setCellValueFactory(data -> data.getValue().valueProperty());
 
-        // Listener to handle completed program runs
+        // --- רישום Listener לריצה שהושלמה ---
+        // כאן אנחנו לא שולחים שום בקשת HTTP! רק מעדכנים את הדאשבורד
         ExecutionRunner.setRunCompletionListener(dto -> {
-            String json = new Gson().toJson(dto);
-            Request request = new Request.Builder()
-                    .url("http://localhost:8080/S-Emulator/api/add-run")
-                    .post(RequestBody.create(json, MediaType.get("application/json")))
-                    .build();
+            Platform.runLater(() -> {
+                try {
+                    DashboardController.refreshProgramsFromServer();  // טבלת התוכניות
+                } catch (Exception ignored) {}
 
-            HttpClientUtil.getClient().newCall(request).enqueue(new Callback() {
-                @Override
-                public void onFailure(Call call, IOException e) {
-                    System.err.println("Failed to report run completion: " + e.getMessage());
-                }
+                try {
+                    ui.dashboard.UserHistory.refreshUserHistory();    // היסטוריית המשתמש
+                } catch (Exception ignored) {}
 
-                @Override
-                public void onResponse(Call call, Response response) {
-                    response.close();
-                    System.out.println("Run completion reported to server.");
-
-                    Platform.runLater(() -> {
-                        try {
-                            DashboardController.refreshProgramsFromServer();
-                        } catch (Exception ignored) {}
-                        try {
-                            ui.dashboard.UserHistory.refreshUserHistory();
-                        } catch (Exception ignored) {}
-                    });
-                }
+                try {
+                    creditsLabel.setText("Available Credits: " + UserSession.getUserCredits());
+                } catch (Exception ignored) {}
             });
         });
-
     }
-
 
     // =====================================================
     // Execution Actions
@@ -356,7 +334,9 @@ public class ExecutionBoardController {
 
                 Platform.runLater(() -> {
                     printInstructions(loadedProgram.getInstructions());
+
                 });
+
             }
         });
     }
@@ -589,39 +569,17 @@ public class ExecutionBoardController {
         Platform.runLater(() -> creditsLabel.setText("Available Credits: " + credits));
     }
     private void updateCreditsAfterExecution(String programName, int creditsUsed) {
-        HttpUrl url = HttpUrl.parse("http://localhost:8080/S-Emulator/execution-update")
-                .newBuilder()
-                .addQueryParameter("program", programName)
-                .addQueryParameter("creditsUsed", String.valueOf(creditsUsed))
-                .build();
+        // נעדכן את הקרדיטים בלוקאלי בלבד
+        int remaining = UserSession.getUserCredits();
 
-        Request request = new Request.Builder()
-                .url(url)
-                .post(RequestBody.create(new byte[0]))
-                .build();
-
-        HttpClientUtil.getClient().newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                System.err.println("Credit update failed: " + e.getMessage());
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                String body = response.body() != null ? response.body().string() : "";
-                if (!response.isSuccessful()) {
-                    System.err.println("Server returned: " + response.code() + " " + body);
-                    return;
-                }
-
-                JsonObject json = JsonParser.parseString(body).getAsJsonObject();
-                int remaining = json.get("remaining").getAsInt();
-                userCredits = remaining;
-
-                Platform.runLater(() -> creditsLabel.setText("Available Credits: " + remaining));
-            }
+        Platform.runLater(() -> {
+            creditsLabel.setText("Available Credits: " + remaining);
+            System.out.println("Execution completed for " + programName +
+                    " | Credits used: " + creditsUsed +
+                    " | Remaining: " + remaining);
         });
     }
+
     @FXML
     public void onBackToDashboard() {
         Stage stage = (Stage) creditsLabel.getScene().getWindow();

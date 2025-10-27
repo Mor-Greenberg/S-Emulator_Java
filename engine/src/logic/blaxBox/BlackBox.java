@@ -104,7 +104,6 @@ public class BlackBox {
                 JumpEqualFunctionInstruction jef = (JumpEqualFunctionInstruction) instr;
                 Program func = program.getFunctionMap().get(jef.getFunctionName());
                 if (func == null) {
-                    System.out.println("Unknown function in JUMP_EQUAL_FUNCTION: " + jef.getFunctionName());
                     return pc + 1;
                 }
 
@@ -142,14 +141,12 @@ public class BlackBox {
                             program.getFunctionMap(),
                             context.getLoadedPrograms()
                     );
-                    System.out.println("▶ Executing QUOTE for function: " + func.getName());
                     executeBlackBox(subCtx, func);
                 }
                 return pc + 1;
             }
 
             default -> {
-                System.out.println("⚠ Unsupported step for: " + name);
                 return pc + 1;
             }
         }

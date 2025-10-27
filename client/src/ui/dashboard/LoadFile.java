@@ -71,7 +71,7 @@ public class LoadFile {
                                 program.getInstructions().size(),
                                 program.calculateMaxDegree(),
                                 program.getRunCount(),
-                                0.0
+                                program.getAverageCredits()
                         );
 
                         RequestBody statsBody = RequestBody.create(

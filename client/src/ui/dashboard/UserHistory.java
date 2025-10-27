@@ -1,6 +1,7 @@
 package ui.dashboard;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import dto.UserRunEntryDTO;
 import javafx.application.Platform;
@@ -86,28 +87,44 @@ public class UserHistory {
 
     public static void sendRunToServer(UserRunEntryDTO dto) {
         String username = UserSession.getUsername();
+
+        // עוטפים את ה־DTO באובייקט JSON עם שם המשתמש
+        JsonObject payload = new JsonObject();
+        payload.addProperty("username", username);
+        payload.add("run", new Gson().toJsonTree(dto));
+
         RequestBody body = RequestBody.create(
-                new Gson().toJson(dto),
+                payload.toString(),
                 MediaType.parse("application/json; charset=utf-8")
         );
 
-
         Request request = new Request.Builder()
-                .url("http://localhost:8080/S-Emulator/api/add-run?username=" + username)
+                .url("http://localhost:8080/S-Emulator/api/add-run")
                 .post(body)
                 .build();
 
-        HttpClientUtil.client.newCall(request).enqueue(new Callback() {
+        HttpClientUtil.getClient().newCall(request).enqueue(new Callback() {
             @Override
-            public void onResponse(Call call, Response response) {
-                System.out.println("Run saved for " + username);
+            public void onResponse(Call call, Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    System.out.println("✅ Run saved for " + username);
+                    Platform.runLater(() -> {
+                        DashboardController.refreshProgramsFromServer();
+                        UserHistory.refreshUserHistory();
+                    });
+                } else {
+                    System.err.println("⚠️ Server error while saving run: " + response.code());
+                }
+                response.close();
             }
+
             @Override
             public void onFailure(Call call, IOException e) {
-                System.err.println("Failed to save run: " + e.getMessage());
+                System.err.println("❌ Failed to save run: " + e.getMessage());
             }
         });
     }
+
     public static void refreshUserHistory() {
         String username = UserSession.getUsername();
         Request request = new Request.Builder()

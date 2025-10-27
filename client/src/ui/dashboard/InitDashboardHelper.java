@@ -102,6 +102,8 @@ public class InitDashboardHelper {
         controller.fetchUsers();
         controller.loadCreditsFromServer();
         controller.fetchProgramsFromServer();
+        controller.programsTable.refresh();
+
 
         // User's Table
         controller.nameColumn.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getName()));
@@ -118,6 +120,17 @@ public class InitDashboardHelper {
         controller.maxDegreeColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getMaxExpansionLevel()).asObject());
         controller.runCountColumn.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getRunCount()).asObject());
         controller.avgCreditsColumn.setCellValueFactory(cell -> new SimpleDoubleProperty(cell.getValue().getAverageCredits()).asObject());
+        controller.avgCreditsColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Double value, boolean empty) {
+                super.updateItem(value, empty);
+                if (empty || value == null) {
+                    setText(null);
+                } else {
+                    setText(String.format("%.2f", value)); // עיגול לשתי ספרות
+                }
+            }
+        });
 
         // Function's table columns
         controller.colFunctionName.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getFunctionName()));
@@ -127,19 +140,22 @@ public class InitDashboardHelper {
         controller.colMaxDegree.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getMaxDegree()));
 
         controller.functionsTable.setItems(controller.functionList);
-
-        // Refresh every second
-        Timer timer = new Timer();
+        Timer timer = new Timer(true);
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
+                if (controller.usersTable.getScene() == null) {
+                    cancel();
+                    return;
+                }
                 Platform.runLater(() -> {
                     controller.fetchUsers();
                     controller.fetchProgramsFromServer();
                     controller.fetchFunctionsFromServer();
                 });
             }
-        }, 0, 3000);
+        }, 3000, 3000);
+
     }
     private static void updateRowStyle(TableRow<UserStatsDTO> row, DashboardController controller) {
         UserStatsDTO current = row.getItem();

@@ -56,6 +56,7 @@ public class ExecutionRunner {
     private static UserRunEntryDTO buildDto(Program program, RunHistoryEntry entry) {
         String runType = (program != null && program.isMain()) ? "Program" : "Function";
         return new UserRunEntryDTO(
+                UserSession.getUsername(),
                 entry.getRunId(),
                 runType,
                 (program != null ? program.getName() : "UNKNOWN"),
@@ -214,8 +215,11 @@ public class ExecutionRunner {
 
 
         int totalUsedCredits = architectureCost + totalCyclesUsed;
-        long result = context.getVariableState().getOrDefault(Variable.RESULT, -1L);
+        long result = context.getVariableState().getOrDefault(Variable.RESULT, 0L);
         saveRunHistory(program, context, result, totalCyclesUsed, false);
+        UserSession.deductCredits(totalUsedCredits);
+        System.out.println("Total deducted: " + totalUsedCredits);
+
 
 
 

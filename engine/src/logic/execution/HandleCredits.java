@@ -18,10 +18,7 @@ public class HandleCredits {
             return -1;
         }
 
-        UserSession.deductCredits(architectureCost);
-       updateCreditsLabel();
-        System.out.println("💰 Deducted architecture cost: " + architectureCost);
-        return architectureCost; // ✅ נחזיר את עלות הארכיטקטורה
+        return architectureCost;
     }
 
 
@@ -29,14 +26,19 @@ public class HandleCredits {
     public static boolean consumeCycles(String programName, int cycles) {
         int current = UserSession.getUserCredits();
         if (current < cycles) {
-            UiUtils.showError("⚠️ Out of credits while running " + programName);
+            UiUtils.showError("Out of credits while running " + programName);
             return false;
         }
 
-        UserSession.deductCredits(cycles);
-        updateCreditsLabel();
         return true;
     }
+    public static void finalizeExecution(String programName, int programCost, int architectureCost) {
+        int total = programCost + architectureCost;
+        UserSession.deductCredits(total);
+        updateCreditsLabel();
+        System.out.println("Total deducted: " + total);
+    }
+
 
 
 }

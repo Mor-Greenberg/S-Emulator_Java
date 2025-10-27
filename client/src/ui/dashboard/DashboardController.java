@@ -115,7 +115,6 @@ public class DashboardController {
     public static void refreshProgramsFromServer() {
         if (instance != null) {
             Platform.runLater(() -> {
-                System.out.println("🔄 Refreshing programs table...");
                 instance.fetchProgramsFromServer();
             });
         } else {
@@ -303,10 +302,15 @@ public class DashboardController {
             controller.setUserCredits(UserSession.getUserCredits());
             controller.architecture = null;
 
-            // פתיחת המסך החדש
             Stage stage = new Stage();
             stage.setTitle("Execution Board – " + program.getName());
             stage.setScene(new Scene(root));
+            stage.setOnHidden(event -> {
+                refreshCreditsFromSession();
+                fetchUsers();
+                fetchProgramsFromServer();
+            });
+
             stage.show();
 
             // סגירת מסך הדאשבורד הקודם
@@ -702,6 +706,9 @@ public class DashboardController {
                 System.out.println("Refreshing user run history...");
                 try {
                     ui.dashboard.UserHistory.refreshUserHistory();
+                    instance.fetchProgramsFromServer();
+                    instance.fetchUsers();
+                    instance.refreshCreditsFromSession();
                 } catch (Exception e) {
                     System.err.println("⚠ Failed to refresh user history: " + e.getMessage());
                 }
@@ -710,6 +717,12 @@ public class DashboardController {
             System.err.println("DashboardController instance is null (cannot refresh history)");
         }
     }
+
+    public void refreshCreditsFromSession() {
+        int credits = UserSession.getUserCredits();
+        Platform.runLater(() -> creditsLabel.setText("Available Credits: " + credits));
+    }
+
 
 
 }
