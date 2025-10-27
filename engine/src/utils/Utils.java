@@ -1,13 +1,12 @@
 package utils;
 
+import logic.architecture.ArchitectureData;
 import logic.execution.ExecutionContext;
-import logic.instruction.AbstractInstruction;
-import logic.instruction.Instruction;
-import logic.instruction.InstructionType;
-import logic.instruction.QuoteInstruction;
+import logic.instruction.*;
 import logic.program.Program;
 
 import java.util.List;
+
 
 public class Utils {
     public static String generateSummary(List<Instruction> instructions) {
@@ -48,4 +47,6 @@ public class Utils {
 
         return maxDegree;
     }
+
+
 }

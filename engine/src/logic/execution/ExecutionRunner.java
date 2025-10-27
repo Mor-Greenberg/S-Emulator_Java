@@ -2,12 +2,16 @@ package logic.execution;
 
 import dto.UserRunEntryDTO;
 import handleExecution.HandleExecution;
+import javafx.scene.control.ChoiceDialog;
 import logic.architecture.ArchitectureData;
+import logic.architecture.ArchitectureRules;
 import logic.history.RunHistoryEntry;
 import logic.instruction.Instruction;
+import logic.instruction.InstructionData;
 import logic.program.Program;
 import logic.Variable.Variable;
 import printExpand.expansion.PrintExpansion;
+import session.UserSession;
 import ui.dashboard.DashboardController;
 import ui.dashboard.UserHistory;
 import ui.executionBoard.ExecutionBoardController;
@@ -71,10 +75,67 @@ public class ExecutionRunner {
 
         if (runCompletionListener != null)
             runCompletionListener.onRunCompleted(buildDto(program, entry));
+        UserHistory.sendRunToServer(buildDto(program, entry));
 
 
+        System.out.println("notifyRunCompleted called for " + program.getName());
         Platform.runLater(DashboardController::refreshProgramsFromServer);
+
     }
+
+    private static boolean validateAllowed(Program program, List<Instruction> instrs) {
+        if (architecture == null) {
+            UiUtils.showError("Please select an architecture before running.");
+            return false;
+        }
+
+        List<String> illegal = new ArrayList<>();
+        for (Instruction i : instrs) {
+            InstructionData id = i.getData();
+            if (!ArchitectureRules.isAllowed(architecture, id)) {
+                String lbl = (i.getLabel() != null) ? i.getLabel().getLabelRepresentation() : "";
+                illegal.add(id.name() + (lbl.isEmpty() ? "" : " @"+lbl));
+            }
+        }
+        if (!illegal.isEmpty()) {
+            UiUtils.showError(
+                    "Program '" + program.getName() + "' contains illegal instructions for " + architecture.name() + ":\n" +
+                            String.join("\n", illegal)
+            );
+            return false;
+        }
+        return true;
+    }
+
+    private static List<Instruction> filterIllegalInstructions(Program program, List<Instruction> instrs) {
+        if (architecture == null) {
+            UiUtils.showError("Please select an architecture before running.");
+            return instrs;
+        }
+
+        List<Instruction> allowed = new ArrayList<>();
+        List<String> removed = new ArrayList<>();
+
+        for (Instruction i : instrs) {
+            InstructionData id = i.getData();
+            if (ArchitectureRules.isAllowed(architecture, id)) {
+                allowed.add(i);
+            } else {
+                String lbl = (i.getLabel() != null) ? i.getLabel().getLabelRepresentation() : "";
+                removed.add(id.name() + (lbl.isEmpty() ? "" : " @" + lbl));
+            }
+        }
+
+        if (!removed.isEmpty()) {
+            UiUtils.showAlert(
+                    "Some instructions were removed because they are not supported by " + architecture.name() + ":\n" +
+                            String.join("\n", removed)
+            );
+        }
+
+        return allowed;
+    }
+
 
 
 
@@ -82,6 +143,35 @@ public class ExecutionRunner {
     // NORMAL RUN
     // =====================================================
     public static void runProgram(Program program) {
+        if (architecture == null) {
+            // פתח דיאלוג בחירת ארכיטקטורה
+            ChoiceDialog<ArchitectureData> dialog = new ChoiceDialog<>(ArchitectureData.I, ArchitectureData.values());
+            dialog.setTitle("Select Architecture");
+            dialog.setHeaderText("Please choose an execution architecture:");
+            dialog.setContentText("Available architectures:");
+            Optional<ArchitectureData> choice = dialog.showAndWait();
+
+            if (choice.isEmpty()) {
+                UiUtils.showError("No architecture selected — execution cancelled.");
+                return;
+            }
+
+            ArchitectureData selected = choice.get();
+            int cost = selected.getCreditsCost();
+            int userCredits=UserSession.getUserCredits();
+
+            // נניח שיש לך משתנה userCredits גלובלי או דרך UserSession
+            if (userCredits < cost) {
+                UiUtils.showError("Not enough credits for " + selected.name());
+                return;
+            }
+
+            userCredits -= cost;
+            architecture = selected;
+
+            UiUtils.showAlert("Architecture '" + selected.name() + "' selected.\nCost: " + cost + " credits.");
+        }
+
         Map<Variable, Long> variableState = new HashMap<>();
         ExecutionContextImpl context = new ExecutionContextImpl(variableState);
         context.setFunctionMap(program.getFunctionMap());
@@ -92,18 +182,24 @@ public class ExecutionRunner {
         if (architectureCost < 0)
             return;
 
+
         // === דרגה 0 ===
         if (currentDegree == 0) {
+            List<Instruction> filtered = filterIllegalInstructions(program, program.getInstructions());
             long result = executeBlackBox(context, program);
-            updateUIAfterExecution(program, context.getVariableState(), program.getInstructions());
+            updateUIAfterExecution(program, context.getVariableState(), filtered);
+
             saveRunHistory(program, context, result, 0, false);
-            program.recordRun(architectureCost);
             return;
         }
 
         program.expandToDegree(currentDegree, context);
         expandedProgram = program;
         List<Instruction> activeInstr = program.getActiveInstructions();
+        activeInstr = filterIllegalInstructions(program, activeInstr);
+
+
+
         int totalCyclesUsed = 0;
 
         for (Instruction instr : activeInstr) {
@@ -118,8 +214,10 @@ public class ExecutionRunner {
 
 
         int totalUsedCredits = architectureCost + totalCyclesUsed;
+        long result = context.getVariableState().getOrDefault(Variable.RESULT, -1L);
+        saveRunHistory(program, context, result, totalCyclesUsed, false);
 
-        program.recordRun(totalUsedCredits);
+
 
     }
 
@@ -219,7 +317,6 @@ public class ExecutionRunner {
                 saveRunHistory(expandedProgram, debugContext, result, executedCycles, true);
 
             }
-            expandedProgram.recordRun(executedCycles);
 
             return;
         }
@@ -258,7 +355,6 @@ public class ExecutionRunner {
                     executedCycles
             );
         });
-        expandedProgram.recordRun(executedCycles);
 
 
         currentIndex++;
@@ -293,7 +389,6 @@ public class ExecutionRunner {
                     ctrl.highlightCurrentInstruction(rowIndex);
                     ctrl.updateVariablesView();
                     ctrl.updateCyclesView(executedCycles);
-                    expandedProgram.recordRun(executedCycles);
 
                 });
 
@@ -323,10 +418,16 @@ public class ExecutionRunner {
     private static void updateUIAfterExecution(Program program, Map<Variable, Long> vars, List<Instruction> instructions) {
         Platform.runLater(() -> {
             ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
-            ctrl.setOriginalInstructions(instructions);
+
+            List<Instruction> filtered = instructions.stream()
+                    .filter(i -> ArchitectureRules.isAllowed(architecture, i.getData()))
+                    .toList();
+
+            ctrl.setOriginalInstructions(filtered);
             ctrl.clearInstructionTable();
+
             int counter = 1;
-            for (Instruction instr : instructions) {
+            for (Instruction instr : filtered) {
                 InstructionRow row = new InstructionRow(
                         counter++,
                         instr.getType().toString(),
@@ -337,16 +438,18 @@ public class ExecutionRunner {
                 );
                 ctrl.addInstructionRow(row);
             }
+
             ctrl.updateVariablesView();
             ctrl.updateSummaryView(
-                    instructions.size(),
-                    (int) instructions.stream().filter(i -> i.getType().toString().equals("B")).count(),
-                    (int) instructions.stream().filter(i -> i.getType().toString().equals("S")).count(),
-                    instructions.stream().mapToInt(Instruction::getCycles).sum()
+                    filtered.size(),
+                    (int) filtered.stream().filter(i -> i.getType().toString().equals("B")).count(),
+                    (int) filtered.stream().filter(i -> i.getType().toString().equals("S")).count(),
+                    filtered.stream().mapToInt(Instruction::getCycles).sum()
             );
-            ctrl.updateCyclesView(instructions.stream().mapToInt(Instruction::getCycles).sum());
+            ctrl.updateCyclesView(filtered.stream().mapToInt(Instruction::getCycles).sum());
         });
     }
+
     private static void saveRunHistory(Program program, ExecutionContext context, long result, int cycles, boolean debug) {
         RunHistoryEntry entry = new RunHistoryEntry(runCounter++, currentDegree, lastInputsMap, result, cycles, debug);
         history.add(entry);

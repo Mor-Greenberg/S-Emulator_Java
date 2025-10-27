@@ -29,4 +29,5 @@ public interface Instruction {
     boolean jumpsTo(Label label);
     void replaceJumpLabel(Label from, Label to);
 
+    InstructionData getData();
 }

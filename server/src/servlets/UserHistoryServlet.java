@@ -9,8 +9,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import user.UserManager;
 
 import java.io.IOException;
-import java.util.List;
-
 @WebServlet("/api/user-history")
 public class UserHistoryServlet extends HttpServlet {
     private final Gson gson = new Gson();
@@ -20,21 +18,19 @@ public class UserHistoryServlet extends HttpServlet {
         String username = req.getParameter("username");
         if (username == null || username.isEmpty()) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("{\"error\":\"Missing username parameter\"}");
             return;
         }
 
-        UserManager userManager = UserManager.getInstance();
-        List<UserRunEntryDTO> history = userManager.getUserHistory(username);
-
-        if (history == null) {
-            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            resp.getWriter().write("{\"error\": \"No history found for user: " + username + "\"}");
+        UserManager userManager = (UserManager) getServletContext().getAttribute("userManager");
+        if (userManager == null) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             return;
         }
 
-        String json = gson.toJson(history);
-        resp.setContentType("application/json; charset=UTF-8");
-        resp.getWriter().write(json);
+        var runs = userManager.getUserHistory(username);
+
+        resp.setContentType("application/json");
+        resp.setCharacterEncoding("UTF-8");
+        resp.getWriter().write(gson.toJson(runs));
     }
 }

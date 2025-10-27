@@ -54,7 +54,7 @@ public class ExecutionUpdateServlet extends HttpServlet {
             return;
         }
 
-        System.out.println("✅ Updated execution count for " + username +
+        System.out.println("Updated execution count for " + username +
                 " (program=" + programName + ", creditsUsed=" + creditsUsed + ")");
 
         resp.setStatus(HttpServletResponse.SC_OK);

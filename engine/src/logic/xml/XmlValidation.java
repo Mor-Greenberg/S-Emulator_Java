@@ -8,7 +8,6 @@ import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static logic.execution.ExecutionContextImpl.getGlobalProgramMap;
 
 public class XmlValidation {
 

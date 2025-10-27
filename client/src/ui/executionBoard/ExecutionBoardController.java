@@ -6,10 +6,12 @@ import com.google.gson.JsonParser;
 import dto.ProgramStatsDTO;
 import gui.reRun.ReRunService;
 import logic.architecture.ArchitectureData;
+import logic.architecture.ArchitectureRules;
 import logic.execution.ExecutionContext;
 import logic.execution.HandleCredits;
 import logic.instruction.AbstractInstruction;
 import printExpand.expansion.Expand;
+import ui.dashboard.DashboardController;
 import ui.executionBoard.highlightSelectionPopup.HighlightAction;
 import ui.executionBoard.highlightSelectionPopup.HighlightChoiceListener;
 import ui.executionBoard.highlightSelectionPopup.HighlightSelectionController;
@@ -145,6 +147,37 @@ public class ExecutionBoardController {
         variableValueCol.setCellValueFactory(
                 data -> data.getValue().nameProperty().length());
 
+        // Listener to handle completed program runs
+        ExecutionRunner.setRunCompletionListener(dto -> {
+            String json = new Gson().toJson(dto);
+            Request request = new Request.Builder()
+                    .url("http://localhost:8080/S-Emulator/api/add-run")
+                    .post(RequestBody.create(json, MediaType.get("application/json")))
+                    .build();
+
+            HttpClientUtil.getClient().newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    System.err.println("Failed to report run completion: " + e.getMessage());
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) {
+                    response.close();
+                    System.out.println("Run completion reported to server.");
+
+                    Platform.runLater(() -> {
+                        try {
+                            DashboardController.refreshProgramsFromServer();
+                        } catch (Exception ignored) {}
+                        try {
+                            ui.dashboard.UserHistory.refreshUserHistory();
+                        } catch (Exception ignored) {}
+                    });
+                }
+            });
+        });
+
     }
 
 
@@ -278,17 +311,21 @@ public class ExecutionBoardController {
     public void printInstructions(List<Instruction> instructions) {
         ObservableList<InstructionRow> rows = FXCollections.observableArrayList();
         int counter = 1;
+
         for (Instruction instr : instructions) {
-            String bs = (instr.getType() != null) ? instr.getType().toString() : "";
-            String label = (instr.getLabel() != null) ? instr.getLabel().toString() : "";
+            String bs = instr.getType() != null ? instr.getType().toString() : "";
+            String label = instr.getLabel() != null ? instr.getLabel().toString() : "";
             String command = instr.commandDisplay();
             int cycles = instr.getCycles();
-            rows.add(new InstructionRow(counter++, bs, label, command, cycles, "RISC-V"));
+
+            ArchitectureData minArch = ArchitectureRules.getMinArchitectureFor(instr.getData());
+            String archName = (minArch != null) ? minArch.name() : "";
+
+            rows.add(new InstructionRow(counter++, bs, label, command, cycles, archName));
         }
+
         originalInstructions = instructions;
-        Platform.runLater(() -> {
-            instructionsTable.setItems(rows);
-        });
+        Platform.runLater(() -> instructionsTable.setItems(rows));
     }
 
 
@@ -454,7 +491,6 @@ public class ExecutionBoardController {
             return;
         }
 
-        // 🧠 Architecture not selected yet
         if (architecture == null) {
             UiUtils.showError("No architecture selected.\nPlease select an architecture before re-running the program.");
             return;

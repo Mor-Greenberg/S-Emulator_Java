@@ -20,11 +20,12 @@ public abstract class AbstractInstruction implements Instruction {
 
 
 
-    public AbstractInstruction(InstructionData instructionData, Variable variable,InstructionType type) {
+
+    public AbstractInstruction(InstructionData instructionData, Variable variable, InstructionType type) {
         this(instructionData, variable, FixedLabel.EMPTY, type);
     }
 
-    public AbstractInstruction(InstructionData instructionData, Variable variable, Label label,InstructionType type) {
+    public AbstractInstruction(InstructionData instructionData, Variable variable, Label label, InstructionType type) {
         this.instructionData = instructionData;
         this.label = label;
         this.variable = variable;
@@ -32,6 +33,10 @@ public abstract class AbstractInstruction implements Instruction {
         this.uniqueId = nextId++;
     }
 
+
+    public InstructionData getData() {
+        return instructionData;
+    }
 
 
     @Override
@@ -60,6 +65,7 @@ public abstract class AbstractInstruction implements Instruction {
     public static void resetIdCounter() {
         nextId = 1;
     }
+
 
 
 

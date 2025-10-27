@@ -22,6 +22,7 @@ import java.util.List;
 
 
 public class UserHistory {
+    private static TableView<UserRunEntryDTO> historyTable = null;
     public static void showUserHistoryPopup(String username) {
         String url = "http://localhost:8080/S-Emulator/api/user-history?username=" + username;
         Request request = new Request.Builder().url(url).build();
@@ -63,6 +64,10 @@ public class UserHistory {
 
         table.setItems(FXCollections.observableList(runs));
 
+        historyTable = table;
+
+        popup.setOnCloseRequest(e -> historyTable = null); // ניקוי כשהפופאפ נסגר
+
         VBox root = new VBox(10, table);
         root.setPadding(new Insets(10));
 
@@ -70,6 +75,7 @@ public class UserHistory {
         popup.setScene(scene);
         popup.show();
     }
+
 
     private static <T> TableColumn<UserRunEntryDTO, T> createColumn(String title, String property, int width) {
         TableColumn<UserRunEntryDTO, T> col = new TableColumn<>(title);
@@ -99,6 +105,29 @@ public class UserHistory {
             @Override
             public void onFailure(Call call, IOException e) {
                 System.err.println("Failed to save run: " + e.getMessage());
+            }
+        });
+    }
+    public static void refreshUserHistory() {
+        String username = UserSession.getUsername();
+        Request request = new Request.Builder()
+                .url("http://localhost:8080/S-Emulator/api/user-history?username=" + username)
+                .get()
+                .build();
+
+        HttpClientUtil.getClient().newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                System.err.println("Failed to refresh user history: " + e.getMessage());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (!response.isSuccessful() || response.body() == null) return;
+                String json = response.body().string();
+                Type listType = new TypeToken<List<UserRunEntryDTO>>(){}.getType();
+                List<UserRunEntryDTO> runs = new Gson().fromJson(json, listType);
+
             }
         });
     }

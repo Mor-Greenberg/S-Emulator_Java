@@ -125,9 +125,14 @@ public class DashboardController {
 
     private static DashboardController instance;
 
+    public static DashboardController getInstance() {
+        return instance ;
+    }
+
+
     @FXML
     public void initialize() {
-        instance = this; // ✅ רק אחרי שטעינת ה־FXML הושלמה
+        instance = this;
         InitDashboardHelper.initialize(this);
     }
 
@@ -688,6 +693,21 @@ public class DashboardController {
             }
 
             return XmlLoader.fromXmlString(xml, username);
+        }
+    }
+
+    public static void refreshUserHistory() {
+        if (instance != null) {
+            Platform.runLater(() -> {
+                System.out.println("Refreshing user run history...");
+                try {
+                    ui.dashboard.UserHistory.refreshUserHistory();
+                } catch (Exception e) {
+                    System.err.println("⚠ Failed to refresh user history: " + e.getMessage());
+                }
+            });
+        } else {
+            System.err.println("DashboardController instance is null (cannot refresh history)");
         }
     }
 
