@@ -79,4 +79,11 @@ public class UserManager {
     public Map<String, User> getAllUsers() { return users; }
 
     public boolean userExists(String username) { return users.containsKey(username); }
+    public void recordExecution(String username, String programName, int creditsUsed) {
+        User u = getUser(username);
+        if (u != null) {
+            u.recordExecution(programName, creditsUsed);
+        }
+    }
+
 }

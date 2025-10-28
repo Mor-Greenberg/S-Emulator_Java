@@ -114,6 +114,35 @@ public class ExecutionBoardController {
         colCycles.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getCycles()));
         colArch.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getArchitecture()));
         instructionsTable.setItems(instructionData);
+        instructionsTable.setRowFactory(tv -> new TableRow<InstructionRow>() {
+            @Override
+            protected void updateItem(InstructionRow row, boolean empty) {
+                super.updateItem(row, empty);
+
+                if (empty || row == null) {
+                    setStyle("");
+                    return;
+                }
+
+                ArchitectureData selectedArch = ExecutionRunner.architecture;
+
+                if (selectedArch != null && row.getArchitecture() != null && !row.getArchitecture().isEmpty()) {
+                    try {
+                        ArchitectureData instrArch = ArchitectureData.valueOf(row.getArchitecture());
+
+                        if (instrArch.ordinal() > selectedArch.ordinal()) {
+                            setStyle("-fx-background-color: #ffcccc;");
+                        } else {
+                            setStyle("");
+                        }
+                    } catch (IllegalArgumentException e) {
+                        setStyle("");
+                    }
+                } else {
+                    setStyle("");
+                }
+            }
+        });
 
         // --- Instruction selection logic ---
         instructionsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldRow, newRow) -> {
@@ -140,16 +169,14 @@ public class ExecutionBoardController {
         variableNameCol.setCellValueFactory(data -> data.getValue().nameProperty());
         variableValueCol.setCellValueFactory(data -> data.getValue().valueProperty());
 
-        // --- רישום Listener לריצה שהושלמה ---
-        // כאן אנחנו לא שולחים שום בקשת HTTP! רק מעדכנים את הדאשבורד
         ExecutionRunner.setRunCompletionListener(dto -> {
             Platform.runLater(() -> {
                 try {
-                    DashboardController.refreshProgramsFromServer();  // טבלת התוכניות
+                    DashboardController.refreshProgramsFromServer();
                 } catch (Exception ignored) {}
 
                 try {
-                    ui.dashboard.UserHistory.refreshUserHistory();    // היסטוריית המשתמש
+                    ui.dashboard.UserHistory.refreshUserHistory();
                 } catch (Exception ignored) {}
 
                 try {
@@ -299,7 +326,7 @@ public class ExecutionBoardController {
             ArchitectureData minArch = ArchitectureRules.getMinArchitectureFor(instr.getData());
             String archName = (minArch != null) ? minArch.name() : "";
 
-            rows.add(new InstructionRow(counter++, bs, label, command, cycles, archName));
+            rows.add(new InstructionRow(counter++, bs, label, command, cycles, archName,false));
         }
 
         originalInstructions = instructions;
@@ -358,14 +385,6 @@ public class ExecutionBoardController {
     }
 
 
-    public void updateSummaryView(int total, int basic, int synthetic, int cycles) {
-        Platform.runLater(() -> {
-            summaryLabel.setText(
-                    String.format("SUMMARY: Total instructions: %d | Basic: %d | Synthetic: %d | cycles: %d",
-                            total, basic, synthetic, cycles)
-            );
-        });
-    }
 
     public TableView<InstructionRow> getInstructionTable() {
         return instructionsTable;
@@ -569,7 +588,6 @@ public class ExecutionBoardController {
         Platform.runLater(() -> creditsLabel.setText("Available Credits: " + credits));
     }
     private void updateCreditsAfterExecution(String programName, int creditsUsed) {
-        // נעדכן את הקרדיטים בלוקאלי בלבד
         int remaining = UserSession.getUserCredits();
 
         Platform.runLater(() -> {
@@ -630,12 +648,21 @@ public class ExecutionBoardController {
         Platform.runLater(() -> creditsLabel.setText("Available Credits: " + userCredits));
 
         UiUtils.showAlert("Architecture '" + chosenArch.name() + "' selected.\nCost: " + cost + " credits.");
+        instructionsTable.refresh();
+
     }
 
 
     private final ExpandedTable expandedTable = new ExpandedTable();
 
-
+    public void updateSummaryLine(String text) {
+        if (summaryLabel == null)
+            return;
+        Platform.runLater(() -> {
+            summaryLabel.setText(text);
+            summaryLabel.setTooltip(new Tooltip(text));
+        });
+    }
 
 }
 

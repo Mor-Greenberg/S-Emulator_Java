@@ -3,6 +3,7 @@ package ui.executionBoard.instructionTable;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import logic.instruction.Instruction;
+import logic.instruction.InstructionData;
 import logic.label.FixedLabel;
 
 import java.util.Arrays;
@@ -18,16 +19,28 @@ public class InstructionRow {
     private final SimpleStringProperty command;
     private final SimpleIntegerProperty cycles;
     private final SimpleStringProperty architecture;
+    private boolean unsupported;
+    private InstructionData data;
+
+    public InstructionData getData() {
+        return data;
+    }
+    public void setData(InstructionData data) {
+        this.data = data;
+    }
 
 
 
-    public InstructionRow(int number, String type, String label, String command, int cycles, String architecture) {
+
+
+    public InstructionRow(int number, String type, String label, String command, int cycles, String architecture, boolean unsupported) {
         this.number = new SimpleIntegerProperty(number);
         this.type = new SimpleStringProperty(type);
         this.label = new SimpleStringProperty(label);
         this.command = new SimpleStringProperty(command);
         this.cycles = new SimpleIntegerProperty(cycles);
         this.architecture = new SimpleStringProperty(architecture);
+        this.unsupported = unsupported;
     }
 
     public int getNumber() { return number.get(); }
@@ -80,6 +93,8 @@ public class InstructionRow {
     }
 
 
-
+    public void setUnsupported(boolean b) {
+        this.unsupported=b;
+    }
 }
 

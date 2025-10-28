@@ -64,7 +64,7 @@ public static void expandAction(Program loadedProgram, ArchitectureData architec
                     instr.getType().toString(),
                     instr.getLabel() != null ? instr.getLabel().getLabelRepresentation() : "",
                     instr.commandDisplay(),
-                    instr.getCycles(),architecture.name()
+                    instr.getCycles(),architecture.name(),false
             ));
         }
 
@@ -138,7 +138,7 @@ public static void expandAction(Program loadedProgram, ArchitectureData architec
                     instr.getLabel() != null ? instr.getLabel().toString() : "",
                     instr.commandDisplay(),
                     instr.getCycles(),
-                    instr.getArchitecture()
+                    instr.getArchitecture(),false
             ));
         }
         table.setItems(rows);

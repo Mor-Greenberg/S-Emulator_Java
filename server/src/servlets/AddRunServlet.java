@@ -15,11 +15,8 @@ import java.io.IOException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-
 @WebServlet("/api/add-run")
 public class AddRunServlet extends HttpServlet {
-
     private final Gson gson = new Gson();
 
     @Override
@@ -38,19 +35,23 @@ public class AddRunServlet extends HttpServlet {
         UserManager userManager = UserManager.getInstance();
         userManager.addRun(username, dto);
 
+        // ✅ חישוב קרדיטים לשם הסטטיסטיקה של התוכנית בלבד
         int usedCredits = dto.getCycles() + dto.getArchitecture().getCreditsCost();
 
-
-
+        // ✅ עדכון ה־Program בלבד (לא המשתמש)
         Program program = GlobalProgramStore.getProgramCache().get(dto.getProgramName());
         if (program != null) {
             program.recordRun(usedCredits);
             System.out.println("Updated " + dto.getProgramName() + " | Runs=" + program.getRunCount() + " | Avg=" + program.getAverageCredits());
         }
 
+        // ❌ אין כאן user.trackExecutionIfEnough
+        // ❌ אין כאן שינוי בקרדיטים
+
         System.out.println("Added run for user: " + username +
                 " | program=" + dto.getProgramName() +
-                " | usedCredits=" + usedCredits );
+                " | usedCredits=" + usedCredits);
+
         resp.setStatus(HttpServletResponse.SC_OK);
     }
 }

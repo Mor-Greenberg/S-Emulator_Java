@@ -1,32 +1,56 @@
 package utils;
 
-import logic.architecture.ArchitectureData;
+import javafx.application.Platform;
+import logic.architecture.ArchitectureRules;
 import logic.execution.ExecutionContext;
+import logic.execution.ExecutionRunner;
 import logic.instruction.*;
 import logic.program.Program;
+import ui.executionBoard.ExecutionBoardController;
 
 import java.util.List;
 
 
+
 public class Utils {
     public static String generateSummary(List<Instruction> instructions) {
-        long basicCount = instructions.stream()
+        if (instructions == null || instructions.isEmpty())
+            return null;
+
+        long total = instructions.size();
+        long basic = instructions.stream()
                 .filter(instr -> instr.getType() == InstructionType.B)
                 .count();
 
-        long syntheticCount = instructions.stream()
+        long synthetic = instructions.stream()
                 .filter(instr -> instr.getType() == InstructionType.S)
                 .count();
 
-        long cyclesCount = instructions.stream()
+        long cycles = instructions.stream()
                 .mapToLong(Instruction::getCycles)
                 .sum();
 
-        return "SUMMARY: Total instructions: " + instructions.size()
-                + " | Basic: " + basicCount
-                + " | Synthetic: " + syntheticCount
-                + " | cycles: " + cyclesCount;
+        long supported = 0;
+        if (ExecutionRunner.architecture != null) {
+            supported = instructions.stream()
+                    .filter(instr -> ArchitectureRules.isAllowed(ExecutionRunner.architecture, instr.getData()))
+                    .count();
+        }
+
+        String summary = String.format(
+                "SUMMARY: total: %d | basic: %d | synthetic: %d | cycles: %d | supported: %d",
+                total, basic, synthetic, cycles, supported
+        );
+
+        Platform.runLater(() -> {
+            ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
+            if (ctrl != null) {
+                ctrl.updateSummaryLine(summary);
+            }
+        });
+        return summary;
     }
+
 
     public static int computeProgramDegree(Program program, ExecutionContext context) {
         int maxDegree = 0;

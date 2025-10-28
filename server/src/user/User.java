@@ -117,6 +117,14 @@ public class User {
         if (runs == 0) return 0;
         return (double) programUsedCredits.getOrDefault(programName, 0) / runs;
     }
+    public void recordExecution(String programName, int creditsUsed) {
+        synchronized (lock) {
+            programRunCounts.merge(programName, 1, Integer::sum);
+            programUsedCredits.merge(programName, creditsUsed, Integer::sum);
+            executionCount++;
+        }
+    }
+
 
 
 

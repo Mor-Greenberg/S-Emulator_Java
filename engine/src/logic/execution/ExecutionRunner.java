@@ -145,7 +145,6 @@ public class ExecutionRunner {
     // =====================================================
     public static void runProgram(Program program) {
         if (architecture == null) {
-            // פתח דיאלוג בחירת ארכיטקטורה
             ChoiceDialog<ArchitectureData> dialog = new ChoiceDialog<>(ArchitectureData.I, ArchitectureData.values());
             dialog.setTitle("Select Architecture");
             dialog.setHeaderText("Please choose an execution architecture:");
@@ -161,7 +160,6 @@ public class ExecutionRunner {
             int cost = selected.getCreditsCost();
             int userCredits=UserSession.getUserCredits();
 
-            // נניח שיש לך משתנה userCredits גלובלי או דרך UserSession
             if (userCredits < cost) {
                 UiUtils.showError("Not enough credits for " + selected.name());
                 return;
@@ -184,7 +182,6 @@ public class ExecutionRunner {
             return;
 
 
-        // === דרגה 0 ===
         if (currentDegree == 0) {
             List<Instruction> filtered = filterIllegalInstructions(program, program.getInstructions());
             long result = executeBlackBox(context, program);
@@ -219,9 +216,6 @@ public class ExecutionRunner {
         saveRunHistory(program, context, result, totalCyclesUsed, false);
         UserSession.deductCredits(totalUsedCredits);
         System.out.println("Total deducted: " + totalUsedCredits);
-
-
-
 
     }
 
@@ -270,14 +264,12 @@ public class ExecutionRunner {
         if (currentDegree == 0) {
             if (bbPc < 0 || bbPc >= debugInstructions.size()) return;
 
-            int executedIndex = bbPc;
             Instruction instr = debugInstructions.get(bbPc);
 
             bbPc = blackBoxStepDegree0(instr, bbPc, bbLabelToIndex, debugInstructions, debugContext, expandedProgram);
             executedCycles += instr.getCycles();
             currentIndex = bbPc;
 
-            // 💳 Deduct credits after each instruction
             boolean hasCredits = HandleCredits.consumeCycles(expandedProgram.getName(), instr.getCycles());
             if (!hasCredits) return; // stop if credits ran out
 
@@ -292,18 +284,13 @@ public class ExecutionRunner {
                         instr.getLabel() != null ? instr.getLabel().getLabelRepresentation() : "",
                         instr.commandDisplay(),
                         instr.getCycles(),
-                        architecture.toString()
+                        architecture.toString(),false
                 );
                 ctrl.addInstructionRow(row);
                 ctrl.highlightCurrentInstruction(rowNumber - 1);
                 ctrl.updateVariablesView();
                 ctrl.updateCyclesView(executedCycles);
-                ctrl.updateSummaryView(
-                        debugInstructions.size(),
-                        (int) debugInstructions.stream().filter(i -> i.getType().toString().equals("B")).count(),
-                        (int) debugInstructions.stream().filter(i -> i.getType().toString().equals("S")).count(),
-                        executedCycles
-                );
+                generateSummary(debugInstructions);
 
             });
 
@@ -318,6 +305,9 @@ public class ExecutionRunner {
                         true
                 );
                 saveRunHistory(expandedProgram, debugContext, result, executedCycles, true);
+                ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(debugInstructions));
+                ExecutionBoardController.getInstance().updateCyclesView(executedCycles);
+
 
             }
 
@@ -345,18 +335,13 @@ public class ExecutionRunner {
                     currentInstr.getLabel() != null ? currentInstr.getLabel().getLabelRepresentation() : "",
                     currentInstr.commandDisplay(),
                     currentInstr.getCycles(),
-                    architecture.name()
+                    architecture.name(),false
             );
             ctrl.addInstructionRow(row);
             ctrl.highlightCurrentInstruction(rowNumber - 1);
             ctrl.updateVariablesView();
             ctrl.updateCyclesView(executedCycles);
-            ctrl.updateSummaryView(
-                    debugInstructions.size(),
-                    (int) debugInstructions.stream().filter(i -> i.getType().toString().equals("B")).count(),
-                    (int) debugInstructions.stream().filter(i -> i.getType().toString().equals("S")).count(),
-                    executedCycles
-            );
+            generateSummary(debugInstructions);
         });
 
 
@@ -386,19 +371,15 @@ public class ExecutionRunner {
                             currentInstr.getLabel() != null ? currentInstr.getLabel().getLabelRepresentation() : "",
                             currentInstr.commandDisplay(),
                             currentInstr.getCycles(),
-                            architecture.name()
+                            architecture.name(),false
                     );
                     ctrl.addInstructionRow(row);
                     ctrl.highlightCurrentInstruction(rowIndex);
                     ctrl.updateVariablesView();
                     ctrl.updateCyclesView(executedCycles);
+                    generateSummary(debugInstructions);
+                    ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(debugInstructions));
 
-                    ctrl.updateSummaryView(
-                            debugInstructions.size(),
-                            (int) debugInstructions.stream().filter(i -> i.getType().toString().equals("B")).count(),
-                            (int) debugInstructions.stream().filter(i -> i.getType().toString().equals("S")).count(),
-                            executedCycles
-                    );
 
                 });
 
@@ -408,6 +389,10 @@ public class ExecutionRunner {
             if (currentIndex >= debugInstructions.size()) {
                 saveDebugHistory();
                 generateSummary(debugInstructions);
+                ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(debugInstructions));
+                ExecutionBoardController.getInstance().updateCyclesView(executedCycles);
+
+
             }
         }).start();
     }
@@ -419,6 +404,8 @@ public class ExecutionRunner {
         debugMode = false;
         saveDebugHistory();
         generateSummary(debugInstructions);
+        ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(debugInstructions));
+
     }
 
 
@@ -429,9 +416,7 @@ public class ExecutionRunner {
         Platform.runLater(() -> {
             ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
 
-            List<Instruction> filtered = instructions.stream()
-                    .filter(i -> ArchitectureRules.isAllowed(architecture, i.getData()))
-                    .toList();
+            List<Instruction> filtered = new ArrayList<>(instructions);
 
             ctrl.setOriginalInstructions(filtered);
             ctrl.clearInstructionTable();
@@ -444,28 +429,46 @@ public class ExecutionRunner {
                         instr.getLabel() != null ? instr.getLabel().getLabelRepresentation() : "",
                         instr.commandDisplay(),
                         instr.getCycles(),
-                        architecture.name()
+                        architecture.name(),false
                 );
+
+                if (!ArchitectureRules.isAllowed(architecture, instr.getData())) {
+                    row.setUnsupported(true);
+                }
+                row.setData(instr.getData());
+
+
                 ctrl.addInstructionRow(row);
+                ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(instructions));
+
             }
 
-            ctrl.updateVariablesView();
-            ctrl.updateSummaryView(
-                    filtered.size(),
-                    (int) filtered.stream().filter(i -> i.getType().toString().equals("B")).count(),
-                    (int) filtered.stream().filter(i -> i.getType().toString().equals("S")).count(),
-                    executedCycles
-            );
 
-            ctrl.updateCyclesView(filtered.stream().mapToInt(Instruction::getCycles).sum());
+
+            ctrl.updateVariablesView();
+            // === Calculate how many instructions are supported by the selected architecture ===
+            long supportedCount = 0;
+            if (architecture != null) {
+                supportedCount = instructions.stream()
+                        .filter(instr -> {
+                            var minArch = ArchitectureRules.getMinArchitectureFor(instr.getData());
+                            return minArch != null && minArch.ordinal() <= architecture.ordinal();
+                        })
+                        .count();
+            }
+
+            generateSummary(instructions);
         });
     }
 
     private static void saveRunHistory(Program program, ExecutionContext context, long result, int cycles, boolean debug) {
+        generateSummary(program.getInstructions());
         RunHistoryEntry entry = new RunHistoryEntry(runCounter++, currentDegree, lastInputsMap, result, cycles, debug);
         history.add(entry);
 
         notifyRunCompleted(program, entry);
+        ExecutionBoardController.getInstance().updateCyclesView(executedCycles);
+
 
         int totalUsedCredits = architecture.getCreditsCost() + cycles;
         program.recordRun(totalUsedCredits);
@@ -482,18 +485,18 @@ public class ExecutionRunner {
             ctrl.setOriginalInstructions(instructions);
             ctrl.clearInstructionTable();
             ctrl.updateVariablesView();
-            ctrl.updateSummaryView(
-                    instructions.size(),
-                    (int) instructions.stream().filter(i -> i.getType().toString().equals("B")).count(),
-                    (int) instructions.stream().filter(i -> i.getType().toString().equals("S")).count(),
-                    0
-            );
+            generateSummary(instructions);
             ctrl.updateCyclesView(0);
         });
     }
     private static void saveDebugHistory() {
         long result = debugContext.getVariableState().getOrDefault(Variable.RESULT, -1L);
         saveRunHistory(expandedProgram, debugContext, result, executedCycles, true);
+        generateSummary(debugInstructions);
+        ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(debugInstructions));
+        ExecutionBoardController.getInstance().updateCyclesView(executedCycles);
+
+
     }
 
 
@@ -543,6 +546,7 @@ public class ExecutionRunner {
     public static void setPrefilledInputs(Map<Variable, Long> inputs) {
         prefilledInputs = (inputs == null) ? null : new HashMap<>(inputs);
     }
+
 
 
 }

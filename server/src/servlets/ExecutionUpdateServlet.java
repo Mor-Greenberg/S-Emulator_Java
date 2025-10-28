@@ -47,12 +47,10 @@ public class ExecutionUpdateServlet extends HttpServlet {
             return;
         }
 
-        boolean success = userManager.trackExecution(username, programName, creditsUsed);
-        if (!success) {
-            resp.setStatus(HttpServletResponse.SC_PAYMENT_REQUIRED);
-            resp.getWriter().write("{\"error\":\"Not enough credits\",\"remaining\":" + user.getCredits() + "}");
-            return;
-        }
+        userManager.recordExecution(username, programName, creditsUsed);
+        resp.setStatus(HttpServletResponse.SC_OK);
+        resp.getWriter().write("{\"status\":\"ok\",\"remaining\":" + user.getCredits() + "}");
+
 
         System.out.println("Updated execution count for " + username +
                 " (program=" + programName + ", creditsUsed=" + creditsUsed + ")");
