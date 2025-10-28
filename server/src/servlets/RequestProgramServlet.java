@@ -1,5 +1,8 @@
+
 package servlets;
 
+import com.google.gson.Gson;
+import dto.ProgramStatsDTO;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import logic.program.Program;
@@ -20,60 +23,66 @@ public class RequestProgramServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String uploader = (String) req.getSession().getAttribute("username");
-        if (uploader == null) {
-            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            resp.getWriter().write("User not logged in.");
+        resp.setContentType("application/json; charset=UTF-8");
+
+        String uploader = req.getParameter("uploader");
+        if (uploader == null || uploader.isBlank()) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("{\"error\": \"Missing uploader name.\"}");
             return;
         }
 
         String xmlContent = new BufferedReader(new InputStreamReader(req.getInputStream()))
                 .lines().collect(Collectors.joining("\n"));
 
-        String programName = req.getParameter("name");
-        if (programName == null || programName.isBlank()) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Missing program name.");
-            return;
-        }
-
         try {
-            Program program = XmlLoader.fromXmlString(xmlContent,uploader);
+            Program program = XmlLoader.fromXmlString(xmlContent, uploader);
             program.setUploaderName(uploader);
+            String programName = program.getName();
 
-            // Save program and its XML in the hybrid store
             GlobalProgramStore.addProgram(programName, xmlContent, program);
+            GlobalProgramStore.addXml(programName, xmlContent);
             uploaderMap.put(programName, uploader);
+
             System.out.println("Stored main program: " + programName + " (uploader=" + uploader + ")");
 
-            // Save all inner functions too
             int count = 0;
             for (Program func : program.getFunctionMap().values()) {
                 if (func.isFunction()) {
                     GlobalProgramStore.addProgram(func.getName(), xmlContent, func);
+                    GlobalProgramStore.addXml(func.getName(), xmlContent);
                     count++;
                     System.out.println("Added function: " + func.getName() +
-                            " (parent=" + program.getName() + ", uploader=" + uploader + ")");
+                            " (parent=" + programName + ", uploader=" + uploader + ")");
                 }
             }
 
             System.out.println("Total stored items: " + GlobalProgramStore.getProgramCache().size());
-            System.out.println("XML map keys: " + GlobalProgramStore.getXmlMap().keySet());
+            System.out.println("Now in map: " + GlobalProgramStore.getProgramCache().keySet());
 
-            // Update user stats
             UserManager userManager = UserManager.getInstance();
             userManager.incrementMainProgramsUploaded(uploader);
             for (int i = 0; i < count; i++) {
                 userManager.incrementContributedFunctions(uploader);
             }
 
+            ProgramStatsDTO dto = new ProgramStatsDTO(
+                    programName,
+                    uploader,
+                    program.getInstructions().size(),
+                    program.calculateMaxDegree(),
+                    program.getRunCount(),
+                    program.getAverageCredits()
+            );
+
+            String json = new Gson().toJson(dto);
             resp.setStatus(HttpServletResponse.SC_OK);
-            resp.getWriter().write("Program and functions saved successfully.");
+            resp.getWriter().write(json);
 
         } catch (Exception e) {
             e.printStackTrace();
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            resp.getWriter().write("Error parsing XML: " + e.getMessage());
+            resp.getWriter().write("{\"error\": \"" + e.getMessage().replace("\"", "'") + "\"}");
         }
     }
 
@@ -86,20 +95,14 @@ public class RequestProgramServlet extends HttpServlet {
             return;
         }
 
-        // Try cache or parse from XML automatically
-        Program program = GlobalProgramStore.getProgram(programName,uploaderMap.get(programName));
-        if (program == null) {
+        Program program = GlobalProgramStore.getProgram(programName, uploaderMap.get(programName));
+        String xml = GlobalProgramStore.getXml(programName);
+
+
+        if (program == null || xml == null) {
             resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
             resp.getWriter().write("Program/function not found on server.");
             System.out.println(programName + " not found in store");
-            return;
-        }
-
-        // Send the raw XML (what XmlLoader can read)
-        String xml = GlobalProgramStore.getXml(programName);
-        if (xml == null) {
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            resp.getWriter().write("No XML found for " + programName);
             return;
         }
 

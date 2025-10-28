@@ -175,9 +175,6 @@ public class DashboardController {
         LoadFile loadFile = new LoadFile();
         loadFile.loadProgram(event, this);
     }
-
-    @FXML
-    private Button loadFileButton;
     @FXML
     void executeProgramPressed(ActionEvent event) {
         if (selectedProgram == null) {
@@ -186,6 +183,7 @@ public class DashboardController {
         }
 
         String programName = selectedProgram.getProgramName();
+        String username = UserSession.getUsername();
 
         Program localProgram = ExecutionContextImpl.getGlobalProgramMap().get(programName);
         if (localProgram != null) {
@@ -193,11 +191,10 @@ public class DashboardController {
             return;
         }
 
-        String url = "http://localhost:8080/S-Emulator/request-program?name=" + programName;
+        String url = "http://localhost:8080/S-Emulator/load-program?name=" + programName;
         Request request = new Request.Builder().url(url).get().build();
 
         OkHttpClient client = HttpClientUtil.getClient();
-
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
@@ -206,31 +203,31 @@ public class DashboardController {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                if (!response.isSuccessful() || response.body() == null) {
-                    Platform.runLater(() ->
-                            UiUtils.showError("Program unavailable on server."));
-                    return;
-                }
+                try (response) {
+                    if (!response.isSuccessful() || response.body() == null) {
+                        Platform.runLater(() ->
+                                UiUtils.showError("Program unavailable on server (HTTP " + response.code() + ")."));
+                        return;
+                    }
 
-                String xml = response.body().string();
+                    String xml = response.body().string();
 
-                try {
-                    Program program = safeLoadProgram(xml, UserSession.getUsername());
+                    try {
+                        Program program = safeLoadProgram(xml, username);
+                        ExecutionContextImpl.loadProgram(program, xml);
 
-                    ExecutionContextImpl.loadProgram(program, xml);
-                    System.out.println("Loaded program from server: " + program.getName());
+                        System.out.println(" Loaded program from server: " + program.getName());
+                        Platform.runLater(() -> openExecutionBoard(program));
 
-                    Platform.runLater(() -> openExecutionBoard(program));
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    Platform.runLater(() ->
-                            UiUtils.showError("Failed to load program: " + e.getMessage()));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        Platform.runLater(() ->
+                                UiUtils.showError("Failed to parse XML: " + e.getMessage()));
+                    }
                 }
             }
         });
     }
-
 
     private void updateCreditsLabel(int credits) {
         Platform.runLater(() -> creditsLabel.setText("Available Credits: " + credits));
@@ -673,32 +670,42 @@ public class DashboardController {
 
             List<String> missingFunctions = Arrays.stream(msg.split("\n"))
                     .filter(line -> line.contains("undefined function"))
-                    .map(line -> line.substring(line.lastIndexOf(":") + 2).trim())
+                    .map(line -> line.substring(line.lastIndexOf(":") + 1).trim())
+                    .distinct()
                     .toList();
 
 
             for (String funcName : missingFunctions) {
                 try {
-                    String funcUrl = "http://localhost:8080/S-Emulator/request-program?name=" + funcName;
+                    String funcUrl = "http://localhost:8080/S-Emulator/load-program?name=" + funcName;
                     Request req = new Request.Builder().url(funcUrl).get().build();
+
                     try (Response res = HttpClientUtil.getClient().newCall(req).execute()) {
                         if (res.isSuccessful() && res.body() != null) {
                             String funcXml = res.body().string();
-                            Program funcProg = XmlLoader.fromXmlString(funcXml, username);
-                            ExecutionContextImpl.loadProgram(funcProg, funcXml);
-                            System.out.println("Loaded missing dependency: " + funcName);
+
+                            try {
+                                Program funcProg = XmlLoader.fromXmlString(funcXml, username);
+                                ExecutionContextImpl.loadProgram(funcProg, funcXml);
+                                System.out.println(" Loaded missing dependency: " + funcName);
+                            } catch (Exception innerEx) {
+                                System.out.println(" Failed to map function " + funcName + ": " + innerEx.getMessage());
+                            }
                         } else {
-                            System.out.println("Could not load " + funcName + " from server.");
+                            System.out.println(" Could not load " + funcName + " from server. HTTP " + res.code());
                         }
                     }
                 } catch (Exception ex) {
-                    ex.printStackTrace();
+                    System.out.println(" Error fetching " + funcName + ": " + ex.getMessage());
                 }
             }
 
-            return XmlLoader.fromXmlString(xml, username);
+            System.out.println("Retrying XML load after fetching missing dependencies...");
+            return XmlLoader.fromXmlString(xml, username,true);
         }
     }
+
+
 
     public static void refreshUserHistory() {
         if (instance != null) {

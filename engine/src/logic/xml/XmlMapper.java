@@ -1,5 +1,7 @@
 package logic.xml;
 
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.Unmarshaller;
 import jaxbV2.jaxb.v2.*;
 import logic.Variable.QuoteVariable;
 import logic.Variable.Variable;
@@ -10,8 +12,9 @@ import logic.label.FixedLabel;
 import logic.label.Label;
 import logic.program.Program;
 import logic.program.ProgramImpl;
-import session.UserSession;
+import serverProgram.GlobalProgramStore;
 
+import java.io.StringReader;
 import java.util.*;
 
 import static logic.xml.XmlParsingUtils.parseVariable;
@@ -22,16 +25,35 @@ public class XmlMapper {
     public XmlMapper(ExecutionContext context) {
         this.context = context;
     }
+    public Program map(String xml, String uploader, boolean skipExisting) throws Exception {
+        if (!skipExisting) {
+            XmlValidation.validateAll(
+                    "FromString",              // path placeholder
+                    new ProgramImpl("TEMP"),   // dummy program
+                    new ArrayList<>(),         // no new functions yet
+                    GlobalProgramStore.getProgramCache() // current map
+            );
+        } else {
+            System.out.println("⚙ Skipping existing-program validation (retry mode)");
+        }
+
+        JAXBContext context = JAXBContext.newInstance("jaxbV2.jaxb.v2");
+        Unmarshaller unmarshaller = context.createUnmarshaller();
+        StringReader reader = new StringReader(xml);
+        SProgram sProgram = (SProgram) unmarshaller.unmarshal(reader);
+
+        return map(sProgram, "FromString", uploader);
+    }
+
+
 
     public Program map(SProgram sProgram, String path, String uploader) {
         this.context.reset();
-
 
         Map<String, Program> localFunctionMap = new HashMap<>();
         if (sProgram.getSFunctions() != null && sProgram.getSFunctions().getSFunction() != null) {
             localFunctionMap = loadFunctions(sProgram.getSFunctions().getSFunction(), sProgram.getName());
         }
-
 
         Program mainProgram = convertToProgram(
                 sProgram.getName(),
@@ -39,23 +61,34 @@ public class XmlMapper {
                 localFunctionMap
         );
         mainProgram.setFunctionMap(localFunctionMap);
-        (mainProgram).setParentProgramName("MAIN");
+        mainProgram.setParentProgramName("MAIN");
 
         for (Program func : localFunctionMap.values()) {
             func.setUploaderName(uploader);
         }
 
+        for (Map.Entry<String, String> entry : GlobalProgramStore.getXmlMap().entrySet()) {
+            String progName = entry.getKey();
+            if (!ExecutionContextImpl.getGlobalProgramMap().containsKey(progName)) {
+                try {
+                    Program reconstructed = XmlLoader.fromXmlString(entry.getValue(), uploader);
+                    ExecutionContextImpl.addGlobalProgram(reconstructed);
+                } catch (Exception ex) {
+                    System.out.println("⚠ Failed to reconstruct program: " + progName + " -> " + ex.getMessage());
+                }
+            }
+        }
+
         Map<String, Program> globalProgramsSnapshot = new HashMap<>(ExecutionContextImpl.getGlobalProgramMap());
 
         XmlValidation.validateAll(
-                path,
+                path != null ? path : "FromString",
                 mainProgram,
                 new ArrayList<>(localFunctionMap.values()),
                 globalProgramsSnapshot
         );
 
         this.context.setFunctionMap(localFunctionMap);
-
         recomputeQuoteDegrees(mainProgram, localFunctionMap);
         for (Program func : localFunctionMap.values()) {
             recomputeQuoteDegrees(func, localFunctionMap);
@@ -67,16 +100,12 @@ public class XmlMapper {
             func.setFunction(true);
             func.setParentProgramName(mainProgram.getName());
             ExecutionContextImpl.addGlobalProgram(func);
-            System.out.println("Added function: " + func.getName() + " (parent=" + func.getParentProgramName() + ")");
+            System.out.println("Added function: " + func.getName() +
+                    " (parent=" + func.getParentProgramName() + ")");
         }
 
         System.out.println("Saved to program map: " + mainProgram.getName());
         System.out.println("Now in map: " + ExecutionContextImpl.getGlobalProgramMap().keySet());
-
-
-
-
-
         return mainProgram;
     }
 

@@ -3,6 +3,7 @@ package logic.xml;
 import logic.instruction.*;
 import logic.label.FixedLabel;
 import logic.program.Program;
+import serverProgram.GlobalProgramStore;
 
 import java.io.File;
 import java.util.*;
@@ -15,6 +16,8 @@ public class XmlValidation {
                                    Program mainProgram,
                                    List<Program> newFunctions,
                                    Map<String, Program> globalProgramsMap) {
+
+        System.out.println("Current map keys: " + GlobalProgramStore.getProgramCache().keySet());
 
         List<String> errors = new ArrayList<>();
 

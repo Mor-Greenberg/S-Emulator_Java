@@ -13,6 +13,7 @@ import logic.label.Label;
 import logic.label.LabelImpl;
 import logic.program.Program;
 import logic.program.ProgramImpl;
+import serverProgram.GlobalProgramStore;
 import session.UserSession;
 
 import java.io.File;
@@ -39,32 +40,16 @@ public class XmlLoader {
             throw new RuntimeException("Failed to load XML: " + path, e);
         }
     }
-    public static Program fromXmlString(String xml,String username) throws Exception {
-        JAXBContext jaxbContext = JAXBContext.newInstance("jaxbV2.jaxb.v2");
-        Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
-
-        Object unmarshalled = unmarshaller.unmarshal(new StringReader(xml));
-
-        SProgram sProgram;
-
-        if (unmarshalled instanceof JAXBElement<?> jaxbElement && jaxbElement.getValue() instanceof SProgram sp) {
-            sProgram = sp;
-        } else if (unmarshalled instanceof SProgram sp) {
-            sProgram = sp;
-        } else {
-            throw new IllegalArgumentException("Expected root element <S-Program> but got: " + unmarshalled.getClass().getSimpleName());
-        }
-
-        try {
-            XmlMapper mapper = new XmlMapper(new ExecutionContextImpl());
-            return mapper.map(sProgram, "FromString", username);
-        } catch (Exception e) {
-            System.err.println("Error during XmlMapper.map:");
-            e.printStackTrace();
-            throw e;
-        }
+    public static Program fromXmlString(String xml, String uploader) throws Exception {
+        XmlMapper mapper = new XmlMapper(new ExecutionContextImpl());
+        return mapper.map(xml, uploader, false);
     }
 
+
+    public static Program fromXmlString(String xml, String uploader, boolean skipExisting) throws Exception {
+        XmlMapper mapper = new XmlMapper(new ExecutionContextImpl());
+        return mapper.map(xml, uploader, skipExisting);
+    }
 
 
 

@@ -60,7 +60,7 @@ public class UserHistoryServlet extends HttpServlet {
         if (program != null) {
             int usedCredits = dto.getCycles() + dto.getArchitecture().getCreditsCost();
             program.recordRun(usedCredits);
-            System.out.println("✅ Updated " + program.getName() +
+            System.out.println(" Updated " + program.getName() +
                     " | Runs=" + program.getRunCount() +
                     " | AvgCredits=" + program.getAverageCredits());
         } else {
