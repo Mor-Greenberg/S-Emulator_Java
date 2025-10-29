@@ -7,12 +7,10 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.stage.Window;
 import logic.architecture.ArchitectureData;
-import okhttp3.MediaType;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import okhttp3.*;
 import util.HttpClientUtil;
 
+import java.io.IOException;
 import java.util.Optional;
 
 public class UserSession {
@@ -55,7 +53,12 @@ public class UserSession {
     public static void deductCredits(int amount) {
         if (amount <= 0) return;
 
+        int before = userCredits;
         userCredits = Math.max(0, userCredits - amount);
+
+        System.out.println("[CLIENT] 💳 Deducted " + amount +
+                " credits | Before=" + before + " | After=" + userCredits);
+
         updateCreditsLabel();
 
         try {
@@ -65,26 +68,23 @@ public class UserSession {
             );
 
             Request request = new Request.Builder()
-                    .url("http://localhost:8080/S-Emulator/credits") // 👈 אם יש לך BASE_URL אחר, שימי אותו כאן
+                    .url("http://localhost:8080/S-Emulator/credits")
                     .post(body)
                     .build();
 
             try (Response response = HttpClientUtil.getClient().newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    System.err.println("Failed to update credits on server. Code: " + response.code());
+                    System.err.println("[CLIENT]  Failed to update credits on server. Code: " + response.code());
                 } else {
-                    System.out.println("Server credits updated successfully by: -" + amount);
+                    System.out.println("[CLIENT]  Server credits updated successfully by: -" + amount);
                 }
             }
 
         } catch (Exception e) {
-            System.err.println("Exception while updating credits: " + e.getMessage());
+            System.err.println("[CLIENT]  Exception while updating credits: " + e.getMessage());
         }
     }
-    public static void bindCreditsLabel(Label label) {
-        creditsLabel = label;
-        updateCreditsLabel();
-    }
+
 
     public static void updateCreditsLabel() {
         if (creditsLabel != null) {
@@ -116,5 +116,32 @@ public class UserSession {
     }
     public void setLastArchitecture(ArchitectureData lastArchitecture) {
         this.lastArchitecture = lastArchitecture;
+    }
+
+    public static void refreshCreditsFromServerAsync() {
+        try {
+            Request req = new Request.Builder()
+                    .url("http://localhost:8080/S-Emulator/credits")
+                    .get()
+                    .build();
+
+            HttpClientUtil.getClient().newCall(req).enqueue(new Callback() {
+                @Override public void onFailure(Call call, IOException e) {
+                    System.err.println("Failed to refresh credits: " + e.getMessage());
+                }
+                @Override public void onResponse(Call call, Response resp) throws IOException {
+                    try (resp) {
+                        if (!resp.isSuccessful()) return;
+                        String txt = resp.body().string().trim();
+                        try {
+                            int serverCredits = Integer.parseInt(txt);
+                            setUserCredits(serverCredits);   // זה גם יעדכן את ה־Label
+                        } catch (NumberFormatException ignore) {}
+                    }
+                }
+            });
+        } catch (Exception e) {
+            System.err.println("Exception while refreshing credits: " + e.getMessage());
+        }
     }
 }

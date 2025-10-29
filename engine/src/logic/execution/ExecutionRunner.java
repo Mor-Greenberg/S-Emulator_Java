@@ -69,6 +69,12 @@ public class ExecutionRunner {
 
     private static final Set<Integer> notifiedRuns = new HashSet<>();
 
+    private static int sumCycles(List<Instruction> instrs) {
+        int sum = 0;
+        for (Instruction i : instrs) sum += i.getCycles();
+        return sum;
+    }
+
 
     private static void notifyRunCompleted(Program program, RunHistoryEntry entry) {
         if (notifiedRuns.contains(entry.getRunId())) return;
@@ -143,7 +149,6 @@ public class ExecutionRunner {
                 return;
             }
 
-            userCredits -= cost;
             architecture = selected;
 
             UiUtils.showAlert("Architecture '" + selected.name() + "' selected.\nCost: " + cost + " credits.");
@@ -163,11 +168,23 @@ public class ExecutionRunner {
         if (currentDegree == 0) {
             List<Instruction> filtered = filterIllegalInstructions(program, program.getInstructions());
             long result = executeBlackBox(context, program);
+            executedCycles = sumCycles(filtered);
+
             updateUIAfterExecution(program, context.getVariableState(), filtered);
 
             saveRunHistory(program, context, result, executedCycles, false);
+
+            int totalUsedCredits = architectureCost + executedCycles;
+
+            //UserSession.refreshCreditsFromServerAsync();
+
+
+            ExecutionBoardController.getInstance()
+                    .notifyExecutionCompleted(program.getName(), totalUsedCredits);
+
             return;
         }
+
 
         program.expandToDegree(currentDegree, context);
         expandedProgram = program;
@@ -188,12 +205,14 @@ public class ExecutionRunner {
 
         updateUIAfterExecution(program, variableState, activeInstr);
 
-
         int totalUsedCredits = architectureCost + totalCyclesUsed;
         long result = context.getVariableState().getOrDefault(Variable.RESULT, 0L);
+
         saveRunHistory(program, context, result, totalCyclesUsed, false);
-        UserSession.deductCredits(totalUsedCredits);
-        System.out.println("Total deducted: " + totalUsedCredits);
+        UserSession.refreshCreditsFromServerAsync();
+
+        ExecutionBoardController.getInstance()
+                .notifyExecutionCompleted(program.getName(), totalUsedCredits);
 
     }
 
@@ -285,6 +304,8 @@ public class ExecutionRunner {
                 saveRunHistory(expandedProgram, debugContext, result, executedCycles, true);
                 ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(debugInstructions));
                 ExecutionBoardController.getInstance().updateCyclesView(executedCycles);
+                UserSession.refreshCreditsFromServerAsync();
+
 
 
             }
@@ -366,6 +387,7 @@ public class ExecutionRunner {
             }
             if (currentIndex >= debugInstructions.size()) {
                 saveDebugHistory();
+                UserSession.refreshCreditsFromServerAsync();
                 generateSummary(debugInstructions);
                 ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(debugInstructions));
                 ExecutionBoardController.getInstance().updateCyclesView(executedCycles);
@@ -381,6 +403,7 @@ public class ExecutionRunner {
         }
         debugMode = false;
         saveDebugHistory();
+        UserSession.refreshCreditsFromServerAsync();
         generateSummary(debugInstructions);
         ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(debugInstructions));
 

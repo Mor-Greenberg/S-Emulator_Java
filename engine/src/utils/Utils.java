@@ -46,6 +46,7 @@ public class Utils {
             ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
             if (ctrl != null) {
                 ctrl.updateSummaryLine(summary);
+                ctrl.updateCyclesView((int) cycles);
             }
         });
         return summary;

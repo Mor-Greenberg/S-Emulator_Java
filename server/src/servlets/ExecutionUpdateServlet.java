@@ -11,7 +11,7 @@ public class ExecutionUpdateServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.setContentType("application/json;charset=utf-8");
+        resp.setContentType("application/json;charset=UTF-8");
 
         HttpSession session = req.getSession(false);
         if (session == null) {
@@ -47,13 +47,12 @@ public class ExecutionUpdateServlet extends HttpServlet {
             return;
         }
 
+        // עדכון הנתונים (קרדיטים וריצות)
         userManager.recordExecution(username, programName, creditsUsed);
-        resp.setStatus(HttpServletResponse.SC_OK);
-        resp.getWriter().write("{\"status\":\"ok\",\"remaining\":" + user.getCredits() + "}");
 
-
-        System.out.println("Updated execution count for " + username +
+        System.out.println("[DEBUG] Updated execution count for " + username +
                 " (program=" + programName + ", creditsUsed=" + creditsUsed + ")");
+        System.out.println("[DEBUG] Deducting " + creditsUsed + " credits from user " + username);
 
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write("{\"status\":\"ok\",\"remaining\":" + user.getCredits() + "}");

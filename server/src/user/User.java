@@ -49,7 +49,7 @@ public class User {
             }
             credits -= amount;
             usedCredits += amount;
-            System.out.println("[DEBUG] Deducting " + amount + " credits from user " + username);
+            System.out.println("[SERVER] 💰 tryDeductCredits(" + amount + ") | Before=" + credits + " | After=" + (credits - amount) + " | User=" + username);
 
             return true;
 
@@ -88,28 +88,6 @@ public class User {
     private final Map<String, Integer> programRunCounts = new HashMap<>();
     private final Map<String, Integer> programUsedCredits = new HashMap<>();
 
-    public boolean trackExecutionIfEnough(String programName, int creditsUsed) {
-        synchronized (lock) {
-            if (credits < creditsUsed) {
-                return false; // not enough credits
-            }
-            credits -= creditsUsed;
-            usedCredits += creditsUsed;
-
-            programRunCounts.merge(programName, 1, Integer::sum);
-            programUsedCredits.merge(programName, creditsUsed, Integer::sum);
-            executionCount++;
-            return true;
-        }
-    }
-    public void refundCredits(int amount) {
-        synchronized (lock) {
-            credits += amount;
-            usedCredits = Math.max(0, usedCredits - amount);
-        }
-    }
-
-
 
     public int getRunCountForProgram(String programName) {
         return programRunCounts.getOrDefault(programName, 0);
@@ -126,11 +104,12 @@ public class User {
             programUsedCredits.merge(programName, creditsUsed, Integer::sum);
             executionCount++;
             System.out.println("[DEBUG] recordExecution called for " + username + " creditsUsed=" + creditsUsed);
-
         }
     }
 
 
-
+    public void addUsedCredits(int usedCreditsIn) {
+        this.usedCredits += usedCreditsIn;
+    }
 
 }

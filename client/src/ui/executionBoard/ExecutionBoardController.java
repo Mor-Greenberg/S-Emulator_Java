@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dto.ProgramStatsDTO;
 import gui.reRun.ReRunService;
+import javafx.scene.text.Text;
 import logic.architecture.ArchitectureData;
 import logic.architecture.ArchitectureRules;
 import logic.execution.ExecutionContext;
@@ -73,7 +74,9 @@ public class ExecutionBoardController {
     @FXML private TableColumn<InstructionRow, Number> colCycles;
     @FXML private TableColumn<InstructionRow, String> colArch;
 
-    @FXML private Label summaryLabel;
+    //@FXML private Label summaryLabel;
+    @FXML private Text summaryText;
+
     @FXML private Label architectureLabel;
     @FXML private Button highlightButton;
 
@@ -732,11 +735,10 @@ public class ExecutionBoardController {
     private final ExpandedTable expandedTable = new ExpandedTable();
 
     public void updateSummaryLine(String text) {
-        if (summaryLabel == null)
+        if (summaryText == null)
             return;
         Platform.runLater(() -> {
-            summaryLabel.setText(text);
-            summaryLabel.setTooltip(new Tooltip(text));
+            summaryText.setText(text);
         });
     }
 
