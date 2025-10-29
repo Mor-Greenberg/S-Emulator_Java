@@ -86,9 +86,7 @@ public class UserHistory {
     }
 
 
-    public static void sendRunToServer(UserRunEntryDTO dto) {
-
-        String username = UserSession.getUsername();
+    public static void sendRunToServer(UserRunEntryDTO dto,String username) {
 
         JsonObject payload = new JsonObject();
         payload.addProperty("username", username);
@@ -111,7 +109,7 @@ public class UserHistory {
                     System.out.println("Run saved for " + username);
                     Platform.runLater(() -> {
                         DashboardController.refreshProgramsFromServer();
-                        UserHistory.refreshUserHistory();
+                        UserHistory.refreshUserHistory(username);
                         DashboardController.refreshUserHistory();
                     });
                 } else {
@@ -128,8 +126,7 @@ public class UserHistory {
     }
 
 
-    public static void refreshUserHistory() {
-        String username = UserSession.getUsername();
+    public static void refreshUserHistory(String username) {
         Request request = new Request.Builder()
                 .url("http://localhost:8080/S-Emulator/api/user-history?username=" + username)
                 .get()

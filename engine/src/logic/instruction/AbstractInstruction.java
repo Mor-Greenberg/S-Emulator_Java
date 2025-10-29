@@ -33,6 +33,18 @@ public abstract class AbstractInstruction implements Instruction {
         this.uniqueId = nextId++;
     }
 
+    public void computeDegree() {
+        int maxDegree = 0;
+
+        if (variable instanceof logic.Variable.QuoteVariable qv) {
+            QuoteInstruction inner = qv.getQuote();
+            inner.computeDegree();
+            maxDegree = Math.max(maxDegree, inner.getDegree());
+        }
+
+        this.degree = Math.max(this.degree, maxDegree);
+    }
+
 
     public InstructionData getData() {
         return instructionData;

@@ -33,8 +33,7 @@ public interface Program {
      boolean hasSyntheticInstructions();
      List<Instruction> getActiveInstructions();
      boolean validate();
-     int calculateMaxDegree();
-    public ProgramStats toStats(User uploader) ;
+     int calculateMaxDegree() ;
         int calculateCycles();
      List <AbstractInstruction> getExpandedInstructions();
     public boolean isMainProgram();

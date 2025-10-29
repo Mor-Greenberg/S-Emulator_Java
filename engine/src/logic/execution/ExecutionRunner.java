@@ -18,6 +18,7 @@ import ui.executionBoard.ExecutionBoardController;
 import ui.executionBoard.instructionTable.InstructionRow;
 import ui.guiUtils.DegreeDialog;
 import user.User;
+import user.UserManager;
 import utils.UiUtils;
 
 import javafx.application.Platform;
@@ -51,13 +52,19 @@ public class ExecutionRunner {
     // --- Debug internals for degree 0 black-box mode ---
     private static int bbPc = -1;
     private static final Map<String, Integer> bbLabelToIndex = new HashMap<>();
+    private static session.UserSession userSession;
+
+    public static void setUserSession(session.UserSession session) {
+        userSession = session;
+    }
 
 
     // === Run completion DTO ===
     private static UserRunEntryDTO buildDto(Program program, RunHistoryEntry entry) {
         String runType = (program != null && program.isMain()) ? "Program" : "Function";
+        String username = (userSession != null) ? userSession.getUsername() : "UNKNOWN";
         return new UserRunEntryDTO(
-                UserSession.getUsername(),
+                username,
                 entry.getRunId(),
                 runType,
                 (program != null ? program.getName() : "UNKNOWN"),
@@ -67,6 +74,7 @@ public class ExecutionRunner {
                 entry.getCycles()
         );
     }
+
 
     private static final Set<Integer> notifiedRuns = new HashSet<>();
 
@@ -84,7 +92,8 @@ public class ExecutionRunner {
         if (runCompletionListener != null)
             runCompletionListener.onRunCompleted(buildDto(program, entry));
 
-        UserHistory.sendRunToServer(buildDto(program, entry));
+        UserRunEntryDTO dto = buildDto(program, entry);
+        UserHistory.sendRunToServer(dto, dto.getUsername());
 
 
         System.out.println("notifyRunCompleted called for " + program.getName());
@@ -129,7 +138,7 @@ public class ExecutionRunner {
     // NORMAL RUN
     // =====================================================
     public static void runProgram(Program program) {
-        ArchitectureData selected = ensureArchitectureSelected(architecture);
+        ArchitectureData selected = ensureArchitectureSelected(architecture,userSession);
         if (selected == null) return;
         architecture = selected;
 
@@ -139,7 +148,7 @@ public class ExecutionRunner {
         currentDegree = resolveDegree(program, context);
         applyInputsToContext(program, context);
 
-        int architectureCost = HandleCredits.prepareExecution(program, architecture);
+        int architectureCost = HandleCredits.prepareExecution(program, architecture,userSession);
         if (architectureCost < 0)
             return;
 
@@ -154,9 +163,9 @@ public class ExecutionRunner {
             saveRunHistory(program, context, result, executedCycles, false);
 
             int totalUsedCredits = architectureCost + executedCycles;
+            userSession.deductCredits(executedCycles);
 
-            ExecutionBoardController.getInstance()
-                    .notifyExecutionCompleted(program.getName(), totalUsedCredits);
+
 
             return;
         }
@@ -175,7 +184,7 @@ public class ExecutionRunner {
             instr.execute(context);
             totalCyclesUsed += instr.getCycles();
 
-            if (!HandleCredits.consumeCycles(program.getName(), instr.getCycles()))
+            if (!HandleCredits.consumeCycles(program.getName(), instr.getCycles(),userSession))
                 return;
         }
 
@@ -185,10 +194,10 @@ public class ExecutionRunner {
         long result = context.getVariableState().getOrDefault(Variable.RESULT, 0L);
 
         saveRunHistory(program, context, result, totalCyclesUsed, false);
-        UserSession.refreshCreditsFromServerAsync();
+        if (userSession != null) userSession.refreshCreditsFromServerAsync();
 
-        ExecutionBoardController.getInstance()
-                .notifyExecutionCompleted(program.getName(), totalUsedCredits);
+//        ExecutionBoardController.getInstance()
+//                .notifyExecutionCompleted(program.getName(), totalUsedCredits);
 
     }
 
@@ -203,7 +212,7 @@ public class ExecutionRunner {
         bbPc = 0;
         bbLabelToIndex.clear();
 
-        ArchitectureData selected = ensureArchitectureSelected(architecture);
+        ArchitectureData selected = ensureArchitectureSelected(architecture,userSession);
         if (selected == null) return;
         architecture = selected;
 
@@ -214,7 +223,7 @@ public class ExecutionRunner {
         currentDegree = resolveDegree(program, debugContext);
         applyInputsToContext(program, debugContext);
 
-        int architectureCost = HandleCredits.prepareExecution(program, architecture);
+        int architectureCost = HandleCredits.prepareExecution(program, architecture,userSession);
         if (architectureCost < 0)
             return;
 
@@ -230,7 +239,9 @@ public class ExecutionRunner {
 
         program.expandToDegree(currentDegree, debugContext);
         expandedProgram = program;
-        debugInstructions = new ArrayList<>(filterIllegalInstructions(program, program.getInstructions()));
+        List<Instruction> active = program.getActiveInstructions();
+        debugInstructions = new ArrayList<>(filterIllegalInstructions(program, active));
+
         setupDebugUI(debugInstructions);
     }
 
@@ -251,14 +262,14 @@ public class ExecutionRunner {
             executedCycles += instr.getCycles();
             currentIndex = bbPc;
 
-            boolean hasCredits = HandleCredits.consumeCycles(expandedProgram.getName(), instr.getCycles());
+            boolean hasCredits = HandleCredits.consumeCycles(expandedProgram.getName(), instr.getCycles(),userSession);
             if (!hasCredits) return; // stop if credits ran out
 
             Platform.runLater(() -> {
                 ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
 
                 Platform.runLater(() -> {
-                    int remaining = UserSession.getUserCredits();
+                    int remaining = (userSession != null) ? userSession.getUserCredits() : 0;
                    ctrl.updateCreditsLabel(remaining);
 
                 });
@@ -295,7 +306,7 @@ public class ExecutionRunner {
                 saveRunHistory(expandedProgram, debugContext, result, executedCycles, true);
                 generateSummary(debugInstructions);
                 ExecutionBoardController.getInstance().updateCyclesView(executedCycles);
-                UserSession.refreshCreditsFromServerAsync();
+                if (userSession != null) userSession.refreshCreditsFromServerAsync();
 
 
 
@@ -312,13 +323,13 @@ public class ExecutionRunner {
         executedCycles += currentInstr.getCycles();
 
         // Deduct credits here as well
-        boolean hasCredits = HandleCredits.consumeCycles(expandedProgram.getName(), currentInstr.getCycles());
+        boolean hasCredits = HandleCredits.consumeCycles(expandedProgram.getName(), currentInstr.getCycles(),userSession);
         if (!hasCredits) return; // if no credits left, stop execution
 
         Platform.runLater(() -> {
             ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
             Platform.runLater(() -> {
-                int remaining = UserSession.getUserCredits();
+                int remaining = (userSession != null) ? userSession.getUserCredits() : 0;
                ctrl.updateCreditsLabel(remaining);
 
             });
@@ -353,7 +364,7 @@ public class ExecutionRunner {
                 currentInstr.execute(debugContext);
                 executedCycles += currentInstr.getCycles();
 
-                if (!HandleCredits.consumeCycles(expandedProgram.getName(), currentInstr.getCycles())) {
+                if (!HandleCredits.consumeCycles(expandedProgram.getName(), currentInstr.getCycles(),userSession)) {
                     debugMode = false;
                     return;
                 }
@@ -375,7 +386,7 @@ public class ExecutionRunner {
                     ctrl.updateCyclesView(executedCycles);
 
                     Platform.runLater(() -> {
-                        int remaining = UserSession.getUserCredits();
+                        int remaining = (userSession != null) ? userSession.getUserCredits() : 0;
                         ExecutionBoardController.getInstance().updateCreditsLabel(remaining);
 
                     });
@@ -388,7 +399,7 @@ public class ExecutionRunner {
             }
             if (currentIndex >= debugInstructions.size()) {
                 saveDebugHistory();
-                UserSession.refreshCreditsFromServerAsync();
+                int remaining = (userSession != null) ? userSession.getUserCredits() : 0;
                 generateSummary(debugInstructions);
                 ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(debugInstructions));
                 ExecutionBoardController.getInstance().updateCyclesView(executedCycles);
@@ -404,7 +415,7 @@ public class ExecutionRunner {
         }
         debugMode = false;
         saveDebugHistory();
-        UserSession.refreshCreditsFromServerAsync();
+        if (userSession != null) userSession.refreshCreditsFromServerAsync();
         generateSummary(debugInstructions);
         ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(debugInstructions));
 
@@ -474,7 +485,7 @@ public class ExecutionRunner {
 
         int totalUsedCredits = architecture.getCreditsCost() + cycles;
         program.recordRun(totalUsedCredits);
-        UserSession.getInstance().setLastArchitecture(architecture);
+        if (userSession != null) userSession.setLastArchitecture(architecture);
         lastVariableState = new HashMap<>(context.getVariableState());
     }
 
@@ -485,8 +496,11 @@ public class ExecutionRunner {
         generateSummary(debugInstructions);
         ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(debugInstructions));
         ExecutionBoardController.getInstance().updateCyclesView(executedCycles);
-        UserSession.getInstance().setLastArchitecture(architecture);
-        User.incrementExecutionCount();
+        if (userSession != null) userSession.setLastArchitecture(architecture);
+//        UserManager.getInstance()
+//                .getUser(userSession.getUsername())
+//                .incrementExecutionCount();
+
     }
 
     private static void setupDebugUI(List<Instruction> instructions) {

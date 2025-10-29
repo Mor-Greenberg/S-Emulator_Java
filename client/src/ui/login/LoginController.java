@@ -34,7 +34,6 @@ public class LoginController {
             return;
         }
 
-        // Prepare HTTP request
         RequestBody body = RequestBody.create(
                 username,
                 MediaType.parse("text/plain; charset=utf-8")
@@ -45,12 +44,10 @@ public class LoginController {
                 .post(body)
                 .build();
 
-        // Send async HTTP request
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
                 Platform.runLater(() -> errorLabel.setText("Connection failed."));
-                e.printStackTrace();
             }
 
             @Override
@@ -58,11 +55,7 @@ public class LoginController {
                 String result = response.body().string().trim();
 
                 if (result.equals("OK")) {
-                    Platform.runLater(() -> {
-                        UserSession.setUsername(username);
-                        goToDashboard(username);
-                    });
-
+                    Platform.runLater(() -> goToDashboard(username));
                 } else {
                     Platform.runLater(() ->
                             errorLabel.setText("Username already exists. Try another.")
@@ -74,21 +67,31 @@ public class LoginController {
 
     private void goToDashboard(String username) {
         try {
+            // 🔹 צרי מופע חדש של UserSession עבור המשתמש הזה בלבד
+            UserSession session = new UserSession(username); // למשל 5000 קרדיטים התחלתי
+
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/ui/dashboard/S-Emulator-Dashboard.fxml"));
             Scene scene = new Scene(loader.load());
 
+            // העברת ה-Session ל-Controller של הדאשבורד
             DashboardController controller = loader.getController();
+            controller.setUserSession(session);
+            controller.initAfterLogin();
+
+            // עדכון התצוגה
             controller.userNameField.setText(username);
 
             Stage stage = (Stage) usernameField.getScene().getWindow();
             stage.setScene(scene);
-            stage.setTitle("S-Emulator Dashboard");
+            stage.setTitle("S-Emulator Dashboard – " + username);
             stage.show();
+
         } catch (IOException e) {
             e.printStackTrace();
             errorLabel.setText("Failed to load dashboard.");
         }
     }
+
     @FXML
     private Button loginButton;
 

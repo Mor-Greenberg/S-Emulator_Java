@@ -30,4 +30,7 @@ public interface Instruction {
     void replaceJumpLabel(Label from, Label to);
 
     InstructionData getData();
+    default void computeDegree() {
+    }
+
 }

@@ -20,6 +20,7 @@ import javafx.scene.control.*;
 import javafx.stage.Stage;
 import jaxbV2.jaxb.v2.SProgram;
 import logic.execution.ExecutionContextImpl;
+import logic.execution.ExecutionRunner;
 import logic.program.Program;
 import logic.xml.XmlLoader;
 import okhttp3.*;
@@ -134,6 +135,26 @@ public class DashboardController {
         instance = this;
         InitDashboardHelper.initialize(this);
     }
+    public void initAfterLogin() {
+        if (userSession != null) {
+            int credits = userSession.getUserCredits();
+            creditsLabel.setText("Available Credits: " + credits);
+            fetchProgramsFromServer();
+            fetchUsers();
+        }
+    }
+
+    private UserSession userSession;
+
+    public void setUserSession(UserSession session) {
+        this.userSession = session;
+        userNameField.setText(session.getUsername());
+    }
+    public UserSession getUserSession() {
+        return userSession;
+    }
+
+
 
 
     void fetchUsers() {
@@ -183,7 +204,7 @@ public class DashboardController {
         }
 
         String programName = selectedProgram.getProgramName();
-        String username = UserSession.getUsername();
+        String username = userSession.getUsername();
 
         Program localProgram = ExecutionContextImpl.getGlobalProgramMap().get(programName);
         if (localProgram != null) {
@@ -274,9 +295,9 @@ public class DashboardController {
                     JsonObject obj = element.getAsJsonObject();
                     int credits = obj.get("credits").getAsInt();
 
-                    UserSession.setUserCredits(credits);
+                    userSession.setUserCredits(credits);
                     Platform.runLater(() -> creditsLabel.setText("Available Credits: " + credits));
-                    UserSession.setUserCredits(credits);
+                    userSession.setUserCredits(credits);
                     updateCreditsLabel(credits);
 
                 } catch (Exception e) {
@@ -291,12 +312,16 @@ public class DashboardController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/ui/executionBoard/S-Emulator-Execution.fxml"));
             Parent root = loader.load();
+            ExecutionBoardController controller = loader.getController();
+            controller.setUserSession(this.userSession);
+            controller.initAfterSession();
+
 
             // get controller
-            ExecutionBoardController controller = loader.getController();
+
             controller.setLoadedProgram(program);
             controller.setOriginalInstructions(program.getInstructions());
-            controller.setUserCredits(UserSession.getUserCredits());
+            controller.setUserCredits(userSession.getUserCredits());
             controller.architecture = null;
 
             Stage stage = new Stage();
@@ -363,7 +388,7 @@ public class DashboardController {
                         JsonObject obj = element.getAsJsonObject();
                         int updatedCredits = obj.get("credits").getAsInt();
 
-                        UserSession.setUserCredits(updatedCredits);
+                        userSession.setUserCredits(updatedCredits);
                         updateCreditsLabel(updatedCredits);
                         Platform.runLater(() -> statusLabel.setText("Charged " + amountToAdd + " credits"));
                     }
@@ -402,7 +427,7 @@ public class DashboardController {
 
                 int updatedCredits = obj.get("credits").getAsInt();
 
-                UserSession.setUserCredits(updatedCredits);
+                userSession.setUserCredits(updatedCredits);
                 updateCreditsLabel(updatedCredits);
             }
 
@@ -446,7 +471,7 @@ public class DashboardController {
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful()) return null;
             String xml = response.body().string();
-            Program program = XmlLoader.fromXmlString(xml,UserSession.getUsername());
+            Program program = XmlLoader.fromXmlString(xml,userSession.getUsername());
             ExecutionContextImpl.loadProgram(program);
             return program;
         } catch (Exception e) {
@@ -493,7 +518,7 @@ public class DashboardController {
                 String xml = response.body().string();
 
                 try {
-                    Program functionProgram = logic.xml.XmlLoader.fromXmlString(xml,UserSession.getUsername());
+                    Program functionProgram = logic.xml.XmlLoader.fromXmlString(xml,userSession.getUsername());
 
                     ExecutionContextImpl.loadProgram(functionProgram, xml);
 
@@ -645,7 +670,7 @@ public class DashboardController {
         if (selected != null) {
             username = selected.getName();
         } else {
-            username = UserSession.getUsername();
+            username = userSession.getUsername();
         }
 
         UserHistory.showUserHistoryPopup(username);
@@ -710,7 +735,9 @@ public class DashboardController {
         if (instance != null) {
             Platform.runLater(() -> {
                 try {
-                    ui.dashboard.UserHistory.refreshUserHistory();
+                    if (instance != null && instance.userSession != null) {
+                        ui.dashboard.UserHistory.refreshUserHistory(instance.userSession.getUsername());
+                    }
                     instance.fetchProgramsFromServer();
                     instance.fetchUsers();
                     instance.refreshCreditsFromSession();
@@ -724,7 +751,7 @@ public class DashboardController {
     }
 
     public void refreshCreditsFromSession() {
-        int credits = UserSession.getUserCredits();
+        int credits = userSession.getUserCredits();
         Platform.runLater(() -> creditsLabel.setText("Available Credits: " + credits));
     }
 

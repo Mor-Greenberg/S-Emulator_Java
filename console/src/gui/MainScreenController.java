@@ -147,89 +147,89 @@ public class MainScreenController {
 
 
     }
-
-    @FXML
-    private void loadFilePressed(ActionEvent event) {
-
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Choose XML File");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
-
-        File selectedFile = fileChooser.showOpenDialog(null);
-        if (selectedFile != null) {
-            new Thread(() -> {
-                try {
-                    Platform.runLater(() -> {
-                        statusLabel.setText("Loading...");
-                        xmlPathLabel.setText(selectedFile.getAbsolutePath());
-
-                        if (enableAnimation) {
-                            loadingProgressBar.setProgress(0);
-                        } else {
-                            loadingProgressBar.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
-                        }
-                    });
-
-                    Thread.sleep(500);
-
-
-                   String path= selectedFile.getAbsolutePath();
-                    SProgram sProgram = XmlLoader.loadFromFile(path);
-
-                    if (sProgram == null) {
-                        throw new IllegalStateException("Failed to parse XML file");
-                    }
-
-                    ExecutionContextImpl context = new ExecutionContextImpl(new HashMap<>(), new HashMap<>(),new HashMap<>());
-
-                    XmlMapper mapper = new XmlMapper(context);
-                    loadedProgram = mapper.map(sProgram,path, UserSession.getUsername());
-
-
-                    context.initializeVarsFromProgram(loadedProgram);
-
-                    this.mainProgram = loadedProgram;
-
-                    Platform.runLater(() -> {
-                        if (!enableAnimation) {
-                            loadingProgressBar.setProgress(1.0);
-                            statusLabel.setText("Done!");
-                        } else {
-                            Timeline timeline = new Timeline(
-                                    new KeyFrame(Duration.seconds(2.0),
-                                            e2 -> statusLabel.setText("Done!"))
-                            );
-                            timeline.play();
-                        }
-
-                        loadProgramSelector(loadedProgram);
-
-
-                    });
-
-                } catch (Exception e) {
-                    Platform.runLater(() -> {
-                        statusLabel.setText("Failed to load");
-                        showError("Failed to load program: " + e.getMessage());
-                        loadingProgressBar.setProgress(0);
-                    });
-                    e.printStackTrace();
-                }
-            }).start();
-        } else {
-            System.out.println("File selection was cancelled.");
-        }
-    }
-
-
-    @FXML
-    private void startExecution(ActionEvent event) {
-        if (loadedProgram == null) {
-            showError("No program loaded.");
-            return;
-        }
-        ExecutionRunner.runProgram(loadedProgram);
-    }
+//
+//    @FXML
+//    private void loadFilePressed(ActionEvent event) {
+//
+//        FileChooser fileChooser = new FileChooser();
+//        fileChooser.setTitle("Choose XML File");
+//        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
+//
+//        File selectedFile = fileChooser.showOpenDialog(null);
+//        if (selectedFile != null) {
+//            new Thread(() -> {
+//                try {
+//                    Platform.runLater(() -> {
+//                        statusLabel.setText("Loading...");
+//                        xmlPathLabel.setText(selectedFile.getAbsolutePath());
+//
+//                        if (enableAnimation) {
+//                            loadingProgressBar.setProgress(0);
+//                        } else {
+//                            loadingProgressBar.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
+//                        }
+//                    });
+//
+//                    Thread.sleep(500);
+//
+//
+//                   String path= selectedFile.getAbsolutePath();
+//                    SProgram sProgram = XmlLoader.loadFromFile(path);
+//
+//                    if (sProgram == null) {
+//                        throw new IllegalStateException("Failed to parse XML file");
+//                    }
+//
+//                    ExecutionContextImpl context = new ExecutionContextImpl(new HashMap<>(), new HashMap<>(),new HashMap<>());
+//
+//                    XmlMapper mapper = new XmlMapper(context);
+//                    loadedProgram = mapper.map(sProgram,path, UserSession.getUsername());
+//
+//
+//                    context.initializeVarsFromProgram(loadedProgram);
+//
+//                    this.mainProgram = loadedProgram;
+//
+//                    Platform.runLater(() -> {
+//                        if (!enableAnimation) {
+//                            loadingProgressBar.setProgress(1.0);
+//                            statusLabel.setText("Done!");
+//                        } else {
+//                            Timeline timeline = new Timeline(
+//                                    new KeyFrame(Duration.seconds(2.0),
+//                                            e2 -> statusLabel.setText("Done!"))
+//                            );
+//                            timeline.play();
+//                        }
+//
+//                        loadProgramSelector(loadedProgram);
+//
+//
+//                    });
+//
+//                } catch (Exception e) {
+//                    Platform.runLater(() -> {
+//                        statusLabel.setText("Failed to load");
+//                        showError("Failed to load program: " + e.getMessage());
+//                        loadingProgressBar.setProgress(0);
+//                    });
+//                    e.printStackTrace();
+//                }
+//            }).start();
+//        } else {
+//            System.out.println("File selection was cancelled.");
+//        }
+//    }
+//
+//
+//    @FXML
+//    private void startExecution(ActionEvent event) {
+//        if (loadedProgram == null) {
+//            showError("No program loaded.");
+//            return;
+//        }
+//        ExecutionRunner.runProgram(loadedProgram);
+//    }
     @FXML
     private void stepOverExecution(ActionEvent e) {
         if (loadedProgram == null) {

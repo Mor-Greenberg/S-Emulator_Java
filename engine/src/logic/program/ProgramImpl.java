@@ -104,17 +104,13 @@ public class ProgramImpl implements Program {
     public boolean validate() {
         return false;
     }
-
     public int calculateMaxDegree() {
         int maxDegree = 0;
 
         for (Instruction instr : instructions) {
-            if (instr instanceof QuoteInstruction q) {
-                q.computeDegree();
-                maxDegree = Math.max(maxDegree, q.getDegree());
-            } else if (instr instanceof AbstractInstruction ai) {
-                maxDegree = Math.max(maxDegree, ai.getDegree());
-            }
+            instr.computeDegree();
+
+            maxDegree = Math.max(maxDegree, instr.getDegree());
         }
 
         return maxDegree;
@@ -132,17 +128,6 @@ public class ProgramImpl implements Program {
     }
 
 
-    @Override
-    public ProgramStats toStats(User uploader) {
-        ProgramStats stats = new ProgramStats();
-        stats.setProgramName(this.name);
-        stats.setUploaderName(uploader.getUsername());
-        stats.setInstructionCount(this.instructions.size());
-        stats.setMaxExpansionLevel(this.calculateMaxDegree());
-        stats.setRunCount(uploader.getRunCountForProgram(this.name));
-        stats.setAverageCredits(uploader.getAverageCreditsForProgram(this.name));
-        return stats;
-    }
 
     @Override
     public int calculateCycles() {

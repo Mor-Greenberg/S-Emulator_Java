@@ -24,11 +24,13 @@ public class UserManager {
     }
 
     public void addRun(String username, UserRunEntryDTO entry) {
-        userHistories.computeIfAbsent(username, k -> Collections.synchronizedList(new ArrayList<>()))
+        userHistories
+                .computeIfAbsent(username, k -> Collections.synchronizedList(new ArrayList<>()))
                 .add(entry);
 
 
     }
+
 
     public List<UserRunEntryDTO> getUserHistory(String username) {
         return userHistories.getOrDefault(username, Collections.emptyList());
@@ -66,7 +68,7 @@ public class UserManager {
             }
 
             u.recordExecution(programName, creditsUsed);
-            u.incrementExecutionCount();
+
 
 
         }

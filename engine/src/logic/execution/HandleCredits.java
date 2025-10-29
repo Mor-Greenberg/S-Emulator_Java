@@ -8,30 +8,30 @@ import utils.UiUtils;
 public class HandleCredits {
 
 
-    public static int prepareExecution(Program program, ArchitectureData architecture) {
+    public static int prepareExecution(Program program, ArchitectureData architecture, UserSession userSession) {
         int architectureCost = architecture.getCreditsCost();
-        int current = UserSession.getUserCredits();
+        int current = userSession.getUserCredits();
 
         if (current < architectureCost) {
             UiUtils.showError("Not enough credits! Required: " + architectureCost + ", Available: " + current);
             return -1;
         }
 
-        UserSession.deductCredits(architectureCost);
+        userSession.deductCredits(architectureCost);
 
 
         return architectureCost;
     }
 
 
-    public static boolean consumeCycles(String programName, int cycles) {
-        int current = UserSession.getUserCredits();
+    public static boolean consumeCycles(String programName, int cycles,UserSession userSession) {
+        int current = userSession.getUserCredits();
         if (current < cycles) {
             UiUtils.showError("Out of credits while running " + programName);
             return false;
         }
 
-        UserSession.deductCredits(cycles);
+        userSession.deductCredits(cycles);
 
         return true;
     }

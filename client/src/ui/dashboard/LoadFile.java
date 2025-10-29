@@ -33,7 +33,7 @@ public class LoadFile {
 
         try {
             String xmlContent = Files.readString(selectedFile.toPath(), StandardCharsets.UTF_8);
-            String username = UserSession.getUsername();
+            String username = controller.getUserSession().getUsername();
 
             RequestBody xmlBody = RequestBody.create(xmlContent, MediaType.parse("application/xml; charset=utf-8"));
             Request xmlReq = new Request.Builder()
@@ -53,13 +53,28 @@ public class LoadFile {
                 @Override
                 public void onResponse(Call call, Response response) {
                     try (response) {
-                        if (!response.isSuccessful() || response.body() == null) {
+                        if (response.body() == null) {
                             Platform.runLater(() ->
-                                    UiUtils.showError("Server returned: " + response.code()));
+                                    UiUtils.showError("Server returned: " + response.code() + " (empty response)"));
                             return;
                         }
 
                         String json = response.body().string();
+                        if (!response.isSuccessful()) {
+                            try {
+                                if (json.contains("\"error\"")) {
+                                    String error = new Gson().fromJson(json, java.util.Map.class).get("error").toString();
+                                    Platform.runLater(() -> UiUtils.showError("Upload failed:\n" + error));
+                                } else {
+                                    Platform.runLater(() -> UiUtils.showError("Server returned " + response.code() + ":\n" + json));
+                                }
+                            } catch (Exception ex) {
+                                Platform.runLater(() -> UiUtils.showError("Server error " + response.code() + ": " + json));
+                            }
+                            return;
+                        }
+
+
 
                         if (json.contains("\"error\"")) {
                             String error = new Gson().fromJson(json, java.util.Map.class).get("error").toString();

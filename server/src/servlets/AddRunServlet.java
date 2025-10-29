@@ -34,6 +34,12 @@ public class AddRunServlet extends HttpServlet {
 
         UserManager userManager = UserManager.getInstance();
         userManager.addRun(username, dto);
+        User user = userManager.getUser(username);
+        if (user != null) {
+            int usedCredits = dto.getCycles() + dto.getArchitecture().getCreditsCost();
+            user.recordRun(usedCredits);
+        }
+
 
         // ✅ חישוב קרדיטים לשם הסטטיסטיקה של התוכנית בלבד
         int usedCredits = dto.getCycles() + dto.getArchitecture().getCreditsCost();
@@ -45,8 +51,6 @@ public class AddRunServlet extends HttpServlet {
             System.out.println("Updated " + dto.getProgramName() + " | Runs=" + program.getRunCount() + " | Avg=" + program.getAverageCredits());
         }
 
-        // ❌ אין כאן user.trackExecutionIfEnough
-        // ❌ אין כאן שינוי בקרדיטים
 
         System.out.println("Added run for user: " + username +
                 " | program=" + dto.getProgramName() +

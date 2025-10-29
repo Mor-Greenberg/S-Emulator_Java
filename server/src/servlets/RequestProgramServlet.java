@@ -81,9 +81,23 @@ public class RequestProgramServlet extends HttpServlet {
 
         } catch (Exception e) {
             e.printStackTrace();
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            resp.getWriter().write("{\"error\": \"" + e.getMessage().replace("\"", "'") + "\"}");
+
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.setContentType("application/json; charset=UTF-8");
+
+            String message = e.getMessage();
+            if (message == null || message.isBlank()) {
+                message = "Unknown validation error occurred.";
+            }
+
+            String jsonError = new Gson().toJson(
+                    java.util.Map.of("error", message)
+            );
+
+            resp.getWriter().write(jsonError);
         }
+
+
     }
 
     @Override

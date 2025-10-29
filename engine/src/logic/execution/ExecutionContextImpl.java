@@ -56,7 +56,6 @@ public class ExecutionContextImpl implements ExecutionContext {
     @Override
     public void setFunctionMap(Map<String, Program> functionMap) {
         if (functionMap == null || functionMap.isEmpty()) {
-            System.out.println("setFunctionMap: received empty or null function map.");
             return;
         }
 

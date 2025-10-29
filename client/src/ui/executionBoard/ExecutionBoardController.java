@@ -53,7 +53,6 @@ import java.util.stream.Collectors;
 
 import static gui.showStatus.Status.showVariablesPopup;
 import static printExpand.expansion.PrintExpansion.getInstructionHistoryChain;
-import static session.UserSession.confirmReusePreviousArchitecture;
 import static ui.executionBoard.instructionTable.InstructionRow.*;
 import static utils.UiUtils.showError;
 
@@ -105,10 +104,17 @@ public class ExecutionBoardController {
     public static ExecutionBoardController getInstance() {
         return instance;
     }
+    private UserSession userSession;
+
+    public void setUserSession(UserSession session) {
+        this.userSession = session;
+        ExecutionRunner.setUserSession(session);
+
+    }
+
     @FXML
     public void initialize() {
-        String username = UserSession.getUsername();
-        userNameField.setText(username);
+
         updateArchitectureLabel(null);
 
         instance = this;
@@ -176,22 +182,26 @@ public class ExecutionBoardController {
         variableNameCol.setCellValueFactory(data -> data.getValue().nameProperty());
         variableValueCol.setCellValueFactory(data -> data.getValue().valueProperty());
 
+
+    }
+    public void initAfterSession() {
+        if (userSession == null) return;
+
+        String username = userSession.getUsername();
+        userNameField.setText(username);
+        creditsLabel.setText("Available Credits: " + userSession.getUserCredits());
+
         ExecutionRunner.setRunCompletionListener(dto -> {
             Platform.runLater(() -> {
                 try {
                     DashboardController.refreshProgramsFromServer();
-                } catch (Exception ignored) {}
-
-                try {
-                    ui.dashboard.UserHistory.refreshUserHistory();
-                } catch (Exception ignored) {}
-
-                try {
-                    creditsLabel.setText("Available Credits: " + UserSession.getUserCredits());
+                    ui.dashboard.UserHistory.refreshUserHistory(username);
+                    creditsLabel.setText("Available Credits: " + userSession.getUserCredits());
                 } catch (Exception ignored) {}
             });
         });
     }
+
 
     // =====================================================
     // Execution Actions
@@ -209,9 +219,9 @@ public class ExecutionBoardController {
             UiUtils.showError("No architecture selected.\nPlease select an architecture before running the program.");
             return;
         }
-        ArchitectureData last = UserSession.getInstance().getLastArchitecture();
+        ArchitectureData last = userSession.getLastArchitecture();
         if (last != null&&!firstrun) {
-            boolean ok = UserSession.confirmReusePreviousArchitecture(
+            boolean ok = userSession.confirmReusePreviousArchitecture(
                     ((Button) event.getSource()).getScene().getWindow(),
                     last.toString(),
                     "Regular Execution"
@@ -276,9 +286,9 @@ public class ExecutionBoardController {
             UiUtils.showError("No architecture selected.\nPlease select an architecture before starting debug mode.");
             return;
         }
-        ArchitectureData last = UserSession.getInstance().getLastArchitecture();
+        ArchitectureData last = userSession.getLastArchitecture();
         if (last != null&&!firstrun) {
-            boolean ok = UserSession.confirmReusePreviousArchitecture(
+            boolean ok = userSession.confirmReusePreviousArchitecture(
                     ((Button) e.getSource()).getScene().getWindow(),
                     last.toString(),
                     "Debug Execution"
@@ -532,7 +542,7 @@ public class ExecutionBoardController {
                     System.out.println("Execution stats updated for " + programName + " | Remaining credits: " + remaining);
 
                     if (remaining >= 0) {
-                        UserSession.setUserCredits(remaining);
+                        userSession.setUserCredits(remaining);
                         userCredits = remaining;
                         Platform.runLater(() ->
                                 creditsLabel.setText("Available Credits: " + remaining));
@@ -553,9 +563,9 @@ public class ExecutionBoardController {
             return;
         }
 
-        ArchitectureData last = UserSession.getInstance().getLastArchitecture();
+        ArchitectureData last = userSession.getLastArchitecture();
         if (last != null) {
-            boolean ok = UserSession.confirmReusePreviousArchitecture(
+            boolean ok = userSession.confirmReusePreviousArchitecture(
                     ((Button) event.getSource()).getScene().getWindow(),
                     last.toString(),
                     "Re-Run Execution"
@@ -663,7 +673,7 @@ public class ExecutionBoardController {
         Platform.runLater(() -> creditsLabel.setText("Available Credits: " + credits));
     }
     private void updateCreditsAfterExecution(String programName, int creditsUsed) {
-        int remaining = UserSession.getUserCredits();
+        int remaining = userSession.getUserCredits();
         creditsLabel.setText("Available Credits: " + remaining);
 
         Platform.runLater(() -> {
@@ -672,7 +682,7 @@ public class ExecutionBoardController {
                     " | Credits used: " + creditsUsed +
                     " | Remaining: " + remaining);
         });
-        System.out.println("CLIENT: current credits=" + UserSession.getUserCredits());
+        System.out.println("CLIENT: current credits=" + userSession.getUserCredits());
 
     }
 
@@ -684,16 +694,30 @@ public class ExecutionBoardController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/ui/dashboard/S-Emulator-Dashboard.fxml"));
             Parent root = loader.load();
+
+            DashboardController controller = loader.getController();
+
+            // ✅ משיג את הסשן הנוכחי (שנשמר ב־ExecutionBoardController)
+            if (userSession == null) {
+                System.err.println("⚠ No active user session found! Creating fallback empty session.");
+                userSession = new UserSession(""); // יצירת אובייקט חדש אם נדרש
+            }
+
+            controller.setUserSession(userSession);
+            controller.initAfterLogin();
+
             Stage dashboardStage = new Stage();
             dashboardStage.setTitle("S-Emulator – Dashboard");
             dashboardStage.setScene(new Scene(root));
             dashboardStage.show();
+
         } catch (IOException e) {
             e.printStackTrace();
             UiUtils.showError("Failed to return to dashboard: " + e.getMessage());
         }
-
     }
+
+
 
 
     public int getUserCredits() {
@@ -721,10 +745,10 @@ public class ExecutionBoardController {
         }
 
 
-        userCredits -= cost;
+        //userCredits -= cost;
 
         architecture = chosenArch;
-        UserSession.getInstance().setLastArchitecture(architecture);
+        userSession.setLastArchitecture(architecture);
         ExecutionRunner.architecture = architecture;
 
         //  Update UI labels

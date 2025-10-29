@@ -9,7 +9,7 @@ public class UserStatsDTO {
     private final int currentCredits;
     private final int usedCredits;
     private final int executionCount;
-    private final double averageCreditsPerRun; // ✅ חדש
+    private final double averageCreditsPerRun;
 
     public UserStatsDTO(User user) {
         this.name = user.getUsername();

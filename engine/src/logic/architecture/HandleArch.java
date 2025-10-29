@@ -9,7 +9,7 @@ import java.util.Optional;
 public class HandleArch {
 
 
-    public static ArchitectureData ensureArchitectureSelected(ArchitectureData currentArchitecture) {
+    public static ArchitectureData ensureArchitectureSelected(ArchitectureData currentArchitecture,UserSession userSession) {
         if (currentArchitecture != null)
             return currentArchitecture;
 
@@ -26,7 +26,7 @@ public class HandleArch {
 
         ArchitectureData selected = choice.get();
         int cost = selected.getCreditsCost();
-        int userCredits = UserSession.getUserCredits();
+        int userCredits = userSession.getUserCredits();
 
         if (userCredits < cost) {
             UiUtils.showError("Not enough credits for " + selected.name());

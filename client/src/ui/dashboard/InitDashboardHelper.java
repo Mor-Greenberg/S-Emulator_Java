@@ -94,14 +94,12 @@ public class InitDashboardHelper {
         });
 
         // Present UserName
-        String username = UserSession.getUsername();
+        String username = controller.getCurrentUserName();
         controller.userNameField.setText(username);
 
 
 
         controller.fetchUsers();
-        int credits = UserSession.getUserCredits();
-        controller.creditsLabel.setText("Available Credits: " + credits);
         controller.fetchProgramsFromServer();
         controller.programsTable.refresh();
 

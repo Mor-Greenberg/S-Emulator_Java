@@ -10,7 +10,7 @@ public class User {
     private int usedCredits = 0;
     private int mainProgramsUploaded = 0;
     private int contributedFunctions = 0;
-    private static int executionCount = 0;
+    private  int executionCount = 0;
 
     private final Object lock = new Object();
 
@@ -48,7 +48,7 @@ public class User {
                 return false;
             }
             credits -= amount;
-            usedCredits += amount;
+            //usedCredits += amount;
 
             return true;
 
@@ -64,7 +64,7 @@ public class User {
         contributedFunctions++;
     }
 
-    public static void incrementExecutionCount() {
+    public  void incrementExecutionCount() {
         executionCount++;
     }
 
@@ -110,4 +110,8 @@ public class User {
         this.usedCredits += usedCreditsIn;
     }
 
+    public void recordRun(int usedCredits) {
+        this.executionCount++;
+        this.usedCredits += usedCredits;
+    }
 }

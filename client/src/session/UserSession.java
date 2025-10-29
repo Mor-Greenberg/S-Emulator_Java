@@ -15,42 +15,45 @@ import java.util.Optional;
 
 public class UserSession {
 
-    private static String currentUsername;
-    private static int userCredits = 0;
-    private static Label creditsLabel;
+    private  String currentUsername;
+    private  int userCredits = 0;
+    private  Label creditsLabel;
     private ArchitectureData lastArchitecture;
 
-    public static void setUsername(String username) {
+    public UserSession(String username) {
+        this.currentUsername = username;
+    }
+
+    public  void setUsername(String username) {
         currentUsername = username;
     }
 
-    public static String getUsername() {
+    public  String getUsername() {
         return currentUsername;
     }
 
-    public static void clear() {
+    public  void clear() {
         currentUsername = null;
         userCredits = 0;
     }
-    private static final UserSession INSTANCE = new UserSession();
-    public static UserSession getInstance() { return INSTANCE; }
 
-    public static int getUserCredits() {
+
+    public  int getUserCredits() {
         return userCredits;
     }
 
-    public static void setUserCredits(int inputUserCredits) {
+    public  void setUserCredits(int inputUserCredits) {
         userCredits = inputUserCredits;
         updateCreditsLabel();
     }
 
-    public static void addCredits(int amount) {
+    public  void addCredits(int amount) {
         userCredits += amount;
         updateCreditsLabel();
     }
 
 
-    public static void deductCredits(int amount) {
+    public  void deductCredits(int amount) {
         if (amount <= 0) return;
 
         int before = userCredits;
@@ -82,14 +85,14 @@ public class UserSession {
     }
 
 
-    public static void updateCreditsLabel() {
+    public  void updateCreditsLabel() {
         if (creditsLabel != null) {
             Platform.runLater(() ->
                     creditsLabel.setText("Available Credits: " + userCredits)
             );
         }
     }
-    public static boolean confirmReusePreviousArchitecture(Window owner, String archText, String mode) {
+    public  boolean confirmReusePreviousArchitecture(Window owner, String archText, String mode) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Confirm Architecture");
         alert.setHeaderText(mode + " Mode");
@@ -114,7 +117,7 @@ public class UserSession {
         this.lastArchitecture = lastArchitecture;
     }
 
-    public static void refreshCreditsFromServerAsync() {
+    public  void refreshCreditsFromServerAsync() {
         try {
             Request req = new Request.Builder()
                     .url("http://localhost:8080/S-Emulator/credits")
