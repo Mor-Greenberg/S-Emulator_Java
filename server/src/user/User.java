@@ -49,7 +49,6 @@ public class User {
             }
             credits -= amount;
             usedCredits += amount;
-            System.out.println("[SERVER] 💰 tryDeductCredits(" + amount + ") | Before=" + credits + " | After=" + (credits - amount) + " | User=" + username);
 
             return true;
 

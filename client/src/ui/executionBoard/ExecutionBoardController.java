@@ -82,7 +82,7 @@ public class ExecutionBoardController {
 
     @FXML
     private VBox historyContainer;
-    // --- Variables Table ---
+    // Variables Table
     @FXML private TableView<VariableRow> variablesTable;
     @FXML private TableColumn<VariableRow, String> variableNameCol;
     @FXML private TableColumn<VariableRow, Number> variableValueCol;

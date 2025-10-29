@@ -37,8 +37,4 @@ public class HandleCredits {
     }
 
 
-    public static void finalizeExecution(String programName, int programCost, int architectureCost) {
-        int total = programCost + architectureCost;
-        System.out.println("[CLIENT] finalizeExecution for " + programName + " | Total cost: " + total);
-    }
 }

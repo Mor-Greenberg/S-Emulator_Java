@@ -6,12 +6,12 @@ import utils.UiUtils;
 
 import java.util.Optional;
 
-import static logic.execution.ExecutionRunner.architecture;
-
 public class HandleArch {
-    public static boolean ensureArchitectureSelected() {
-        if (architecture != null)
-            return true;
+
+
+    public static ArchitectureData ensureArchitectureSelected(ArchitectureData currentArchitecture) {
+        if (currentArchitecture != null)
+            return currentArchitecture;
 
         ChoiceDialog<ArchitectureData> dialog = new ChoiceDialog<>(ArchitectureData.I, ArchitectureData.values());
         dialog.setTitle("Select Architecture");
@@ -21,7 +21,7 @@ public class HandleArch {
 
         if (choice.isEmpty()) {
             UiUtils.showError("No architecture selected — execution cancelled.");
-            return false;
+            return null;
         }
 
         ArchitectureData selected = choice.get();
@@ -30,12 +30,10 @@ public class HandleArch {
 
         if (userCredits < cost) {
             UiUtils.showError("Not enough credits for " + selected.name());
-            return false;
+            return null;
         }
 
-        architecture = selected;
         UiUtils.showAlert("Architecture '" + selected.name() + "' selected.\nCost: " + cost + " credits.");
-        return true;
+        return selected;
     }
-
 }

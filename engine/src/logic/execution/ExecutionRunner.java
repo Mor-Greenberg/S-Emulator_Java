@@ -24,6 +24,7 @@ import javafx.application.Platform;
 import javafx.scene.control.TableView;
 import java.util.*;
 
+import static logic.architecture.HandleArch.ensureArchitectureSelected;
 import static logic.blaxBox.BlackBox.blackBoxStepDegree0;
 import static logic.blaxBox.BlackBox.executeBlackBox;
 import static utils.Utils.generateSummary;
@@ -82,7 +83,6 @@ public class ExecutionRunner {
 
         if (runCompletionListener != null)
             runCompletionListener.onRunCompleted(buildDto(program, entry));
-        System.out.println("[DEBUG] Sending run to server for " + program.getName());
 
         UserHistory.sendRunToServer(buildDto(program, entry));
 
@@ -129,32 +129,9 @@ public class ExecutionRunner {
     // NORMAL RUN
     // =====================================================
     public static void runProgram(Program program) {
-        if (architecture == null) {
-            ChoiceDialog<ArchitectureData> dialog = new ChoiceDialog<>(ArchitectureData.I, ArchitectureData.values());
-            dialog.setTitle("Select Architecture");
-            dialog.setHeaderText("Please choose an execution architecture:");
-            dialog.setContentText("Available architectures:");
-            Optional<ArchitectureData> choice = dialog.showAndWait();
-
-            if (choice.isEmpty()) {
-                UiUtils.showError("No architecture selected — execution cancelled.");
-                return;
-            }
-
-
-            ArchitectureData selected = choice.get();
-            int cost = selected.getCreditsCost();
-            int userCredits=UserSession.getUserCredits();
-
-            if (userCredits < cost) {
-                UiUtils.showError("Not enough credits for " + selected.name());
-                return;
-            }
-
-            architecture = selected;
-
-            UiUtils.showAlert("Architecture '" + selected.name() + "' selected.\nCost: " + cost + " credits.");
-        }
+        ArchitectureData selected = ensureArchitectureSelected(architecture);
+        if (selected == null) return;
+        architecture = selected;
 
         Map<Variable, Long> variableState = new HashMap<>();
         ExecutionContextImpl context = new ExecutionContextImpl(variableState);
@@ -177,9 +154,6 @@ public class ExecutionRunner {
             saveRunHistory(program, context, result, executedCycles, false);
 
             int totalUsedCredits = architectureCost + executedCycles;
-
-            //UserSession.refreshCreditsFromServerAsync();
-
 
             ExecutionBoardController.getInstance()
                     .notifyExecutionCompleted(program.getName(), totalUsedCredits);
@@ -229,6 +203,10 @@ public class ExecutionRunner {
         bbPc = 0;
         bbLabelToIndex.clear();
 
+        ArchitectureData selected = ensureArchitectureSelected(architecture);
+        if (selected == null) return;
+        architecture = selected;
+
         Platform.runLater(() -> ExecutionBoardController.getInstance().clearInstructionTable());
         debugContext = new ExecutionContextImpl(new HashMap<>());
         debugContext.setFunctionMap(program.getFunctionMap());
@@ -243,7 +221,7 @@ public class ExecutionRunner {
         if (currentDegree == 0) {
             long result = executeBlackBox(debugContext, program);
             expandedProgram = program;
-            debugInstructions = new ArrayList<>(program.getInstructions());
+            debugInstructions = new ArrayList<>(filterIllegalInstructions(program, program.getInstructions()));
             setupDebugUI(debugInstructions);
 
             ExecutionBoardController.getInstance().updateCyclesView(executedCycles);
@@ -252,7 +230,7 @@ public class ExecutionRunner {
 
         program.expandToDegree(currentDegree, debugContext);
         expandedProgram = program;
-        debugInstructions = new ArrayList<>(expandedProgram.getActiveInstructions());
+        debugInstructions = new ArrayList<>(filterIllegalInstructions(program, program.getInstructions()));
         setupDebugUI(debugInstructions);
     }
 
@@ -359,7 +337,6 @@ public class ExecutionRunner {
             ctrl.highlightCurrentInstruction(rowNumber - 1);
             ctrl.updateVariablesView();
             ctrl.updateCyclesView(executedCycles);
-           // generateSummary(debugInstructions);
 
         });
 

@@ -56,8 +56,6 @@ public class UserSession {
         int before = userCredits;
         userCredits = Math.max(0, userCredits - amount);
 
-        System.out.println("[CLIENT] 💳 Deducted " + amount +
-                " credits | Before=" + before + " | After=" + userCredits);
 
         updateCreditsLabel();
 
@@ -75,8 +73,6 @@ public class UserSession {
             try (Response response = HttpClientUtil.getClient().newCall(request).execute()) {
                 if (!response.isSuccessful()) {
                     System.err.println("[CLIENT]  Failed to update credits on server. Code: " + response.code());
-                } else {
-                    System.out.println("[CLIENT]  Server credits updated successfully by: -" + amount);
                 }
             }
 

@@ -74,7 +74,6 @@ public class ExecutionContextImpl implements ExecutionContext {
             }
 
             globalProgramMap.put(funcName, funcProg);
-            System.out.println("Added function: " + funcName);
         }
     }
 

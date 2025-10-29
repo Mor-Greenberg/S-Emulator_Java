@@ -27,11 +27,8 @@ public class UserManager {
         userHistories.computeIfAbsent(username, k -> Collections.synchronizedList(new ArrayList<>()))
                 .add(entry);
 
-        User user = users.get(username);
-        if (user != null) User.incrementExecutionCount();
+
     }
-
-
 
     public List<UserRunEntryDTO> getUserHistory(String username) {
         return userHistories.getOrDefault(username, Collections.emptyList());

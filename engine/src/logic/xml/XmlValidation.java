@@ -17,7 +17,6 @@ public class XmlValidation {
                                    List<Program> newFunctions,
                                    Map<String, Program> globalProgramsMap) {
 
-        System.out.println("Current map keys: " + GlobalProgramStore.getProgramCache().keySet());
 
         List<String> errors = new ArrayList<>();
 

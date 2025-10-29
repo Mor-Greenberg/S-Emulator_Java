@@ -310,7 +310,6 @@ public class DashboardController {
 
             stage.show();
 
-            // סגירת מסך הדאשבורד הקודם
             Stage currentStage = (Stage) executeProgramButton.getScene().getWindow(); // או userNameField
             currentStage.close();
 
@@ -710,14 +709,13 @@ public class DashboardController {
     public static void refreshUserHistory() {
         if (instance != null) {
             Platform.runLater(() -> {
-                System.out.println("Refreshing user run history...");
                 try {
                     ui.dashboard.UserHistory.refreshUserHistory();
                     instance.fetchProgramsFromServer();
                     instance.fetchUsers();
                     instance.refreshCreditsFromSession();
                 } catch (Exception e) {
-                    System.err.println("⚠ Failed to refresh user history: " + e.getMessage());
+                    System.err.println("Failed to refresh user history: " + e.getMessage());
                 }
             });
         } else {
