@@ -49,7 +49,10 @@ public class User {
             }
             credits -= amount;
             usedCredits += amount;
+            System.out.println("[DEBUG] Deducting " + amount + " credits from user " + username);
+
             return true;
+
         }
     }
 
@@ -122,6 +125,8 @@ public class User {
             programRunCounts.merge(programName, 1, Integer::sum);
             programUsedCredits.merge(programName, creditsUsed, Integer::sum);
             executionCount++;
+            System.out.println("[DEBUG] recordExecution called for " + username + " creditsUsed=" + creditsUsed);
+
         }
     }
 

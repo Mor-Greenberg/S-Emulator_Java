@@ -498,7 +498,6 @@ public class ExecutionBoardController {
     public void loadProgramByName(String name) {
         fetchProgramFromServer(name);
     }
-
     public void notifyExecutionCompleted(String programName, int creditsUsed) {
         Request request = new Request.Builder()
                 .url("http://localhost:8080/S-Emulator/execution-update?program=" + programName + "&creditsUsed=" + creditsUsed)
@@ -512,13 +511,35 @@ public class ExecutionBoardController {
             }
 
             @Override
-            public void onResponse(Call call, Response response) {
-                response.close();
-                System.out.println("Execution stats updated for " + programName);
-            }
+            public void onResponse(Call call, Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    System.err.println("Server returned error for execution update: " + response.code());
+                    response.close();
+                    return;
+                }
 
+                String json = response.body().string();
+                response.close();
+
+                try {
+                    com.google.gson.JsonObject obj =
+                            com.google.gson.JsonParser.parseString(json).getAsJsonObject();
+
+                    int remaining = obj.has("remaining") ? obj.get("remaining").getAsInt() : -1;
+                    System.out.println("Execution stats updated for " + programName + " | Remaining credits: " + remaining);
+
+                    if (remaining >= 0) {
+                        UserSession.setUserCredits(remaining);
+                        Platform.runLater(() ->
+                                creditsLabel.setText("Available Credits: " + remaining));
+                    }
+                } catch (Exception e) {
+                    System.err.println("Failed to parse execution-update response: " + e.getMessage());
+                }
+            }
         });
     }
+
 
     @FXML
     void onReRunClicked(ActionEvent event) {
@@ -638,6 +659,7 @@ public class ExecutionBoardController {
     }
     private void updateCreditsAfterExecution(String programName, int creditsUsed) {
         int remaining = UserSession.getUserCredits();
+        creditsLabel.setText("Available Credits: " + remaining);
 
         Platform.runLater(() -> {
             creditsLabel.setText("Available Credits: " + remaining);
@@ -645,6 +667,8 @@ public class ExecutionBoardController {
                     " | Credits used: " + creditsUsed +
                     " | Remaining: " + remaining);
         });
+        System.out.println("CLIENT: current credits=" + UserSession.getUserCredits());
+
     }
 
     @FXML

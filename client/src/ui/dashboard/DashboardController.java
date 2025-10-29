@@ -90,7 +90,7 @@ public class DashboardController {
 
 
     @FXML
-    private Label creditsLabel;
+    Label creditsLabel;
     @FXML
     TableView<UserStatsDTO> usersTable;
     @FXML

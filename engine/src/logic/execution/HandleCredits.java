@@ -5,8 +5,6 @@ import logic.program.Program;
 import session.UserSession;
 import utils.UiUtils;
 
-import static session.UserSession.updateCreditsLabel;
-
 public class HandleCredits {
 
     public static int prepareExecution(Program program, ArchitectureData architecture) {
@@ -21,8 +19,6 @@ public class HandleCredits {
         return architectureCost;
     }
 
-
-
     public static boolean consumeCycles(String programName, int cycles) {
         int current = UserSession.getUserCredits();
         if (current < cycles) {
@@ -32,13 +28,11 @@ public class HandleCredits {
 
         return true;
     }
+
+
     public static void finalizeExecution(String programName, int programCost, int architectureCost) {
         int total = programCost + architectureCost;
-        UserSession.deductCredits(total);
-        updateCreditsLabel();
-        System.out.println("Total deducted: " + total);
+        System.out.println("Total used (to be deducted by server): " + total);
+
     }
-
-
-
 }

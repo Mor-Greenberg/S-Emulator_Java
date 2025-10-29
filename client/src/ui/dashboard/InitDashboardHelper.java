@@ -25,7 +25,7 @@ public class InitDashboardHelper {
             row.setOnMouseClicked(event -> {
                 if (!row.isEmpty() && event.getClickCount() == 1) {
                     controller.selectedUser = row.getItem();
-                    controller.usersTable.refresh(); // רענון מיידי כדי לצבוע
+                    controller.usersTable.refresh();
                 }
             });
 
@@ -100,7 +100,8 @@ public class InitDashboardHelper {
 
 
         controller.fetchUsers();
-        controller.loadCreditsFromServer();
+        int credits = UserSession.getUserCredits();
+        controller.creditsLabel.setText("Available Credits: " + credits);
         controller.fetchProgramsFromServer();
         controller.programsTable.refresh();
 
