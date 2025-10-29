@@ -82,6 +82,8 @@ public class ExecutionRunner {
 
         if (runCompletionListener != null)
             runCompletionListener.onRunCompleted(buildDto(program, entry));
+        System.out.println("[DEBUG] Sending run to server for " + program.getName());
+
         UserHistory.sendRunToServer(buildDto(program, entry));
 
 
@@ -224,6 +226,8 @@ public class ExecutionRunner {
         debugMode = true;
         currentIndex = 0;
         executedCycles = 0;
+        bbPc = 0;
+        bbLabelToIndex.clear();
 
         Platform.runLater(() -> ExecutionBoardController.getInstance().clearInstructionTable());
         debugContext = new ExecutionContextImpl(new HashMap<>());
@@ -236,12 +240,13 @@ public class ExecutionRunner {
         if (architectureCost < 0)
             return;
 
-
         if (currentDegree == 0) {
             long result = executeBlackBox(debugContext, program);
             expandedProgram = program;
             debugInstructions = new ArrayList<>(program.getInstructions());
             setupDebugUI(debugInstructions);
+
+            ExecutionBoardController.getInstance().updateCyclesView(executedCycles);
             return;
         }
 
@@ -250,6 +255,7 @@ public class ExecutionRunner {
         debugInstructions = new ArrayList<>(expandedProgram.getActiveInstructions());
         setupDebugUI(debugInstructions);
     }
+
 
     public static void stepOver() {
         if (!debugMode) {
@@ -273,6 +279,12 @@ public class ExecutionRunner {
             Platform.runLater(() -> {
                 ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
 
+                Platform.runLater(() -> {
+                    int remaining = UserSession.getUserCredits();
+                   ctrl.updateCreditsLabel(remaining);
+
+                });
+
                 int rowNumber = ctrl.getInstructionTable().getItems().size() + 1;
 
                 InstructionRow row = new InstructionRow(
@@ -287,7 +299,8 @@ public class ExecutionRunner {
                 ctrl.highlightCurrentInstruction(rowNumber - 1);
                 ctrl.updateVariablesView();
                 ctrl.updateCyclesView(executedCycles);
-                generateSummary(debugInstructions);
+                //generateSummary(debugInstructions);
+
 
             });
 
@@ -302,7 +315,7 @@ public class ExecutionRunner {
                         true
                 );
                 saveRunHistory(expandedProgram, debugContext, result, executedCycles, true);
-                ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(debugInstructions));
+                generateSummary(debugInstructions);
                 ExecutionBoardController.getInstance().updateCyclesView(executedCycles);
                 UserSession.refreshCreditsFromServerAsync();
 
@@ -326,6 +339,12 @@ public class ExecutionRunner {
 
         Platform.runLater(() -> {
             ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
+            Platform.runLater(() -> {
+                int remaining = UserSession.getUserCredits();
+               ctrl.updateCreditsLabel(remaining);
+
+            });
+
 
             int rowNumber = ctrl.getInstructionTable().getItems().size() + 1;
             InstructionRow row = new InstructionRow(
@@ -340,7 +359,8 @@ public class ExecutionRunner {
             ctrl.highlightCurrentInstruction(rowNumber - 1);
             ctrl.updateVariablesView();
             ctrl.updateCyclesView(executedCycles);
-            generateSummary(debugInstructions);
+           // generateSummary(debugInstructions);
+
         });
 
 
@@ -376,8 +396,12 @@ public class ExecutionRunner {
                     ctrl.highlightCurrentInstruction(rowIndex);
                     ctrl.updateVariablesView();
                     ctrl.updateCyclesView(executedCycles);
-                    generateSummary(debugInstructions);
-                    ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(debugInstructions));
+
+                    Platform.runLater(() -> {
+                        int remaining = UserSession.getUserCredits();
+                        ExecutionBoardController.getInstance().updateCreditsLabel(remaining);
+
+                    });
 
 
                 });
@@ -447,7 +471,7 @@ public class ExecutionRunner {
 
 
             ctrl.updateVariablesView();
-            // === Calculate how many instructions are supported by the selected architecture ===
+            // Calculate how many instructions are supported by the selected architecture
             long supportedCount = 0;
             if (architecture != null) {
                 supportedCount = instructions.stream()
@@ -478,7 +502,15 @@ public class ExecutionRunner {
     }
 
 
-
+    private static void saveDebugHistory() {
+        long result = debugContext.getVariableState().getOrDefault(Variable.RESULT, 0L);
+        saveRunHistory(expandedProgram, debugContext, result, executedCycles, true);
+        generateSummary(debugInstructions);
+        ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(debugInstructions));
+        ExecutionBoardController.getInstance().updateCyclesView(executedCycles);
+        UserSession.getInstance().setLastArchitecture(architecture);
+        User.incrementExecutionCount();
+    }
 
     private static void setupDebugUI(List<Instruction> instructions) {
         Platform.runLater(() -> {
@@ -486,20 +518,10 @@ public class ExecutionRunner {
             ctrl.setOriginalInstructions(instructions);
             ctrl.clearInstructionTable();
             ctrl.updateVariablesView();
-            generateSummary(instructions);
             ctrl.updateCyclesView(0);
         });
     }
-    private static void saveDebugHistory() {
-        long result = debugContext.getVariableState().getOrDefault(Variable.RESULT, -1L);
-        saveRunHistory(expandedProgram, debugContext, result, executedCycles, true);
-        generateSummary(debugInstructions);
-        ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(debugInstructions));
-        ExecutionBoardController.getInstance().updateCyclesView(executedCycles);
-        UserSession.getInstance().setLastArchitecture(architecture);
 
-
-    }
 
 
 

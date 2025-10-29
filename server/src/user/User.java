@@ -10,7 +10,7 @@ public class User {
     private int usedCredits = 0;
     private int mainProgramsUploaded = 0;
     private int contributedFunctions = 0;
-    private int executionCount = 0;
+    private static int executionCount = 0;
 
     private final Object lock = new Object();
 
@@ -65,7 +65,7 @@ public class User {
         contributedFunctions++;
     }
 
-    public void incrementExecutionCount() {
+    public static void incrementExecutionCount() {
         executionCount++;
     }
 
@@ -103,7 +103,6 @@ public class User {
             programRunCounts.merge(programName, 1, Integer::sum);
             programUsedCredits.merge(programName, creditsUsed, Integer::sum);
             executionCount++;
-            System.out.println("[DEBUG] recordExecution called for " + username + " creditsUsed=" + creditsUsed);
         }
     }
 

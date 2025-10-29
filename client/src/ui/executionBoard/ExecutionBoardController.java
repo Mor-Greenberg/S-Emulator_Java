@@ -751,5 +751,8 @@ public class ExecutionBoardController {
         });
     }
 
+    public void updateCreditsLabel(int remaining) {
+        Platform.runLater(() -> creditsLabel.setText("Available Credits: " + remaining));    }
+
 }
 

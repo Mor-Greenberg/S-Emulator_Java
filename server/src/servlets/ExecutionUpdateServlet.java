@@ -49,9 +49,7 @@ public class ExecutionUpdateServlet extends HttpServlet {
 
         userManager.recordExecution(username, programName, creditsUsed);
 
-        System.out.println("[DEBUG] Updated execution count for " + username +
-                " (program=" + programName + ", creditsUsed=" + creditsUsed + ")");
-        System.out.println("[DEBUG] Deducting " + creditsUsed + " credits from user " + username);
+
 
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write("{\"status\":\"ok\",\"remaining\":" + user.getCredits() + "}");

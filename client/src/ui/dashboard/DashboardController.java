@@ -324,7 +324,7 @@ public class DashboardController {
 
     @FXML
     private void handleChargeCredits() {
-        TextInputDialog dialog = new TextInputDialog("50");
+        TextInputDialog dialog = new TextInputDialog("5000");
         dialog.setTitle("Charge Credits");
         dialog.setHeaderText(null);
         dialog.setContentText("Enter amount to charge:");

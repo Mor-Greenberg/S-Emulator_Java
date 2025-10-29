@@ -7,6 +7,7 @@ import utils.UiUtils;
 
 public class HandleCredits {
 
+
     public static int prepareExecution(Program program, ArchitectureData architecture) {
         int architectureCost = architecture.getCreditsCost();
         int current = UserSession.getUserCredits();
@@ -16,8 +17,12 @@ public class HandleCredits {
             return -1;
         }
 
+        UserSession.deductCredits(architectureCost);
+
+
         return architectureCost;
     }
+
 
     public static boolean consumeCycles(String programName, int cycles) {
         int current = UserSession.getUserCredits();
@@ -26,13 +31,14 @@ public class HandleCredits {
             return false;
         }
 
+        UserSession.deductCredits(cycles);
+
         return true;
     }
 
 
     public static void finalizeExecution(String programName, int programCost, int architectureCost) {
         int total = programCost + architectureCost;
-        System.out.println("Total used (to be deducted by server): " + total);
-
+        System.out.println("[CLIENT] finalizeExecution for " + programName + " | Total cost: " + total);
     }
 }

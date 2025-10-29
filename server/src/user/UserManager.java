@@ -23,9 +23,12 @@ public class UserManager {
         return users.computeIfAbsent(username, User::new);
     }
 
-
     public void addRun(String username, UserRunEntryDTO entry) {
-        userHistories.computeIfAbsent(username, k -> Collections.synchronizedList(new ArrayList<>())).add(entry);
+        userHistories.computeIfAbsent(username, k -> Collections.synchronizedList(new ArrayList<>()))
+                .add(entry);
+
+        User user = users.get(username);
+        if (user != null) User.incrementExecutionCount();
     }
 
 
@@ -59,21 +62,16 @@ public class UserManager {
     public void recordExecution(String username, String programName, int creditsUsed) {
         User u = getUser(username);
         if (u != null) {
-            // 1️⃣ מנכים קרדיטים בפועל
             boolean ok = u.tryDeductCredits(creditsUsed);
             if (!ok) {
-                System.out.println("[WARN] ❌ User " + username + " has insufficient credits to deduct " + creditsUsed);
+                System.out.println(" User " + username + " has insufficient credits to deduct " + creditsUsed);
                 return;
             }
 
-            // 2️⃣ רושמים את הריצה בהיסטוריה
             u.recordExecution(programName, creditsUsed);
             u.incrementExecutionCount();
 
-            System.out.println("[DEBUG] ✅ recordExecution: user=" + username +
-                    " | program=" + programName +
-                    " | used=" + creditsUsed +
-                    " | remaining=" + u.getCredits());
+
         }
     }
 
