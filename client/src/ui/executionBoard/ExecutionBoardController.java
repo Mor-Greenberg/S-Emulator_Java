@@ -533,9 +533,11 @@ public class ExecutionBoardController {
 
                     if (remaining >= 0) {
                         UserSession.setUserCredits(remaining);
+                        userCredits = remaining;
                         Platform.runLater(() ->
                                 creditsLabel.setText("Available Credits: " + remaining));
                     }
+
                 } catch (Exception e) {
                     System.err.println("Failed to parse execution-update response: " + e.getMessage());
                 }
@@ -690,6 +692,7 @@ public class ExecutionBoardController {
             e.printStackTrace();
             UiUtils.showError("Failed to return to dashboard: " + e.getMessage());
         }
+
     }
 
 
@@ -698,6 +701,7 @@ public class ExecutionBoardController {
     }
     @FXML
     private void onArchitectureSelectionClicked() {
+        //Let the user choose an architecture
         ChoiceDialog<ArchitectureData> dialog = new ChoiceDialog<>(
                 ArchitectureData.I, ArchitectureData.values());
         dialog.setTitle("Architecture Selection");
@@ -716,17 +720,22 @@ public class ExecutionBoardController {
             return;
         }
 
+
         userCredits -= cost;
-        architecture = ArchitectureData.valueOf(chosenArch.name());
+
+        architecture = chosenArch;
         UserSession.getInstance().setLastArchitecture(architecture);
-
-
         ExecutionRunner.architecture = architecture;
-        updateArchitectureLabel(architecture);
 
+        //  Update UI labels
+        updateArchitectureLabel(architecture);
         Platform.runLater(() -> creditsLabel.setText("Available Credits: " + userCredits));
 
-        UiUtils.showAlert("Architecture '" + chosenArch.name() + "' selected.\nCost: " + cost + " credits.");
+        UiUtils.showAlert(
+                "Architecture '" + chosenArch.name() + "' selected.\n" +
+                        "Cost: " + cost + " credits.\n\n"
+        );
+
         instructionsTable.refresh();
 
     }

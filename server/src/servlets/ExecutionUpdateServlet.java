@@ -47,7 +47,6 @@ public class ExecutionUpdateServlet extends HttpServlet {
             return;
         }
 
-        // עדכון הנתונים (קרדיטים וריצות)
         userManager.recordExecution(username, programName, creditsUsed);
 
         System.out.println("[DEBUG] Updated execution count for " + username +

@@ -56,16 +56,27 @@ public class UserManager {
         getUser(username).incrementContributedFunctions();
     }
 
-    /**
-     * Called once when a run finishes successfully — responsible for stats update.
-     */
     public void recordExecution(String username, String programName, int creditsUsed) {
         User u = getUser(username);
         if (u != null) {
+            // 1️⃣ מנכים קרדיטים בפועל
+            boolean ok = u.tryDeductCredits(creditsUsed);
+            if (!ok) {
+                System.out.println("[WARN] ❌ User " + username + " has insufficient credits to deduct " + creditsUsed);
+                return;
+            }
+
+            // 2️⃣ רושמים את הריצה בהיסטוריה
             u.recordExecution(programName, creditsUsed);
             u.incrementExecutionCount();
+
+            System.out.println("[DEBUG] ✅ recordExecution: user=" + username +
+                    " | program=" + programName +
+                    " | used=" + creditsUsed +
+                    " | remaining=" + u.getCredits());
         }
     }
+
 
 
     public Map<String, User> getAllUsers() {
