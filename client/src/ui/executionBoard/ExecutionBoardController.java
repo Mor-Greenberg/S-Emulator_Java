@@ -49,8 +49,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
+
 import static gui.showStatus.Status.showVariablesPopup;
 import static printExpand.expansion.PrintExpansion.getInstructionHistoryChain;
+import static session.UserSession.confirmReusePreviousArchitecture;
 import static ui.executionBoard.instructionTable.InstructionRow.*;
 import static utils.UiUtils.showError;
 
@@ -72,6 +74,7 @@ public class ExecutionBoardController {
     @FXML private TableColumn<InstructionRow, String> colArch;
 
     @FXML private Label summaryLabel;
+    @FXML private Label architectureLabel;
     @FXML private Button highlightButton;
 
     @FXML
@@ -103,6 +106,7 @@ public class ExecutionBoardController {
     public void initialize() {
         String username = UserSession.getUsername();
         userNameField.setText(username);
+        updateArchitectureLabel(null);
 
         instance = this;
 
@@ -189,6 +193,7 @@ public class ExecutionBoardController {
     // =====================================================
     // Execution Actions
     // =====================================================
+    private boolean firstrun=true;
     @FXML
     private void startExecution(ActionEvent event) {
         if (loadedProgram == null) {
@@ -201,6 +206,17 @@ public class ExecutionBoardController {
             UiUtils.showError("No architecture selected.\nPlease select an architecture before running the program.");
             return;
         }
+        ArchitectureData last = UserSession.getInstance().getLastArchitecture();
+        if (last != null&&!firstrun) {
+            boolean ok = UserSession.confirmReusePreviousArchitecture(
+                    ((Button) event.getSource()).getScene().getWindow(),
+                    last.toString(),
+                    "Regular Execution"
+            );
+            if (!ok) return;
+        }
+
+        updateArchitectureLabel(last);
 
         if (userCredits <= 0) {
             UiUtils.showError("You don't have enough credits to run this program.");
@@ -209,6 +225,7 @@ public class ExecutionBoardController {
 
         // continue normally
         ExecutionRunner.runProgram(loadedProgram);
+        firstrun = false;
         updateVariablesView();
 
         int cost = Utils.computeProgramDegree(
@@ -256,6 +273,17 @@ public class ExecutionBoardController {
             UiUtils.showError("No architecture selected.\nPlease select an architecture before starting debug mode.");
             return;
         }
+        ArchitectureData last = UserSession.getInstance().getLastArchitecture();
+        if (last != null&&!firstrun) {
+            boolean ok = UserSession.confirmReusePreviousArchitecture(
+                    ((Button) e.getSource()).getScene().getWindow(),
+                    last.toString(),
+                    "Debug Execution"
+            );
+            if (!ok) return;
+        }
+
+        updateArchitectureLabel(last);
 
         if (userCredits <= 0) {
             UiUtils.showError("You don't have enough credits to start debugging this program.");
@@ -264,6 +292,7 @@ public class ExecutionBoardController {
 
         // continue normally
         ExecutionRunner.startDebug(loadedProgram);
+        firstrun = false;
         updateVariablesView();
     }
 
@@ -281,6 +310,14 @@ public class ExecutionBoardController {
     // =====================================================
     // UI & Data Updates
     // =====================================================
+
+    private void updateArchitectureLabel(ArchitectureData arch) {
+        if (architectureLabel == null) return;
+        String text = (arch == null)
+                ? "Architecture selected : none"
+                : "Architecture selected : " + arch.name() + " (" + arch.getCreditsCost() + " credits)";
+        Platform.runLater(() -> architectureLabel.setText(text));
+    }
 
     public void updateVariablesView() {
         Map<Variable, Long> vars;
@@ -484,10 +521,22 @@ public class ExecutionBoardController {
     }
 
     @FXML
-    void onReRunClicked() {
+    void onReRunClicked(ActionEvent event) {
         if (loadedProgram == null) {
             showError("No program loaded.");
             return;
+        }
+
+        ArchitectureData last = UserSession.getInstance().getLastArchitecture();
+        if (last != null) {
+            boolean ok = UserSession.confirmReusePreviousArchitecture(
+                    ((Button) event.getSource()).getScene().getWindow(),
+                    last.toString(),
+                    "Re-Run Execution"
+            );
+            if (!ok) return;
+            architecture = last;
+            ExecutionRunner.architecture = last;
         }
 
         if (architecture == null) {
@@ -642,8 +691,11 @@ public class ExecutionBoardController {
 
         userCredits -= cost;
         architecture = ArchitectureData.valueOf(chosenArch.name());
+        UserSession.getInstance().setLastArchitecture(architecture);
+
 
         ExecutionRunner.architecture = architecture;
+        updateArchitectureLabel(architecture);
 
         Platform.runLater(() -> creditsLabel.setText("Available Credits: " + userCredits));
 

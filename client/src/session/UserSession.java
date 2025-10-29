@@ -1,18 +1,26 @@
 package session;
 
 import javafx.application.Platform;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
+import javafx.stage.Window;
+import logic.architecture.ArchitectureData;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import util.HttpClientUtil;
 
+import java.util.Optional;
+
 public class UserSession {
 
     private static String currentUsername;
     private static int userCredits = 0;
     private static Label creditsLabel;
+    private ArchitectureData lastArchitecture;
 
     public static void setUsername(String username) {
         currentUsername = username;
@@ -26,6 +34,8 @@ public class UserSession {
         currentUsername = null;
         userCredits = 0;
     }
+    private static final UserSession INSTANCE = new UserSession();
+    public static UserSession getInstance() { return INSTANCE; }
 
     public static int getUserCredits() {
         return userCredits;
@@ -82,5 +92,29 @@ public class UserSession {
                     creditsLabel.setText("Available Credits: " + userCredits)
             );
         }
+    }
+    public static boolean confirmReusePreviousArchitecture(Window owner, String archText, String mode) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Confirm Architecture");
+        alert.setHeaderText(mode + " Mode");
+        alert.setContentText("Continue with the previous architecture: " + archText + "?");
+
+        ButtonType ok = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        alert.getButtonTypes().setAll(ok, cancel);
+
+        if (owner != null)
+            alert.initOwner(owner);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ok;
+    }
+
+
+    public ArchitectureData getLastArchitecture() {
+        return  lastArchitecture;
+    }
+    public void setLastArchitecture(ArchitectureData lastArchitecture) {
+        this.lastArchitecture = lastArchitecture;
     }
 }

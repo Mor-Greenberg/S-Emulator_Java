@@ -84,29 +84,6 @@ public class ExecutionRunner {
 
     }
 
-    private static boolean validateAllowed(Program program, List<Instruction> instrs) {
-        if (architecture == null) {
-            UiUtils.showError("Please select an architecture before running.");
-            return false;
-        }
-
-        List<String> illegal = new ArrayList<>();
-        for (Instruction i : instrs) {
-            InstructionData id = i.getData();
-            if (!ArchitectureRules.isAllowed(architecture, id)) {
-                String lbl = (i.getLabel() != null) ? i.getLabel().getLabelRepresentation() : "";
-                illegal.add(id.name() + (lbl.isEmpty() ? "" : " @"+lbl));
-            }
-        }
-        if (!illegal.isEmpty()) {
-            UiUtils.showError(
-                    "Program '" + program.getName() + "' contains illegal instructions for " + architecture.name() + ":\n" +
-                            String.join("\n", illegal)
-            );
-            return false;
-        }
-        return true;
-    }
 
     private static List<Instruction> filterIllegalInstructions(Program program, List<Instruction> instrs) {
         if (architecture == null) {
@@ -155,6 +132,7 @@ public class ExecutionRunner {
                 UiUtils.showError("No architecture selected — execution cancelled.");
                 return;
             }
+
 
             ArchitectureData selected = choice.get();
             int cost = selected.getCreditsCost();
@@ -472,7 +450,7 @@ public class ExecutionRunner {
 
         int totalUsedCredits = architecture.getCreditsCost() + cycles;
         program.recordRun(totalUsedCredits);
-
+        UserSession.getInstance().setLastArchitecture(architecture);
         lastVariableState = new HashMap<>(context.getVariableState());
     }
 
@@ -495,6 +473,7 @@ public class ExecutionRunner {
         generateSummary(debugInstructions);
         ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(debugInstructions));
         ExecutionBoardController.getInstance().updateCyclesView(executedCycles);
+        UserSession.getInstance().setLastArchitecture(architecture);
 
 
     }
