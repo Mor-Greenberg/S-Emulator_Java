@@ -181,7 +181,6 @@ public class ExecutionContextImpl implements ExecutionContext {
         return loadedPrograms;
     }
 
-    // ====== Static management of global function map ======
 
     public static void loadProgram(Program program) {
         globalProgramMap.put(program.getName(), program);
@@ -196,38 +195,6 @@ public class ExecutionContextImpl implements ExecutionContext {
         return globalProgramMap;
     }
 
-    public static String getXmlForProgram(String name) {
-        if (name == null || name.isBlank()) {
-            System.err.println("⚠️ getXmlForProgram called with null/blank name");
-            return null;
-        }
 
-        if (globalXmlMap == null || globalXmlMap.isEmpty()) {
-            System.err.println("⚠️ globalXmlMap is empty or not initialized");
-            return null;
-        }
-
-        String key = name.trim();
-        String xml = globalXmlMap.get(key);
-
-        if (xml == null) {
-            // ננסה גם lowercase אם השמות שונים רק באותיות
-            xml = globalXmlMap.get(key.toLowerCase());
-        }
-
-        if (xml == null) {
-            System.err.println("❌ XML not found in memory for program: " + key);
-        } else {
-            System.out.println("📄 XML found locally for program: " + key);
-        }
-
-        return xml;
-    }
-
-
-    public static void clearPrograms() {
-        globalProgramMap.clear();
-        globalXmlMap.clear();
-    }
 }
 

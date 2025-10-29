@@ -1,15 +1,12 @@
 package ui.executionBoard;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import dto.ProgramStatsDTO;
 import gui.reRun.ReRunService;
 import javafx.scene.text.Text;
 import logic.architecture.ArchitectureData;
 import logic.architecture.ArchitectureRules;
 import logic.execution.ExecutionContext;
-import logic.execution.HandleCredits;
 import logic.instruction.AbstractInstruction;
 import printExpand.expansion.Expand;
 import ui.dashboard.DashboardController;
@@ -36,25 +33,19 @@ import logic.execution.ExecutionContextImpl;
 import logic.instruction.Instruction;
 import logic.program.Program;
 import okhttp3.*;
-
 import session.UserSession;
 import ui.executionBoard.instructionTable.ExpandedTable;
 import ui.executionBoard.instructionTable.InstructionRow;
 import ui.executionBoard.variablesTable.VariableRow;
 import util.HttpClientUtil;
-import utils.UiUtils;
 import utils.Utils;
-
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
-
-
-
 import static gui.showStatus.Status.showVariablesPopup;
 import static printExpand.expansion.PrintExpansion.getInstructionHistoryChain;
 import static ui.executionBoard.instructionTable.InstructionRow.*;
-import static utils.UiUtils.showError;
+import static ui.guiUtils.UiUtils.showAlert;
+import static ui.guiUtils.UiUtils.showError;
 
 
 public class ExecutionBoardController {
@@ -73,7 +64,6 @@ public class ExecutionBoardController {
     @FXML private TableColumn<InstructionRow, Number> colCycles;
     @FXML private TableColumn<InstructionRow, String> colArch;
 
-    //@FXML private Label summaryLabel;
     @FXML private Text summaryText;
 
     @FXML private Label architectureLabel;
@@ -203,20 +193,20 @@ public class ExecutionBoardController {
     }
 
 
-    // =====================================================
+
     // Execution Actions
-    // =====================================================
+
     private boolean firstrun=true;
     @FXML
     private void startExecution(ActionEvent event) {
         if (loadedProgram == null) {
-            UiUtils.showError("No program loaded.");
+            showError("No program loaded.");
             return;
         }
 
         // Architecture not selected yet
         if (architecture == null ) {
-            UiUtils.showError("No architecture selected.\nPlease select an architecture before running the program.");
+            showError("No architecture selected.\nPlease select an architecture before running the program.");
             return;
         }
         ArchitectureData last = userSession.getLastArchitecture();
@@ -232,7 +222,7 @@ public class ExecutionBoardController {
         updateArchitectureLabel(last);
 
         if (userCredits <= 0) {
-            UiUtils.showError("You don't have enough credits to run this program.");
+            showError("You don't have enough credits to run this program.");
             return;
         }
 
@@ -257,7 +247,7 @@ public class ExecutionBoardController {
     @FXML
     private void stepOverExecution(ActionEvent e) {
         if (loadedProgram == null) {
-            UiUtils.showError("No program loaded.");
+            showError("No program loaded.");
             return;
         }
         ExecutionRunner.stepOver();
@@ -268,22 +258,22 @@ public class ExecutionBoardController {
     @FXML
     private void stopExecution(ActionEvent e) {
         if (loadedProgram == null) {
-            UiUtils.showError("No program loaded.");
+            showError("No program loaded.");
             return;
         }
         ExecutionRunner.stop();
-        UiUtils.showAlert("Program stopped.");
+        showAlert("Program stopped.");
     }
     @FXML
     private void startDebug(ActionEvent e) {
         if (loadedProgram == null) {
-            UiUtils.showError("No program loaded.");
+            showError("No program loaded.");
             return;
         }
 
         // Architecture not selected yet
         if (architecture == null ) {
-            UiUtils.showError("No architecture selected.\nPlease select an architecture before starting debug mode.");
+            showError("No architecture selected.\nPlease select an architecture before starting debug mode.");
             return;
         }
         ArchitectureData last = userSession.getLastArchitecture();
@@ -299,7 +289,7 @@ public class ExecutionBoardController {
         updateArchitectureLabel(last);
 
         if (userCredits <= 0) {
-            UiUtils.showError("You don't have enough credits to start debugging this program.");
+            showError("You don't have enough credits to start debugging this program.");
             return;
         }
 
@@ -313,16 +303,16 @@ public class ExecutionBoardController {
     @FXML
     private void resumeExecution(ActionEvent e) {
         if (loadedProgram == null) {
-            UiUtils.showError("No program loaded.");
+            showError("No program loaded.");
             return;
         }
         ExecutionRunner.resume();
         updateVariablesView();
     }
 
-    // =====================================================
+
     // UI & Data Updates
-    // =====================================================
+
 
     private void updateArchitectureLabel(ArchitectureData arch) {
         if (architectureLabel == null) return;
@@ -397,13 +387,13 @@ public class ExecutionBoardController {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                Platform.runLater(() -> UiUtils.showError("Failed to fetch program: " + e.getMessage()));
+                Platform.runLater(() -> showError("Failed to fetch program: " + e.getMessage()));
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 if (!response.isSuccessful()) {
-                    Platform.runLater(() -> UiUtils.showError("Program not found on server."));
+                    Platform.runLater(() -> showError("Program not found on server."));
                     return;
                 }
                 String json = response.body().string();
@@ -576,12 +566,12 @@ public class ExecutionBoardController {
         }
 
         if (architecture == null) {
-            UiUtils.showError("No architecture selected.\nPlease select an architecture before re-running the program.");
+            showError("No architecture selected.\nPlease select an architecture before re-running the program.");
             return;
         }
 
         if (getUserCredits() <= 0) {
-            UiUtils.showError("You don't have enough credits to re-run this program.");
+            showError("You don't have enough credits to re-run this program.");
             return;
         }
 
@@ -607,7 +597,7 @@ public class ExecutionBoardController {
     @FXML
     private void onDegreeCommandsAndInformationClicked() {
         if (loadedProgram == null) {
-            UiUtils.showError("No program loaded.");
+            showError("No program loaded.");
             return;
         }
 
@@ -663,9 +653,9 @@ public class ExecutionBoardController {
         Expand.expandAction(loadedProgram,architecture);
     }
 
-    // =====================================================
+
     // Credits
-    // =====================================================
+
 
 
     public void setUserCredits(int credits) {
@@ -697,10 +687,9 @@ public class ExecutionBoardController {
 
             DashboardController controller = loader.getController();
 
-            // ✅ משיג את הסשן הנוכחי (שנשמר ב־ExecutionBoardController)
             if (userSession == null) {
-                System.err.println("⚠ No active user session found! Creating fallback empty session.");
-                userSession = new UserSession(""); // יצירת אובייקט חדש אם נדרש
+                System.err.println("No active user session found! Creating fallback empty session.");
+                userSession = new UserSession("");
             }
 
             controller.setUserSession(userSession);
@@ -713,7 +702,7 @@ public class ExecutionBoardController {
 
         } catch (IOException e) {
             e.printStackTrace();
-            UiUtils.showError("Failed to return to dashboard: " + e.getMessage());
+            showError("Failed to return to dashboard: " + e.getMessage());
         }
     }
 
@@ -740,12 +729,9 @@ public class ExecutionBoardController {
         int currentCredits = userCredits;
 
         if (currentCredits < cost) {
-            UiUtils.showError("Not enough credits to select " + chosenArch.name());
+            showError("Not enough credits to select " + chosenArch.name());
             return;
         }
-
-
-        //userCredits -= cost;
 
         architecture = chosenArch;
         userSession.setLastArchitecture(architecture);
@@ -755,7 +741,7 @@ public class ExecutionBoardController {
         updateArchitectureLabel(architecture);
         Platform.runLater(() -> creditsLabel.setText("Available Credits: " + userCredits));
 
-        UiUtils.showAlert(
+        showAlert(
                 "Architecture '" + chosenArch.name() + "' selected.\n" +
                         "Cost: " + cost + " credits.\n\n"
         );

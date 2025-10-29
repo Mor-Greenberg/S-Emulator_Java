@@ -36,7 +36,6 @@ public class UserManager {
         return userHistories.getOrDefault(username, Collections.emptyList());
     }
 
-    // ---------------- Credit and statistics management ----------------
 
     public void addCredits(String username, int amount) {
         getUser(username).addCredits(amount);

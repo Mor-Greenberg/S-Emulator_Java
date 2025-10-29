@@ -9,7 +9,6 @@ import okhttp3.*;
 import session.UserSession;
 import util.HttpClientUtil;
 import dto.ProgramStatsDTO;
-import utils.UiUtils;
 import com.google.gson.Gson;
 
 import java.io.File;
@@ -17,6 +16,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.concurrent.TimeUnit;
+
+import static ui.guiUtils.UiUtils.showError;
 
 public class LoadFile {
 
@@ -47,7 +48,7 @@ public class LoadFile {
                 @Override
                 public void onFailure(Call call, IOException e) {
                     Platform.runLater(() ->
-                            UiUtils.showError("Server error: " + e.getMessage()));
+                            showError("Server error: " + e.getMessage()));
                 }
 
                 @Override
@@ -55,7 +56,7 @@ public class LoadFile {
                     try (response) {
                         if (response.body() == null) {
                             Platform.runLater(() ->
-                                    UiUtils.showError("Server returned: " + response.code() + " (empty response)"));
+                                    showError("Server returned: " + response.code() + " (empty response)"));
                             return;
                         }
 
@@ -64,12 +65,12 @@ public class LoadFile {
                             try {
                                 if (json.contains("\"error\"")) {
                                     String error = new Gson().fromJson(json, java.util.Map.class).get("error").toString();
-                                    Platform.runLater(() -> UiUtils.showError("Upload failed:\n" + error));
+                                    Platform.runLater(() -> showError("Upload failed:\n" + error));
                                 } else {
-                                    Platform.runLater(() -> UiUtils.showError("Server returned " + response.code() + ":\n" + json));
+                                    Platform.runLater(() -> showError("Server returned " + response.code() + ":\n" + json));
                                 }
                             } catch (Exception ex) {
-                                Platform.runLater(() -> UiUtils.showError("Server error " + response.code() + ": " + json));
+                                Platform.runLater(() -> showError("Server error " + response.code() + ": " + json));
                             }
                             return;
                         }
@@ -78,7 +79,7 @@ public class LoadFile {
 
                         if (json.contains("\"error\"")) {
                             String error = new Gson().fromJson(json, java.util.Map.class).get("error").toString();
-                            Platform.runLater(() -> UiUtils.showError("Server error: " + error));
+                            Platform.runLater(() -> showError("Server error: " + error));
                             return;
                         }
 
@@ -100,14 +101,14 @@ public class LoadFile {
                         });
 
                     } catch (Exception e) {
-                        Platform.runLater(() -> UiUtils.showError("Failed to parse server response: " + e.getMessage()));
+                        Platform.runLater(() -> showError("Failed to parse server response: " + e.getMessage()));
                         e.printStackTrace();
                     }
                 }
             });
 
         } catch (Exception e) {
-            UiUtils.showError("Failed to send file: " + e.getMessage());
+            showError("Failed to send file: " + e.getMessage());
             e.printStackTrace();
         }
     }

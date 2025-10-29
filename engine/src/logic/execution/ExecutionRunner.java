@@ -10,24 +10,23 @@ import logic.instruction.Instruction;
 import logic.instruction.InstructionData;
 import logic.program.Program;
 import logic.Variable.Variable;
-import printExpand.expansion.PrintExpansion;
-import session.UserSession;
+
 import ui.dashboard.DashboardController;
 import ui.dashboard.UserHistory;
 import ui.executionBoard.ExecutionBoardController;
 import ui.executionBoard.instructionTable.InstructionRow;
 import ui.guiUtils.DegreeDialog;
-import user.User;
-import user.UserManager;
-import utils.UiUtils;
+
 
 import javafx.application.Platform;
-import javafx.scene.control.TableView;
+
 import java.util.*;
 
 import static logic.architecture.HandleArch.ensureArchitectureSelected;
 import static logic.blaxBox.BlackBox.blackBoxStepDegree0;
 import static logic.blaxBox.BlackBox.executeBlackBox;
+import static ui.guiUtils.UiUtils.showAlert;
+import static ui.guiUtils.UiUtils.showError;
 import static utils.Utils.generateSummary;
 
 public class ExecutionRunner {
@@ -104,7 +103,7 @@ public class ExecutionRunner {
 
     private static List<Instruction> filterIllegalInstructions(Program program, List<Instruction> instrs) {
         if (architecture == null) {
-            UiUtils.showError("Please select an architecture before running.");
+            showError("Please select an architecture before running.");
             return instrs;
         }
 
@@ -122,7 +121,7 @@ public class ExecutionRunner {
         }
 
         if (!removed.isEmpty()) {
-            UiUtils.showAlert(
+            showAlert(
                     "Some instructions were removed because they are not supported by " + architecture.name() + ":\n" +
                             String.join("\n", removed)
             );
@@ -131,12 +130,7 @@ public class ExecutionRunner {
         return allowed;
     }
 
-
-
-
-    // =====================================================
     // NORMAL RUN
-    // =====================================================
     public static void runProgram(Program program) {
         ArchitectureData selected = ensureArchitectureSelected(architecture,userSession);
         if (selected == null) return;
@@ -165,18 +159,12 @@ public class ExecutionRunner {
             int totalUsedCredits = architectureCost + executedCycles;
             userSession.deductCredits(executedCycles);
 
-
-
             return;
         }
-
-
         program.expandToDegree(currentDegree, context);
         expandedProgram = program;
         List<Instruction> activeInstr = program.getActiveInstructions();
         activeInstr = filterIllegalInstructions(program, activeInstr);
-
-
 
         int totalCyclesUsed = 0;
 
@@ -196,15 +184,10 @@ public class ExecutionRunner {
         saveRunHistory(program, context, result, totalCyclesUsed, false);
         if (userSession != null) userSession.refreshCreditsFromServerAsync();
 
-//        ExecutionBoardController.getInstance()
-//                .notifyExecutionCompleted(program.getName(), totalUsedCredits);
-
     }
 
 
-    // =====================================================
     // DEBUG MODE
-    // =====================================================
     public static void startDebug(Program program) {
         debugMode = true;
         currentIndex = 0;
@@ -248,11 +231,11 @@ public class ExecutionRunner {
 
     public static void stepOver() {
         if (!debugMode) {
-            UiUtils.showError("Not on debug mode");
+           showError("Not on debug mode");
             return;
         }
 
-        // -------- Degree 0: black-box single step --------
+        // Degree 0: black-box single step
         if (currentDegree == 0) {
             if (bbPc < 0 || bbPc >= debugInstructions.size()) return;
 
@@ -288,9 +271,6 @@ public class ExecutionRunner {
                 ctrl.highlightCurrentInstruction(rowNumber - 1);
                 ctrl.updateVariablesView();
                 ctrl.updateCyclesView(executedCycles);
-                //generateSummary(debugInstructions);
-
-
             });
 
             if (bbPc >= debugInstructions.size()) {
@@ -307,9 +287,6 @@ public class ExecutionRunner {
                 generateSummary(debugInstructions);
                 ExecutionBoardController.getInstance().updateCyclesView(executedCycles);
                 if (userSession != null) userSession.refreshCreditsFromServerAsync();
-
-
-
             }
 
             return;
@@ -322,7 +299,6 @@ public class ExecutionRunner {
         currentInstr.execute(debugContext);
         executedCycles += currentInstr.getCycles();
 
-        // Deduct credits here as well
         boolean hasCredits = HandleCredits.consumeCycles(expandedProgram.getName(), currentInstr.getCycles(),userSession);
         if (!hasCredits) return; // if no credits left, stop execution
 
@@ -410,7 +386,7 @@ public class ExecutionRunner {
     }
     public static void stop() {
         if (!debugMode) {
-            UiUtils.showError("Not on debug mode");
+            showError("Not on debug mode");
             return;
         }
         debugMode = false;
@@ -421,10 +397,7 @@ public class ExecutionRunner {
 
     }
 
-
-    // =====================================================
     // Helpers
-    // =====================================================
     private static void updateUIAfterExecution(Program program, Map<Variable, Long> vars, List<Instruction> instructions) {
         Platform.runLater(() -> {
             ExecutionBoardController ctrl = ExecutionBoardController.getInstance();
@@ -455,9 +428,6 @@ public class ExecutionRunner {
                 ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(instructions));
 
             }
-
-
-
             ctrl.updateVariablesView();
             // Calculate how many instructions are supported by the selected architecture
             long supportedCount = 0;
@@ -497,9 +467,6 @@ public class ExecutionRunner {
         ExecutionBoardController.getInstance().updateSummaryLine(utils.Utils.generateSummary(debugInstructions));
         ExecutionBoardController.getInstance().updateCyclesView(executedCycles);
         if (userSession != null) userSession.setLastArchitecture(architecture);
-//        UserManager.getInstance()
-//                .getUser(userSession.getUsername())
-//                .incrementExecutionCount();
 
     }
 
@@ -512,8 +479,6 @@ public class ExecutionRunner {
             ctrl.updateCyclesView(0);
         });
     }
-
-
 
 
     private static int resolveDegree(Program program, ExecutionContext context) {
@@ -550,9 +515,7 @@ public class ExecutionRunner {
     public static int getCurrentDegree() {
         return currentDegree;
     }
-    // =====================================================
 // Prefill support for ReRunService
-// =====================================================
     public static void setPrefilledDegree(int degree) {
         usePrefilledDegree = true;
         prefilledDegree = degree;

@@ -2,24 +2,14 @@ package logic.xml;
 
 import jakarta.xml.bind.*;
 import jaxbV2.jaxb.v2.*;
-import logic.Variable.Variable;
-import logic.Variable.VariableImpl;
-import logic.Variable.VariableType;
-import logic.execution.ExecutionContext;
+
 import logic.execution.ExecutionContextImpl;
-import logic.instruction.*;
-import logic.label.FixedLabel;
-import logic.label.Label;
-import logic.label.LabelImpl;
+
 import logic.program.Program;
-import logic.program.ProgramImpl;
-import serverProgram.GlobalProgramStore;
-import session.UserSession;
+
 
 import java.io.File;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.util.*;
+
 
 public class XmlLoader {
     public static SProgram loadFromFile(String path) {

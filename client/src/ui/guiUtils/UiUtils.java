@@ -1,4 +1,4 @@
-package utils;
+package ui.guiUtils;
 
 import javafx.scene.control.Alert;
 import javafx.scene.paint.Color;

@@ -41,10 +41,8 @@ public class AddRunServlet extends HttpServlet {
         }
 
 
-        // ✅ חישוב קרדיטים לשם הסטטיסטיקה של התוכנית בלבד
         int usedCredits = dto.getCycles() + dto.getArchitecture().getCreditsCost();
 
-        // ✅ עדכון ה־Program בלבד (לא המשתמש)
         Program program = GlobalProgramStore.getProgramCache().get(dto.getProgramName());
         if (program != null) {
             program.recordRun(usedCredits);

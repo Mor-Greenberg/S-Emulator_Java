@@ -4,7 +4,7 @@ import logic.execution.ExecutionRunner;
 import logic.history.RunHistoryEntry;
 import logic.program.Program;
 
-import static utils.UiUtils.showError;
+import static ui.guiUtils.UiUtils.showError;
 
 
 public class ReRunService {

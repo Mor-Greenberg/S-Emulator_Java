@@ -64,7 +64,7 @@ public class UserHistoryServlet extends HttpServlet {
                     " | Runs=" + program.getRunCount() +
                     " | AvgCredits=" + program.getAverageCredits());
         } else {
-            System.out.println("⚠ Program not found in GlobalProgramStore: " + dto.getProgramName());
+            System.out.println(" Program not found in GlobalProgramStore: " + dto.getProgramName());
         }
 
         resp.setStatus(HttpServletResponse.SC_OK);

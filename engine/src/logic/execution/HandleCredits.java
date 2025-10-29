@@ -3,7 +3,9 @@ package logic.execution;
 import logic.architecture.ArchitectureData;
 import logic.program.Program;
 import session.UserSession;
-import utils.UiUtils;
+
+import static ui.guiUtils.UiUtils.showError;
+
 
 public class HandleCredits {
 
@@ -13,7 +15,7 @@ public class HandleCredits {
         int current = userSession.getUserCredits();
 
         if (current < architectureCost) {
-            UiUtils.showError("Not enough credits! Required: " + architectureCost + ", Available: " + current);
+            showError("Not enough credits! Required: " + architectureCost + ", Available: " + current);
             return -1;
         }
 
@@ -27,7 +29,7 @@ public class HandleCredits {
     public static boolean consumeCycles(String programName, int cycles,UserSession userSession) {
         int current = userSession.getUserCredits();
         if (current < cycles) {
-            UiUtils.showError("Out of credits while running " + programName);
+           showError("Out of credits while running " + programName);
             return false;
         }
 

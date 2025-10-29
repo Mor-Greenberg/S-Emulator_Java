@@ -67,18 +67,15 @@ public class LoginController {
 
     private void goToDashboard(String username) {
         try {
-            // 🔹 צרי מופע חדש של UserSession עבור המשתמש הזה בלבד
-            UserSession session = new UserSession(username); // למשל 5000 קרדיטים התחלתי
+            UserSession session = new UserSession(username);
 
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/ui/dashboard/S-Emulator-Dashboard.fxml"));
             Scene scene = new Scene(loader.load());
 
-            // העברת ה-Session ל-Controller של הדאשבורד
             DashboardController controller = loader.getController();
             controller.setUserSession(session);
             controller.initAfterLogin();
 
-            // עדכון התצוגה
             controller.userNameField.setText(username);
 
             Stage stage = (Stage) usernameField.getScene().getWindow();

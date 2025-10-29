@@ -2,9 +2,11 @@ package logic.architecture;
 
 import javafx.scene.control.ChoiceDialog;
 import session.UserSession;
-import utils.UiUtils;
 
 import java.util.Optional;
+
+import static ui.guiUtils.UiUtils.showAlert;
+import static ui.guiUtils.UiUtils.showError;
 
 public class HandleArch {
 
@@ -20,7 +22,7 @@ public class HandleArch {
         Optional<ArchitectureData> choice = dialog.showAndWait();
 
         if (choice.isEmpty()) {
-            UiUtils.showError("No architecture selected — execution cancelled.");
+            showError("No architecture selected — execution cancelled.");
             return null;
         }
 
@@ -29,11 +31,11 @@ public class HandleArch {
         int userCredits = userSession.getUserCredits();
 
         if (userCredits < cost) {
-            UiUtils.showError("Not enough credits for " + selected.name());
+            showError("Not enough credits for " + selected.name());
             return null;
         }
 
-        UiUtils.showAlert("Architecture '" + selected.name() + "' selected.\nCost: " + cost + " credits.");
+        showAlert("Architecture '" + selected.name() + "' selected.\nCost: " + cost + " credits.");
         return selected;
     }
 }

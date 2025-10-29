@@ -134,7 +134,7 @@ public class UserSession {
                         String txt = resp.body().string().trim();
                         try {
                             int serverCredits = Integer.parseInt(txt);
-                            setUserCredits(serverCredits);   // זה גם יעדכן את ה־Label
+                            setUserCredits(serverCredits);
                         } catch (NumberFormatException ignore) {}
                     }
                 }

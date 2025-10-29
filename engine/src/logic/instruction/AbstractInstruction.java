@@ -145,6 +145,6 @@ public abstract class AbstractInstruction implements Instruction {
 
 
     public String getArchitecture() {
-        return "no architecture yet...";
+        return "DUMMY";
     }
 }

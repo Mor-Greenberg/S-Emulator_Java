@@ -27,7 +27,7 @@ import okhttp3.*;
 import session.UserSession;
 import ui.executionBoard.ExecutionBoardController;
 import util.HttpClientUtil;
-import utils.UiUtils;
+
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -35,7 +35,9 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static utils.UiUtils.showAlert;
+import static ui.guiUtils.UiUtils.showAlert;
+import static ui.guiUtils.UiUtils.showError;
+
 
 public class DashboardController {
     private SProgram loadedProgram;
@@ -119,7 +121,7 @@ public class DashboardController {
                 instance.fetchProgramsFromServer();
             });
         } else {
-            System.err.println("⚠ DashboardController instance is null");
+            System.err.println("DashboardController instance is null");
         }
     }
 
@@ -199,7 +201,7 @@ public class DashboardController {
     @FXML
     void executeProgramPressed(ActionEvent event) {
         if (selectedProgram == null) {
-            UiUtils.showError("Select a program first.");
+            showError("Select a program first.");
             return;
         }
 
@@ -219,7 +221,7 @@ public class DashboardController {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                Platform.runLater(() -> UiUtils.showError("Server error: " + e.getMessage()));
+                Platform.runLater(() ->showError("Server error: " + e.getMessage()));
             }
 
             @Override
@@ -227,7 +229,7 @@ public class DashboardController {
                 try (response) {
                     if (!response.isSuccessful() || response.body() == null) {
                         Platform.runLater(() ->
-                                UiUtils.showError("Program unavailable on server (HTTP " + response.code() + ")."));
+                               showError("Program unavailable on server (HTTP " + response.code() + ")."));
                         return;
                     }
 
@@ -243,7 +245,7 @@ public class DashboardController {
                     } catch (Exception e) {
                         e.printStackTrace();
                         Platform.runLater(() ->
-                                UiUtils.showError("Failed to parse XML: " + e.getMessage()));
+                                showError("Failed to parse XML: " + e.getMessage()));
                     }
                 }
             }
@@ -340,7 +342,7 @@ public class DashboardController {
 
         } catch (IOException e) {
             e.printStackTrace();
-            UiUtils.showError("Failed to open Execution Board: " + e.getMessage());
+           showError("Failed to open Execution Board: " + e.getMessage());
         }
     }
 
@@ -484,7 +486,7 @@ public class DashboardController {
     @FXML
     private void onExecuteFunctionClicked(ActionEvent event) {
         if (selectedFunction == null) {
-            UiUtils.showError("Select a function first.");
+            showError("Select a function first.");
             return;
         }
 
@@ -504,14 +506,14 @@ public class DashboardController {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                Platform.runLater(() -> UiUtils.showError("Server error: " + e.getMessage()));
+                Platform.runLater(() -> showError("Server error: " + e.getMessage()));
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 if (!response.isSuccessful() || response.body() == null) {
                     Platform.runLater(() ->
-                            UiUtils.showError("Function unavailable on server."));
+                            showError("Function unavailable on server."));
                     return;
                 }
 
@@ -526,7 +528,7 @@ public class DashboardController {
 
                 } catch (Exception e) {
                     Platform.runLater(() ->
-                            UiUtils.showError("Failed to load function: " + e.getMessage()));
+                            showError("Failed to load function: " + e.getMessage()));
                     e.printStackTrace();
                 }
             }
@@ -573,14 +575,14 @@ public class DashboardController {
             @Override
             public void onFailure(Call call, IOException e) {
                 Platform.runLater(() ->
-                        UiUtils.showError("Failed to fetch functions: " + e.getMessage()));
+                        showError("Failed to fetch functions: " + e.getMessage()));
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 if (!response.isSuccessful() || response.body() == null) {
                     Platform.runLater(() ->
-                            UiUtils.showError("Server returned error while fetching functions"));
+                          showError("Server returned error while fetching functions"));
                     return;
                 }
 
@@ -640,13 +642,13 @@ public class DashboardController {
         HttpClientUtil.getClient().newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                Platform.runLater(() -> UiUtils.showError("Server error: " + e.getMessage()));
+                Platform.runLater(() -> showError("Server error: " + e.getMessage()));
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 if (!response.isSuccessful() || response.body() == null) {
-                    Platform.runLater(() -> UiUtils.showError("Failed to load functions from server"));
+                    Platform.runLater(() ->showError("Failed to load functions from server"));
                     return;
                 }
 

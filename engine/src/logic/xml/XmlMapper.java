@@ -74,7 +74,7 @@ public class XmlMapper {
                     Program reconstructed = XmlLoader.fromXmlString(entry.getValue(), uploader);
                     ExecutionContextImpl.addGlobalProgram(reconstructed);
                 } catch (Exception ex) {
-                    System.out.println("⚠ Failed to reconstruct program: " + progName + " -> " + ex.getMessage());
+                    System.out.println("Failed to reconstruct program: " + progName + " -> " + ex.getMessage());
                 }
             }
         }
@@ -280,7 +280,6 @@ public class XmlMapper {
 
             String head = parts.get(0).trim();
 
-            // --- 💡 זיהוי פונקציה או ביטוי ---
             if (functionMap.containsKey(head)) {
                 List<Variable> innerArgs = new ArrayList<>();
                 for (int i = 1; i < parts.size(); i++) {
@@ -289,15 +288,12 @@ public class XmlMapper {
                 QuoteInstruction innerQuote = new QuoteInstruction(head, innerArgs, destination);
                 argumentList.add(new QuoteVariable(innerQuote));
             }
-            // --- 💡 זיהוי משתנה תקף בלבד ---
             else if (head.matches("^[xyz]\\d*$") || head.equals("y")) {
                 Variable var = parseVariable(head);
                 program.addVar(var);
                 argumentList.add(var);
             }
-            // --- 💡 CONST0 ופונקציות שלא מוגדרות במפה ---
             else if (functionMap.containsKey(head) || head.startsWith("CONST")) {
-                // פונקציה פנימית כמו CONST0, NOT, EQUAL וכו'
                 QuoteInstruction innerQuote = new QuoteInstruction(head, new ArrayList<>(), destination);
                 argumentList.add(new QuoteVariable(innerQuote));
             }
